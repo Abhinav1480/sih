@@ -1,0 +1,27 @@
+# SIH 2026 Problem Statement 26176: Requirements Traceability Matrix
+## "ORCA - Marine EcOsystem Reasoning with Collaborative Agents"
+
+### 1. Problem Statement Context & Domain
+- **Problem Statement ID**: 26176
+- **Title**: ORCA - Marine EcOsystem Reasoning with Collaborative Agents
+- **Nodal Organizations / Stakeholders**: Ministry of Earth Sciences (MoES), Indian National Centre for Ocean Information Services (INCOIS), India Meteorological Department (IMD), Department of Fisheries, Indian Coast Guard, Maritime Administration.
+- **Context**: Marine data across Indian oceanic zones (Arabian Sea, Bay of Bengal, Indian Ocean) is scattered across independent scientific services (INCOIS Ocean State Forecasts, PFZ Advisories, OSF high wave alerts, IMD weather and cyclone bulletins, Department of Fisheries regulations, Marine Protected Areas under MoEFCC). Coastal communities, commercial navigators, and marine administrators face critical delays, cognitive overload, and fragmented understanding when planning offshore activities.
+
+---
+
+### 2. Requirements Traceability Matrix
+
+| Req ID | Official SIH Requirement Category | ORCA Technical Implementation | Verification Method | Implementation Status | Limitations & Assumptions |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **REQ-01** | Natural Language Query Understanding | Generalized intent, entity, coordinate, temporal, and constraint extraction engine in `orca/agents/planner.py` | Unit tests on 30+ unseen queries (`test_generalization_30_queries.py`) | **VERIFIED** | Supports complex conjunctions, spatial constraints, and multi-parameter filters. |
+| **REQ-02** | Collaborative Multi-Agent Architecture | Discrete specialist agents (`OceanAgent`, `WeatherAgent`, `FisheryAgent`, `GeoAgent`, `VesselAgent`, `RiskAgent`, `ReportAgent`) orchestrated via `AgentOrchestrator` | Execution audit log with recorded start/end timestamps and step telemetry | **VERIFIED** | All agents run real asynchronous tasks; no synthetic placeholder timers. |
+| **REQ-03** | Authoritative Oceanographic Data Integration | INCOIS Ocean State Forecast, SST, Chlorophyll-a, Swell, Significant Wave Height, and Currents adapters | Live API client with fallback to deterministic high-fidelity demo provider | **VERIFIED** | INCOIS Web APIs require public network connectivity; cached and demo modes provide resilience. |
+| **REQ-04** | Meteorological Data Integration | IMD Weather bulletins, wind speed/direction, precipitation, lightning, cyclone tracks, and storm warnings | Open-Meteo Marine / IMD bulletin ingestors with structured alert classification | **VERIFIED** | Severe weather warnings tagged with official severity codes (Yellow/Orange/Red). |
+| **REQ-05** | Fisheries & Potential Fishing Zone (PFZ) Intelligence | INCOIS PFZ integration, sea surface temperature thermal fronts, chlorophyll concentration contours, and distance ranking | Spatial filtering within configurable nautical mile / km radii | **VERIFIED** | PFZ advisories are decision aids and do not guarantee fish catch. |
+| **REQ-06** | Spatial Reasoning & Geofencing | Exact distance, bearing, point-in-polygon, buffer radius, coastal zones, EEZ boundaries, and Marine Protected Areas (MPAs) | GIS engine with Shapely / PostGIS spatial geometry (`orca/geospatial/`) | **VERIFIED** | Spatial calculations performed with mathematical exactness (Haversine & planar GIS). |
+| **REQ-07** | Deterministic Risk & Marine Safety Engine | Multi-factor risk engine computing weighted hazard indices (0-100) based on wave height, wind, swell, storm alerts, and restrictions | Deterministic matrix with rule explanations and transparent factor breakdown (`orca/risk/`) | **VERIFIED** | All risk thresholds are configurable and cite standard maritime safety guidelines. |
+| **REQ-08** | Dynamic Visualization & Adaptive UI | Adaptive result interface rendering maps, time series charts, comparison tables, or risk cards dynamically based on question type | UI visual inspection across multiple query archetypes | **VERIFIED** | UI renders only relevant components rather than a fixed static dashboard. |
+| **REQ-09** | Evidence, Provenance & Data Freshness | Granular data tracking preserving provider name, dataset ID, measurement unit, coordinate, timestamp, freshness status, and quality index | Provenance record attached to every metric displayed in the UI | **VERIFIED** | Clear badges: `LIVE`, `FORECAST`, `CACHED`, `HISTORICAL`, `DEMO`. |
+| **REQ-10** | Multi-Turn Conversational Memory | Conversational session manager retaining spatial context, temporal targets, active entities, and previous analysis results | Multi-turn test suite testing follow-up queries ("What about tomorrow?", "Why?") | **VERIFIED** | Session state persisted in database with full thread history. |
+| **REQ-11** | Multilingual Accessibility | Architecture supporting 10 Indian coastal languages (English, Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Odia) | Multilingual synthesizer and language auto-detector in `orca/utils/multilingual.py` | **VERIFIED** | Prompt analysis and final synthesis dynamically respect user language. |
+| **REQ-12** | Dual Mode Operation (Live & Deterministic Demo) | Environment toggle `ORCA_MODE=LIVE|DEMO`. Demo mode contains consistent geospatial and temporal datasets across Indian waters | Comprehensive test suite executing in Demo mode without network dependencies | **VERIFIED** | Transparent UI badge indicating demo data status when active. |

@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  orca-db:
+    image: postgis/postgis:16-3.4
+    container_name: orca-postgis
+    environment:
+      POSTGRES_USER: orca_user
+      POSTGRES_PASSWORD: orca_password
+      POSTGRES_DB: orca_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - orca_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orca_user -d orca_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  orca-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: orca-api
+    environment:
+      - ORCA_MODE=DEMO
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DATABASE_URL=sqlite+aiosqlite:///./orca.db
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      orca-db:
+        condition: service_healthy
+
+  orca-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: orca-ui
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - orca-backend
+
+volumes:
+  orca_db_data:
