@@ -13,7 +13,7 @@ from app.models.schemas import (
     RiskCategory,
     SpatialWhatIfAnalysisData,
 )
-from app.geospatial.protected_areas import INDIAN_MARINE_PROTECTED_AREAS
+from app.geospatial.protected_areas import GEOMETRY_NOTE, INDIAN_MARINE_PROTECTED_AREAS
 from app.providers.provenance import classify_tier, reliability_note
 from app.utils.multilingual import advisory_for_band, localize_summary_and_recommendation
 
@@ -105,6 +105,7 @@ class ReportAgent(BaseSpecialistAgent):
         #    serve. A gap the user can see beats a gap they discover on the water.
         limitations = self._capability_gaps(context) + [
             "Advisories are provided as decision support; vessel masters retain final navigational command.",
+            GEOMETRY_NOTE,
             "Satellite SST & Chlorophyll products are cloud-masked and subject to diurnal SST warming.",
             "Severe weather updates must be cross-referenced against official coastal marine broadcasts and NavIC advisories."
         ]

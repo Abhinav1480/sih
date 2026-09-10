@@ -20,3 +20,33 @@ To uphold absolute technical honesty in front of SIH judges, this document outli
 
 ### 3. Vessel Traffic & Live AIS Positioning
 - **Public AIS Feeds**: Live Automatic Identification System (AIS) Class A/B vessel positions are subject to commercial licensing and Indian Coast Guard security sensitivities in territorial waters. Where public or live authenticated AIS feeds are unavailable, ORCA executes corridor passage and geofence evaluations in deterministic mode, never fabricating live positions.
+
+## Marine protected area geometry is approximate
+
+The six MPA boundaries in `backend/app/geospatial/protected_areas.py` are
+hand-drawn 4-vertex quadrilaterals, not gazetted survey geometry. Each has been
+scaled to within ~0.1% of its sanctuary's published area, but the *shape* is a
+quadrilateral over roughly the right water.
+
+They are sufficient to warn that a position is near a sanctuary. They are not
+sufficient to decide whether a specific vessel is legally inside one, and the
+response says so in `meta.limitations` on every query.
+
+The published areas used as scaling targets (Gahirmatha 1435, Gulf of Mannar
+560, Malvan 29.1, Gulf of Kutch 620.8, Mahatma Gandhi 281.5, Coringa 235.7 km²)
+are general reference figures and are not read from any dataset in this
+repository.
+
+Before this scaling, Gulf of Kutch was drawn 4.35× its published area and Gulf
+of Mannar 2.82×; the Rameswaram and Malvan harbour nodes tested as inside an
+MPA, firing a legal-violation penalty on a fisherman in his own home port.
+`backend/tests/test_mpa_geometry.py` now asserts no harbour node is inside any
+polygon.
+
+Replacing this with real WDPA / Protected Planet geometry remains open.
+
+## No EEZ or IMBL geometry exists
+
+`geospatial/` contains MPA polygons only. There is no Exclusive Economic Zone
+boundary and no International Maritime Boundary Line in the backend, despite
+both being named in the agent role strings and in `CLAUDE.md`.
