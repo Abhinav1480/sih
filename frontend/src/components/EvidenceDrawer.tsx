@@ -13,18 +13,23 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ evidence }) => {
 
   if (!evidence || evidence.length === 0) return null;
 
+  const providerSummary = Array.from(new Set(evidence.map((e) => e.provider))).slice(0, 3).join(" · ");
+
   return (
-    <div className="bg-orca-card/70 border border-orca-border rounded-xl overflow-hidden text-xs">
+    <div className="border border-orca-border/70 rounded-xl overflow-hidden text-xs bg-white/[0.015]">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-orca-card transition"
+        className="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition"
       >
-        <div className="flex items-center gap-2 text-emerald-400 font-medium">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Evidence & Provenance Registry ({evidence.length} Authoritative Data Points)</span>
+        <div className="flex items-center gap-2 text-slate-300 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Evidence &amp; Data</span>
+          <span className="text-[10px] text-orca-dim font-mono hidden sm:inline">
+            {providerSummary}
+          </span>
         </div>
-        <div className="flex items-center gap-2 text-orca-muted">
-          <span className="text-[10px]">Data Trust</span>
+        <div className="flex items-center gap-2 text-orca-dim">
+          <span className="text-[10px] font-mono">{evidence.length}</span>
           {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </div>
       </button>
