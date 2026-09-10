@@ -4,10 +4,8 @@ import {
   TraceItemStatus,
   OrcaAnalysisResponse,
 } from "./types";
-import { getMockSSEEventsForQuery } from "../mocks/mockSSEEvents";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-const FORCE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 
 export interface StreamCallbacks {
   onEvent: (event: SSETraceEvent) => void;
@@ -320,53 +318,13 @@ export function accumulateTraceItems(
   return items;
 }
 
-/**
- * Replays mock SSE events sequentially with realistic timing for SIH demos and offline operation.
- */
-export function runMockSSEReplay(
-  query: string,
-  callbacks: StreamCallbacks,
-  signal?: AbortSignal
-): () => void {
-  const events = getMockSSEEventsForQuery(query);
-  let currentIndex = 0;
-  let timerId: any = null;
-
-  const scheduleNext = () => {
-    if (signal?.aborted) return;
-    if (currentIndex >= events.length) {
-      callbacks.onComplete();
-      return;
-    }
-
-    const currentEvent = events[currentIndex];
-    // Dynamic pacing: planner/results slightly slower, messages/starts fast
-    let delay = 280;
-    if (currentEvent.stage === "planner") delay = 350;
-    else if (currentEvent.stage === "replan") delay = 480;
-    else if (currentEvent.stage === "correlation") delay = 380;
-    else if (currentEvent.stage === "synthesis" && currentEvent.payload?.status === "generating") delay = 450;
-    else if (currentEvent.stage === "done") delay = 200;
-
-    timerId = setTimeout(() => {
-      if (signal?.aborted) return;
-      callbacks.onEvent(currentEvent);
-      currentIndex++;
-      scheduleNext();
-    }, delay);
-  };
-
-  scheduleNext();
-
-  return () => {
-    if (timerId) clearTimeout(timerId);
-  };
-}
 
 /**
  * Primary streaming orchestrator.
- * Tries real SSE / stream endpoint first if available.
- * If mock mode is enabled or stream endpoint is unavailable, smoothly executes mock telemetry.
+ * Tries the real SSE endpoint. When it is unavailable -- it 404s today,
+ * BE-04 is unbuilt -- this resolves with no events and emits no telemetry of
+ * its own. The caller falls back to the trace[] the completed /api/query
+ * response already carries.
  */
 export async function streamOrcaAnalysis(
   query: string,
@@ -375,12 +333,6 @@ export async function streamOrcaAnalysis(
   callbacks: StreamCallbacks,
   abortController?: AbortController
 ): Promise<void> {
-  // If explicitly configured for mock mode, replay mock SSE stream immediately
-  if (FORCE_MOCKS) {
-    runMockSSEReplay(query, callbacks, abortController?.signal);
-    return;
-  }
-
   // Attempt real SSE stream if supported by backend (/api/query/stream)
   try {
     const streamUrl = `${API_BASE}/api/query/stream`;
@@ -450,9 +402,13 @@ export async function streamOrcaAnalysis(
   } catch (err: any) {
     // If aborted by user, return cleanly
     if (err.name === "AbortError") return;
-    // Otherwise fallback smoothly to mock SSE replay
+    // The endpoint is unavailable. Resolve with no events rather than
+    // inventing any: the caller then reveals the real trace[] from the
+    // completed /api/query response.
   }
 
-  // Graceful fallback for demo or when /api/query/stream is pending BE-04
-  runMockSSEReplay(query, callbacks, abortController?.signal);
+  // /api/query/stream does not exist yet (BE-04). No telemetry is emitted
+  // here, ever. A scripted replay presented as live agent progress is a lie
+  // about what the system did.
+  callbacks.onComplete();
 }

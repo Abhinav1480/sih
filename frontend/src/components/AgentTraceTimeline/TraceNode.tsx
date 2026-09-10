@@ -79,6 +79,15 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
       badge: "text-orca-muted bg-white/[0.02] border-orca-border",
       label: "Pending",
     },
+    // The backend emits SKIPPED whenever a provider tier is passed over, e.g.
+    // the ISRO tier with no MOSDAC token. Without this key the whole lookup
+    // failed to typecheck and `next build` refused to compile.
+    SKIPPED: {
+      bullet: <span className="w-2 h-2 rounded-full bg-amber-400/70" />,
+      bulletBg: "bg-orca-dark border-amber-500/40 text-amber-300",
+      badge: "text-amber-300 bg-amber-500/10 border-amber-500/30",
+      label: "Skipped",
+    },
   }[item.status] || {
     bullet: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
     bulletBg: "bg-orca-dark border-emerald-500/40 text-emerald-300",
