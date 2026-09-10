@@ -1,0 +1,1076 @@
+{
+  "bbox_lat_min_lat_max_lon_min_lon_max": [
+    16.0,
+    18.0,
+    81.5,
+    83.5
+  ],
+  "generated_utc": "2026-09-10T09:04:16+00:00",
+  "source_dir_note": "Raw granules are not committed; see backend/scripts/subset_granules.py",
+  "products": {
+    "eos06_ocm3_l2c_ga": [
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260901_060714_063_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-01T06:07:14+00:00",
+        "acquisition_end": "2026-09-01T06:10:43+00:00",
+        "source_file": "E06OCML2GA_20260901_060714_063_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260901_061033_063_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-01T06:10:33+00:00",
+        "acquisition_end": "2026-09-01T06:14:03+00:00",
+        "source_file": "E06OCML2GA_20260901_061033_063_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 0.09127911925315857,
+            "max": 0.4355798065662384
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260902_070051_056_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-02T07:00:51+00:00",
+        "acquisition_end": "2026-09-02T07:04:20+00:00",
+        "source_file": "E06OCML2GA_20260902_070051_056_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260902_070410_056_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-02T07:04:10+00:00",
+        "acquisition_end": "2026-09-02T07:07:39+00:00",
+        "source_file": "E06OCML2GA_20260902_070410_056_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260903_061453_062_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-03T06:14:53+00:00",
+        "acquisition_end": "2026-09-03T06:18:22+00:00",
+        "source_file": "E06OCML2GA_20260903_061453_062_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260903_061812_062_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-03T06:18:12+00:00",
+        "acquisition_end": "2026-09-03T06:21:41+00:00",
+        "source_file": "E06OCML2GA_20260903_061812_062_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 70089,
+            "total_pixels": 372710,
+            "min": 0.05296734347939491,
+            "max": 29.848602294921875
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260904_070829_055_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-04T07:08:29+00:00",
+        "acquisition_end": "2026-09-04T07:11:59+00:00",
+        "source_file": "E06OCML2GA_20260904_070829_055_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260904_071148_055_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-04T07:11:48+00:00",
+        "acquisition_end": "2026-09-04T07:15:18+00:00",
+        "source_file": "E06OCML2GA_20260904_071148_055_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260905_062231_061_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-05T06:22:31+00:00",
+        "acquisition_end": "2026-09-05T06:26:01+00:00",
+        "source_file": "E06OCML2GA_20260905_062231_061_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260905_062550_061_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-05T06:25:50+00:00",
+        "acquisition_end": "2026-09-05T06:29:20+00:00",
+        "source_file": "E06OCML2GA_20260905_062550_061_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 97514,
+            "total_pixels": 373321,
+            "min": 0.048902031034231186,
+            "max": 1121.648681640625
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260906_071608_054_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-06T07:16:08+00:00",
+        "acquisition_end": "2026-09-06T07:19:37+00:00",
+        "source_file": "E06OCML2GA_20260906_071608_054_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260907_063010_060_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-07T06:30:10+00:00",
+        "acquisition_end": "2026-09-07T06:33:39+00:00",
+        "source_file": "E06OCML2GA_20260907_063010_060_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260907_063329_060_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-07T06:33:29+00:00",
+        "acquisition_end": "2026-09-07T06:36:59+00:00",
+        "source_file": "E06OCML2GA_20260907_063329_060_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260908_072346_053_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-08T07:23:46+00:00",
+        "acquisition_end": "2026-09-08T07:27:16+00:00",
+        "source_file": "E06OCML2GA_20260908_072346_053_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260909_063748_059_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-09T06:37:48+00:00",
+        "acquisition_end": "2026-09-09T06:41:18+00:00",
+        "source_file": "E06OCML2GA_20260909_063748_059_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_ga/E06OCML2GA_20260909_064108_059_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_ga",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-09T06:41:08+00:00",
+        "acquisition_end": "2026-09-09T06:44:37+00:00",
+        "source_file": "E06OCML2GA_20260909_064108_059_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "CDOM Absorption Coefficient (412nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null
+          }
+        }
+      }
+    ],
+    "eos06_ocm3_l2c_oc": [
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260901_060714_063_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-01T06:07:14+00:00",
+        "acquisition_end": "2026-09-01T06:10:43+00:00",
+        "source_file": "E06OCML2OC_20260901_060714_063_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 153972,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260901_061033_063_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-01T06:10:33+00:00",
+        "acquisition_end": "2026-09-01T06:14:03+00:00",
+        "source_file": "E06OCML2OC_20260901_061033_063_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 0.003949041943997145,
+            "max": 0.014922920614480972
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 6.304526777967112e-06,
+            "max": 0.13058747351169586
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 0.000403103738790378,
+            "max": 5.3194379806518555
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 0.000185614509973675,
+            "max": 0.07979849725961685
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 1677,
+            "total_pixels": 373321,
+            "min": 9.184056580124889e-06,
+            "max": 0.025707680732011795
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260902_070051_056_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-02T07:00:51+00:00",
+        "acquisition_end": "2026-09-02T07:04:20+00:00",
+        "source_file": "E06OCML2OC_20260902_070051_056_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260902_070410_056_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-02T07:04:10+00:00",
+        "acquisition_end": "2026-09-02T07:07:39+00:00",
+        "source_file": "E06OCML2OC_20260902_070410_056_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260903_061453_062_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-03T06:14:53+00:00",
+        "acquisition_end": "2026-09-03T06:18:22+00:00",
+        "source_file": "E06OCML2OC_20260903_061453_062_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260903_061812_062_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-03T06:18:12+00:00",
+        "acquisition_end": "2026-09-03T06:21:41+00:00",
+        "source_file": "E06OCML2OC_20260903_061812_062_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 70194,
+            "total_pixels": 372710,
+            "min": 2.7429012334323488e-05,
+            "max": 0.06568492949008942
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 70194,
+            "total_pixels": 372710,
+            "min": 8.260100230472744e-07,
+            "max": 1.5901840925216675
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 70194,
+            "total_pixels": 372710,
+            "min": 3.777668462134898e-05,
+            "max": 22.476869583129883
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 70194,
+            "total_pixels": 372710,
+            "min": 4.088806963409297e-05,
+            "max": 0.21626846492290497
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 70194,
+            "total_pixels": 372710,
+            "min": 8.903084136591133e-08,
+            "max": 0.22265656292438507
+          }
+        }
+      }
+    ],
+    "insat3dr_l3b_olr_daily": [
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_01SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-01T00:15:00+00:00",
+        "acquisition_end": "2026-09-01T23:45:00+00:00",
+        "source_file": "3RIMG_01SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 213.37863159179688,
+            "max": 252.69155883789062
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_02SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-02T00:15:00+00:00",
+        "acquisition_end": "2026-09-02T23:45:00+00:00",
+        "source_file": "3RIMG_02SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 197.51651000976562,
+            "max": 236.6435546875
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_03SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-03T00:15:00+00:00",
+        "acquisition_end": "2026-09-03T23:45:00+00:00",
+        "source_file": "3RIMG_03SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 207.2459259033203,
+            "max": 262.09417724609375
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_04SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-04T00:15:00+00:00",
+        "acquisition_end": "2026-09-04T23:45:00+00:00",
+        "source_file": "3RIMG_04SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 186.81483459472656,
+            "max": 274.4698486328125
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_05SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-05T00:15:00+00:00",
+        "acquisition_end": "2026-09-05T23:45:00+00:00",
+        "source_file": "3RIMG_05SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 214.12222290039062,
+            "max": 274.0523681640625
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_06SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-06T00:15:00+00:00",
+        "acquisition_end": "2026-09-06T23:45:00+00:00",
+        "source_file": "3RIMG_06SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 193.039306640625,
+            "max": 268.64544677734375
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_07SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-07T00:15:00+00:00",
+        "acquisition_end": "2026-09-07T23:45:00+00:00",
+        "source_file": "3RIMG_07SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 248.65074157714844,
+            "max": 276.83154296875
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_08SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-08T00:15:00+00:00",
+        "acquisition_end": "2026-09-08T23:45:00+00:00",
+        "source_file": "3RIMG_08SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 227.8492889404297,
+            "max": 273.0657653808594
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_olr_daily/3RIMG_09SEP2026_0015_L3B_OLR_DLY_V01R00.nc",
+        "product": "insat3dr_l3b_olr_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-09T00:15:00+00:00",
+        "acquisition_end": "2026-09-09T23:45:00+00:00",
+        "source_file": "3RIMG_09SEP2026_0015_L3B_OLR_DLY_V01R00.h5",
+        "variables": {
+          "OLR_DLY": {
+            "units": "W.m-2",
+            "long_name": "Outgoing Longwave Radiation (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 2860,
+            "total_pixels": 2860,
+            "min": 163.2545166015625,
+            "max": 239.76129150390625
+          }
+        }
+      }
+    ],
+    "insat3dr_l3b_sst_daily": [
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_01SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-01T00:15:00+00:00",
+        "acquisition_end": "2026-09-01T23:45:00+00:00",
+        "source_file": "3RIMG_01SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1123,
+            "total_pixels": 2860,
+            "min": 299.3014221191406,
+            "max": 303.4885559082031
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_02SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-02T00:15:00+00:00",
+        "acquisition_end": "2026-09-02T23:45:00+00:00",
+        "source_file": "3RIMG_02SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1081,
+            "total_pixels": 2860,
+            "min": 299.22808837890625,
+            "max": 303.4217834472656
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_03SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-03T00:15:00+00:00",
+        "acquisition_end": "2026-09-03T23:45:00+00:00",
+        "source_file": "3RIMG_03SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1176,
+            "total_pixels": 2860,
+            "min": 299.7188720703125,
+            "max": 303.47882080078125
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_04SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-04T00:15:00+00:00",
+        "acquisition_end": "2026-09-04T23:45:00+00:00",
+        "source_file": "3RIMG_04SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1438,
+            "total_pixels": 2860,
+            "min": 299.7405700683594,
+            "max": 302.9477233886719
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_05SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-05T00:15:00+00:00",
+        "acquisition_end": "2026-09-05T23:45:00+00:00",
+        "source_file": "3RIMG_05SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1452,
+            "total_pixels": 2860,
+            "min": 299.94781494140625,
+            "max": 303.5235595703125
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_06SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-06T00:15:00+00:00",
+        "acquisition_end": "2026-09-06T23:45:00+00:00",
+        "source_file": "3RIMG_06SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1337,
+            "total_pixels": 2860,
+            "min": 299.59661865234375,
+            "max": 303.54388427734375
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_07SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-07T00:15:00+00:00",
+        "acquisition_end": "2026-09-07T23:45:00+00:00",
+        "source_file": "3RIMG_07SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1450,
+            "total_pixels": 2860,
+            "min": 299.88482666015625,
+            "max": 303.60833740234375
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_08SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-08T00:15:00+00:00",
+        "acquisition_end": "2026-09-08T23:45:00+00:00",
+        "source_file": "3RIMG_08SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1420,
+            "total_pixels": 2860,
+            "min": 299.8946228027344,
+            "max": 303.6214904785156
+          }
+        }
+      },
+      {
+        "file": "insat3dr_l3b_sst_daily/3RIMG_09SEP2026_0015_L3B_SST_DLY_V02R00.nc",
+        "product": "insat3dr_l3b_sst_daily",
+        "satellite": "INSAT-3DR",
+        "sensor": "IMAGER",
+        "processing_level": "L3B",
+        "acquisition_start": "2026-09-09T00:15:00+00:00",
+        "acquisition_end": "2026-09-09T23:45:00+00:00",
+        "source_file": "3RIMG_09SEP2026_0015_L3B_SST_DLY_V02R00.h5",
+        "variables": {
+          "SST_DLY": {
+            "units": "K",
+            "long_name": "Sea Surface Temperature (Daily)",
+            "fill_value": -999.0,
+            "valid_pixels": 1006,
+            "total_pixels": 2860,
+            "min": 299.9154052734375,
+            "max": 303.7268371582031
+          }
+        }
+      }
+    ]
+  }
+}
