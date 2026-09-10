@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { TraceItem } from "@/lib/types";
+import { NUM } from "@/components/ui/tone";
 import { PlannerNode } from "./PlannerNode";
 import { ReplanNode } from "./ReplanNode";
 import { CorrelationNode } from "./CorrelationNode";
@@ -26,6 +27,8 @@ interface AgentTraceTimelineProps {
   onRetry?: () => void;
   className?: string;
   defaultCollapsed?: boolean;
+  /** Total rows expected (for the staggered reveal counter). */
+  expectedCount?: number;
 }
 
 export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
@@ -35,10 +38,12 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
   onRetry,
   className = "",
   defaultCollapsed = false,
+  expectedCount,
 }) => {
   const [isOpen, setIsOpen] = useState(!defaultCollapsed);
 
-  if (!items || items.length === 0) return null;
+  if ((!items || items.length === 0) && !isRunning) return null;
+  const skippedCount = items.filter((i) => (i.status as string) === "SKIPPED").length;
 
   // Derive summary metrics
   const completedCount = items.filter(
@@ -57,7 +62,7 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
   return (
     <section
       aria-label="ORCA Agent Reasoning Trace"
-      className={`rounded-xl border border-orca-border/80 bg-orca-dark/40 overflow-hidden text-xs transition-all shadow-sm ${className}`}
+      className={`rounded-xl border border-orca-border/80 bg-orca-dark/40 overflow-hidden text-xs transition-all ${className}`}
     >
       {/* Interactive Header / Status Bar */}
       <button
@@ -78,18 +83,23 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
               ORCA REASONING TRACE
             </span>
             {isRunning ? (
-              <span className="px-2 py-0.5 rounded-full bg-orca-cyan/10 border border-orca-cyan/30 text-orca-cyan text-[10px] font-mono flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full bg-orca-cyan/10 border border-orca-cyan/30 text-orca-cyan text-[10px] font-mono tabular-nums flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-orca-cyan animate-pulse" />
                 Active Analysis
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono tabular-nums flex items-center gap-1">
                 <CheckCircle2 className="w-2.5 h-2.5" />
                 Complete
               </span>
             )}
+            {skippedCount > 0 && (
+              <span className={`inline-flex px-2 py-0.5 rounded-full border border-[#ffb443]/60 text-[#ffb443] text-[10px] ${NUM} items-center gap-1`}>
+                {skippedCount} SKIPPED
+              </span>
+            )}
             {replanCount > 0 && (
-              <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-mono items-center gap-1">
+              <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-mono tabular-nums items-center gap-1">
                 <RotateCcw className="w-2.5 h-2.5" />
                 Replan Recovered
               </span>
@@ -98,8 +108,10 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
         </div>
 
         {/* Telemetry metadata */}
-        <div className="flex items-center gap-2.5 text-orca-muted flex-shrink-0 text-[11px] font-mono">
-          <span className="text-slate-300">{items.length} nodes</span>
+        <div className="flex items-center gap-2.5 text-orca-muted flex-shrink-0 text-[11px] font-mono tabular-nums">
+          <span className={`text-slate-300 ${NUM}`}>
+            {items.length}{expectedCount && expectedCount > items.length ? `/${expectedCount}` : ""} rows
+          </span>
           {durationSec && (
             <span className="flex items-center gap-1 text-orca-muted">
               <Clock className="w-3 h-3" />
@@ -117,12 +129,19 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
         <div className="p-3.5 space-y-0.5 max-h-[480px] overflow-y-auto bg-orca-darkest/70">
           {/* Active running highlight banner if running */}
           {isRunning && runningItem && (
-            <div className="mb-3 p-2 rounded-lg bg-orca-cyan/5 border border-orca-cyan/20 flex items-center justify-between text-[11px] text-orca-cyan font-mono animate-pulse">
+            <div className="mb-3 p-2 rounded-lg bg-orca-cyan/5 border border-orca-cyan/20 flex items-center justify-between text-[11px] text-orca-cyan font-mono tabular-nums animate-pulse">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3" />
                 {runningItem.title || runningItem.agent}: {runningItem.summary}
               </span>
               <span className="text-[10px] text-orca-muted">Mission In-Progress</span>
+            </div>
+          )}
+
+          {items.length === 0 && isRunning && (
+            <div className={`text-[11px] ${NUM} text-[#7a94a3] flex items-center gap-2 py-1`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#38e8d0] animate-pulse" />
+              awaiting telemetry — live stream unavailable, trace replays on completion
             </div>
           )}
 
@@ -153,10 +172,10 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
                   </div>
                   <div className="flex-1 min-w-0 pb-1">
                     <div className="p-2 rounded-lg bg-emerald-950/15 border border-emerald-500/25 flex items-center justify-between">
-                      <span className="font-semibold text-emerald-300 font-mono text-[11px] uppercase tracking-wide">
+                      <span className="font-semibold text-emerald-300 font-mono tabular-nums text-[11px] uppercase tracking-wide">
                         {item.title}
                       </span>
-                      <span className="text-emerald-400 font-mono text-[10.5px]">
+                      <span className="text-emerald-400 font-mono tabular-nums text-[10.5px]">
                         {item.summary}
                       </span>
                     </div>
@@ -182,7 +201,7 @@ export const AgentTraceTimeline: React.FC<AgentTraceTimelineProps> = ({
                         <button
                           type="button"
                           onClick={onRetry}
-                          className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 text-[10.5px] font-mono transition"
+                          className="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 text-[10.5px] font-mono tabular-nums transition"
                         >
                           Retry
                         </button>

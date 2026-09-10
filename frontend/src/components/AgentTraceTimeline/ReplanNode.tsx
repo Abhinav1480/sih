@@ -35,7 +35,7 @@ export const ReplanNode: React.FC<ReplanNodeProps> = ({ item, isLast = false }) 
                 <RotateCcw className="w-3.5 h-3.5" />
                 ORCA REPLANNED
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[10px] text-amber-200 font-mono font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[10px] text-amber-200 font-mono tabular-nums font-medium">
                 Self-Healing Recovery
               </span>
             </div>
@@ -63,7 +63,7 @@ export const ReplanNode: React.FC<ReplanNodeProps> = ({ item, isLast = false }) 
                   <AlertCircle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <span className="text-amber-400/90 font-medium">Reason: </span>
-                    <span className="font-mono text-[10.5px] text-slate-300">{meta.reason}</span>
+                    <span className="font-mono tabular-nums text-[10.5px] text-slate-300">{meta.reason}</span>
                   </div>
                 </div>
               )}
@@ -73,11 +73,11 @@ export const ReplanNode: React.FC<ReplanNodeProps> = ({ item, isLast = false }) 
                 <div className="p-2 rounded bg-orca-darkest/60 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 text-[10.5px]">
                   <span className="text-orca-muted">Reassignment:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="line-through text-rose-300/80 font-mono">
+                    <span className="line-through text-rose-300/80 font-mono tabular-nums">
                       {meta.failed_source || meta.failed_agent || "Primary Source"}
                     </span>
                     <ArrowRight className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                    <span className="text-emerald-300 font-medium font-mono">
+                    <span className="text-emerald-300 font-medium font-mono tabular-nums">
                       {meta.new_source || meta.reassigned_to || "Fallback Calibrated Model"}
                     </span>
                   </div>
@@ -85,7 +85,7 @@ export const ReplanNode: React.FC<ReplanNodeProps> = ({ item, isLast = false }) 
               )}
 
               {/* Recovery Status */}
-              <div className="flex items-center gap-1.5 text-[10.5px] text-emerald-400 font-mono">
+              <div className="flex items-center gap-1.5 text-[10.5px] text-emerald-400 font-mono tabular-nums">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Task pipeline recovered without query termination</span>
               </div>

@@ -38,7 +38,7 @@ export const CorrelationNode: React.FC<CorrelationNodeProps> = ({ item, isLast =
                 {agents.map((ag, i) => (
                   <span
                     key={i}
-                    className="px-1.5 py-0.5 rounded bg-cyan-900/40 border border-cyan-400/20 text-[10px] text-cyan-200 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-cyan-900/40 border border-cyan-400/20 text-[10px] text-cyan-200 font-mono tabular-nums"
                   >
                     {ag}
                   </span>

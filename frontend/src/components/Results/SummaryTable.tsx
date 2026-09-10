@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Waves,
 } from "lucide-react";
+import { NUM, bandTone, verdictTone } from "@/components/ui/tone";
 
 interface SummaryTableProps {
   analysis: OrcaAnalysisResponse;
@@ -380,11 +381,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
               {t("final_decision_summary", activeLang)}
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
+          <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
             {t("route_matrix", activeLang)}
           </span>
         </div>
@@ -401,7 +402,7 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         {/* Table */}
         <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
           <table className="w-full text-xs text-left">
-            <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+            <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
               <tr>
                 <th className="py-2 px-3">{t("metric", activeLang)}</th>
                 <th className="py-2 px-3 text-emerald-400">
@@ -420,9 +421,9 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 compData.metrics.map((m, idx) => (
                   <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel(m.metric_name, activeLang)}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{m.recommended_value}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{m.alternative_value}</td>
-                    <td className="py-2 px-3 text-right font-mono">
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{m.recommended_value}</td>
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{m.alternative_value}</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${
                           m.advantage.includes("Recommended") || m.advantage.includes("Avoided")
@@ -441,61 +442,61 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 <>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Distance", activeLang)}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{recCandidate.distance_km} km</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{altCandidate.distance_km} km</td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{recCandidate.distance_km} km</td>
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{altCandidate.distance_km} km</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {(recCandidate.distance_km - altCandidate.distance_km).toFixed(1)} km
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Transit Time", activeLang)}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{recCandidate.estimated_transit_hours} h</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{altCandidate.estimated_transit_hours} h</td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{recCandidate.estimated_transit_hours} h</td>
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{altCandidate.estimated_transit_hours} h</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {(recCandidate.estimated_transit_hours - altCandidate.estimated_transit_hours).toFixed(1)} h
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Marine Risk", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                         {recCandidate.marine_risk}
                       </span>
                     </td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
                         {altCandidate.marine_risk}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-emerald-400 font-semibold">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-emerald-400 font-semibold">
                       {localizeLabel("Lower Hazard", activeLang)}
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Protected Waters", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-emerald-300">
+                    <td className="py-2 px-3 font-mono tabular-nums text-emerald-300">
                       {localizeLabel(recCandidate.crosses_protected_waters ? "Intersects" : "Avoided", activeLang)}
                     </td>
-                    <td className="py-2 px-3 font-mono text-rose-300">
+                    <td className="py-2 px-3 font-mono tabular-nums text-rose-300">
                       {localizeLabel(altCandidate.crosses_protected_waters ? "Intersects" : "Avoided", activeLang)}
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-emerald-400 font-semibold">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-emerald-400 font-semibold">
                       {localizeLabel("Sanctuary Preserved", activeLang)}
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02] bg-white/[0.01]">
                     <td className="py-2 px-3 text-white font-bold">{localizeLabel("Overall Verdict", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                         {localizeLabel("Preferred", activeLang)}
                       </span>
                     </td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                         {localizeLabel("Higher Risk", activeLang)}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-cyan-400 font-bold">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-cyan-400 font-bold">
                       {localizeLabel("Recommended", activeLang)}
                     </td>
                   </tr>
@@ -504,17 +505,17 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 <>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Total Distance", activeLang)}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{singleRoute.total_distance_km} km</td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">{localizeLabel("Planned Corridor", activeLang)}</td>
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{singleRoute.total_distance_km} km</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">{localizeLabel("Planned Corridor", activeLang)}</td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Transit Duration", activeLang)}</td>
-                    <td className="py-2 px-3 text-slate-200 font-mono">{singleRoute.estimated_transit_hours} hours</td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">@ 10 kt Cruising</td>
+                    <td className="py-2 px-3 text-slate-200 font-mono tabular-nums">{singleRoute.estimated_transit_hours} hours</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">@ 10 kt Cruising</td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Marine Risk", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       <span
                         className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           singleRoute.overall_route_risk === "LOW"
@@ -525,16 +526,16 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                         {singleRoute.overall_route_risk}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">{localizeLabel("Verified Corridor", activeLang)}</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">{localizeLabel("Verified Corridor", activeLang)}</td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 text-white font-medium">{localizeLabel("Protected Waters", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-emerald-300">
+                    <td className="py-2 px-3 font-mono tabular-nums text-emerald-300">
                       {singleRoute.crosses_protected_waters
                         ? `${localizeLabel("Intersects", activeLang)} (${singleRoute.protected_areas_intersected.join(", ")})`
                         : `${localizeLabel("Avoided", activeLang)} (Clear of MPAs)`}
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {localizeLabel(singleRoute.crosses_protected_waters ? "Restricted Waters" : "Permitted Waters", activeLang)}
                     </td>
                   </tr>
@@ -563,11 +564,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
               {t("final_decision_summary", activeLang)}
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+          <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
             {t("fishing_matrix", activeLang)}
           </span>
         </div>
@@ -582,12 +583,12 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
 
         <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
           <table className="w-full text-xs text-left">
-            <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+            <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
               <tr>
                 <th className="py-2 px-3 w-12">{t("rank", activeLang)}</th>
                 <th className="py-2 px-3">{t("fishing_zone", activeLang)}</th>
-                <th className="py-2 px-3 font-mono">{t("distance", activeLang)}</th>
-                <th className="py-2 px-3 font-mono">{t("suitability", activeLang)}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">{t("distance", activeLang)}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">{t("suitability", activeLang)}</th>
                 <th className="py-2 px-3">{t("key_factors", activeLang)}</th>
               </tr>
             </thead>
@@ -599,7 +600,7 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                     zone.rank === 1 ? "bg-cyan-500/[0.03]" : ""
                   }`}
                 >
-                  <td className="py-2 px-3 font-mono font-bold">
+                  <td className="py-2 px-3 font-mono tabular-nums font-bold">
                     <span
                       className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] ${
                         zone.within_mpa
@@ -616,19 +617,19 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                     <div className="flex items-center gap-1.5">
                       <span>{zone.name}</span>
                       {zone.rank === 1 && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono tabular-nums font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                           {localizeLabel("Best Zone", activeLang)}
                         </span>
                       )}
                       {zone.within_mpa && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono tabular-nums font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
                           {localizeLabel("MPA Restricted", activeLang)}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="py-2 px-3 font-mono text-slate-300">{zone.distance_km} km</td>
-                  <td className="py-2 px-3 font-mono font-semibold">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{zone.distance_km} km</td>
+                  <td className="py-2 px-3 font-mono tabular-nums font-semibold">
                     <span
                       className={
                         zone.within_mpa
@@ -641,7 +642,7 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                       {zone.suitability_score}/100
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-[11px] text-slate-300 font-mono">
+                  <td className="py-2 px-3 text-[11px] text-slate-300 font-mono tabular-nums">
                     Chl {zone.chlorophyll_mg_m3} mg/m³ · SST {zone.sst_c}°C · Wave {zone.wave_height_m}m
                   </td>
                 </tr>
@@ -667,11 +668,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
               {t("final_decision_summary", activeLang)}
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
+          <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
             {t("spatial_matrix", activeLang)}
           </span>
         </div>
@@ -686,14 +687,14 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
 
         <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
           <table className="w-full text-xs text-left">
-            <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+            <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
               <tr>
                 <th className="py-2 px-3">{t("condition", activeLang)}</th>
-                <th className="py-2 px-3 font-mono">{sw.origin.name}</th>
-                <th className="py-2 px-3 font-mono">
+                <th className="py-2 px-3 font-mono tabular-nums">{sw.origin.name}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">
                   {sw.displaced.name || `${sw.distance_km}km ${sw.direction}`}
                 </th>
-                <th className="py-2 px-3 font-mono">{t("net_change", activeLang)}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">{t("net_change", activeLang)}</th>
                 <th className="py-2 px-3 text-right">{t("significance", activeLang)}</th>
               </tr>
             </thead>
@@ -711,19 +712,19 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                       <div className="flex items-center gap-1.5">
                         <span>{localizeLabel(rc.metric_name, activeLang)}</span>
                         {isLargest && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-400/20 text-cyan-300 border border-cyan-400/40">
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono tabular-nums font-bold bg-cyan-400/20 text-cyan-300 border border-cyan-400/40">
                             {localizeLabel("Largest Change", activeLang)}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-2 px-3 font-mono text-slate-300">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">
                       {rc.location_a_value} {rc.unit}
                     </td>
-                    <td className="py-2 px-3 font-mono text-slate-300">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">
                       {rc.location_b_value} {rc.unit}
                     </td>
-                    <td className="py-2 px-3 font-mono font-semibold">
+                    <td className="py-2 px-3 font-mono tabular-nums font-semibold">
                       <span
                         className={
                           rc.absolute_difference > 0
@@ -739,7 +740,7 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                           ` (${rc.percentage_difference > 0 ? "+" : ""}${rc.percentage_difference}%)`}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums">
                       <span className="text-[10px] text-slate-400">{rc.operational_impact}</span>
                     </td>
                   </tr>
@@ -767,11 +768,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
               {t("final_decision_summary", activeLang)}
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
+          <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
             {t("comparison_matrix", activeLang)}
           </span>
         </div>
@@ -786,12 +787,12 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
 
         <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
           <table className="w-full text-xs text-left">
-            <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+            <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
               <tr>
                 <th className="py-2 px-3">{t("metric", activeLang)}</th>
-                <th className="py-2 px-3 font-mono text-cyan-300">{comp.location_a.name}</th>
-                <th className="py-2 px-3 font-mono text-cyan-300">{comp.location_b.name}</th>
-                <th className="py-2 px-3 font-mono">{t("net_change", activeLang)}</th>
+                <th className="py-2 px-3 font-mono tabular-nums text-cyan-300">{comp.location_a.name}</th>
+                <th className="py-2 px-3 font-mono tabular-nums text-cyan-300">{comp.location_b.name}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">{t("net_change", activeLang)}</th>
                 <th className="py-2 px-3 text-right">{t("evaluation_diff", activeLang)}</th>
               </tr>
             </thead>
@@ -799,17 +800,17 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
               {comp.metrics.map((m, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 font-medium text-white">{localizeLabel(m.metric_name, activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-300">
                     {m.location_a_value} {m.unit}
                   </td>
-                  <td className="py-2 px-3 font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-300">
                     {m.location_b_value} {m.unit}
                   </td>
-                  <td className="py-2 px-3 font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-300">
                     {m.difference > 0 ? "+" : ""}
                     {m.difference} {m.unit}
                   </td>
-                  <td className="py-2 px-3 text-right font-mono">
+                  <td className="py-2 px-3 text-right font-mono tabular-nums">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orca-panel border border-white/[0.08] text-cyan-400">
                       {m.favorability}
                     </span>
@@ -841,11 +842,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+            <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
               {t("final_decision_summary", activeLang)}
             </span>
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-500/20">
+          <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-500/20">
             {t("trend_matrix", activeLang)}
           </span>
         </div>
@@ -860,12 +861,12 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
 
         <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
           <table className="w-full text-xs text-left">
-            <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+            <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
               <tr>
                 <th className="py-2 px-3">{t("metric", activeLang)}</th>
-                <th className="py-2 px-3 font-mono">Earlier ({firstPt?.timestamp.slice(0, 10)})</th>
-                <th className="py-2 px-3 font-mono">Recent ({lastPt?.timestamp.slice(0, 10)})</th>
-                <th className="py-2 px-3 font-mono">{t("net_change", activeLang)}</th>
+                <th className="py-2 px-3 font-mono tabular-nums">Earlier ({firstPt?.timestamp.slice(0, 10)})</th>
+                <th className="py-2 px-3 font-mono tabular-nums">Recent ({lastPt?.timestamp.slice(0, 10)})</th>
+                <th className="py-2 px-3 font-mono tabular-nums">{t("net_change", activeLang)}</th>
                 <th className="py-2 px-3 text-right">{t("significance", activeLang)}</th>
               </tr>
             </thead>
@@ -874,43 +875,43 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 <>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 font-medium text-white">{localizeLabel("Significant Wave Height", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{firstPt.wave_height_m} m</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{lastPt.wave_height_m} m</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{firstPt.wave_height_m} m</td>
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{lastPt.wave_height_m} m</td>
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       {(lastPt.wave_height_m - firstPt.wave_height_m).toFixed(2)} m
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {lastPt.wave_height_m > firstPt.wave_height_m ? "Increasing" : "Subsided"}
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 font-medium text-white">{localizeLabel("Wind Speed & Gusts", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{firstPt.wind_knots} kt</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{lastPt.wind_knots} kt</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{firstPt.wind_knots} kt</td>
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{lastPt.wind_knots} kt</td>
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       {(lastPt.wind_knots - firstPt.wind_knots).toFixed(1)} kt
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {lastPt.wind_knots > firstPt.wind_knots ? "Accelerating" : "Decreasing"}
                     </td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 font-medium text-white">{localizeLabel("Sea Surface Temperature", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{firstPt.sst_c}°C</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{lastPt.sst_c}°C</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{firstPt.sst_c}°C</td>
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{lastPt.sst_c}°C</td>
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       {(lastPt.sst_c - firstPt.sst_c).toFixed(1)}°C
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">Thermal Shift</td>
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">Thermal Shift</td>
                   </tr>
                   <tr className="hover:bg-white/[0.02]">
                     <td className="py-2 px-3 font-medium text-white">{localizeLabel("Marine Risk", activeLang)}</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{firstPt.risk_score}/100</td>
-                    <td className="py-2 px-3 font-mono text-slate-300">{lastPt.risk_score}/100</td>
-                    <td className="py-2 px-3 font-mono">
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{firstPt.risk_score}/100</td>
+                    <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{lastPt.risk_score}/100</td>
+                    <td className="py-2 px-3 font-mono tabular-nums">
                       {lastPt.risk_score - firstPt.risk_score} pts
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                       {lastPt.risk_score > firstPt.risk_score ? "Elevating Risk" : "Stable/Declining"}
                     </td>
                   </tr>
@@ -929,8 +930,15 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
   const ocean = analysis.ocean_conditions;
   const weather = analysis.weather_conditions;
   const risk = analysis.risk_assessment;
+  // Primary signal comes from answer.verdict / risk.band (contract 1.3.0), never prose.
+  const envAny = analysis as any;
+  const vt = envAny.answer?.verdict ? verdictTone(envAny.answer.verdict) : null;
+  const envBand: string | undefined = envAny.risk?.band ?? risk?.category;
+  const envScore: number | undefined = typeof envAny.risk?.score === "number" ? envAny.risk.score : risk?.overall_score;
+  const bt = envBand ? bandTone(envBand) : null;
   const conclusion =
     (activeLang !== "en" && analysis.recommendation ? analysis.recommendation : null) ||
+    envAny.answer?.narrative ||
     analysis.recommendation ||
     analysis.executive_summary;
 
@@ -939,29 +947,35 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
       <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-200">
+          <span className="text-[11px] font-mono tabular-nums font-bold uppercase tracking-wider text-slate-200">
             {t("final_decision_summary", activeLang)}
           </span>
         </div>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
+        <span className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
           {t("env_matrix", activeLang)}
         </span>
       </div>
 
       <div className="p-2.5 rounded-lg bg-orca-darkest/60 border border-white/[0.06] text-xs text-slate-300 leading-relaxed flex items-start gap-2">
         <Waves className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0 mt-0.5" />
-        <div>
+        <div className="min-w-0">
+          {(vt || bt) && (
+            <div className={`flex items-center gap-2 mb-1 ${NUM}`}>
+              {vt && <span className="text-[13px] font-bold" style={{ color: vt.hex }}>{vt.word}</span>}
+              {bt && <span className="text-[11px] font-semibold" style={{ color: bt.hex }}>{bt.word}{typeof envScore === "number" ? ` · ${envScore}/100` : ""}</span>}
+            </div>
+          )}
           <span className="text-white font-semibold mr-1.5">{t("conclusion_label", activeLang)}</span>
-          <span>{conclusion}</span>
+          <span className="text-slate-400">{conclusion}</span>
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-white/[0.06] bg-orca-darkest/50">
         <table className="w-full text-xs text-left">
-          <thead className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
+          <thead className="text-[10px] font-mono tabular-nums uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/[0.06]">
             <tr>
               <th className="py-2 px-3">{t("condition_param", activeLang)}</th>
-              <th className="py-2 px-3 font-mono">{t("value", activeLang)}</th>
+              <th className="py-2 px-3 font-mono tabular-nums">{t("value", activeLang)}</th>
               <th className="py-2 px-3 text-right">{t("severity_interp", activeLang)}</th>
             </tr>
           </thead>
@@ -969,7 +983,7 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
             {risk && (
               <tr className="hover:bg-white/[0.02] transition-colors bg-white/[0.01]">
                 <td className="py-2 px-3 font-semibold text-white">{localizeLabel("Overall Marine Hazard", activeLang)}</td>
-                <td className="py-2 px-3 font-mono font-bold">
+                <td className="py-2 px-3 font-mono tabular-nums font-bold">
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-[10px] border ${
                       risk.category === "LOW"
@@ -979,14 +993,14 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                         : "bg-rose-500/15 text-rose-300 border-rose-500/30"
                     }`}
                   >
-                    {risk.category} RISK · {risk.overall_score}/100
+                    {(envBand || risk.category)} RISK · {envScore ?? risk.overall_score}/100
                   </span>
                 </td>
                 {/* This cell used to manufacture a go/no-go instruction in the
                     browser from the band string -- "Safe for Normal Navigation"
                     / "Severe Sea State — Delay Departure". The verdict is the
                     backend's to make; the UI only shows the one it was given. */}
-                <td className="py-2 px-3 text-right font-mono text-slate-300">
+                <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                   {(analysis as any)?.answer?.verdict ?? (
                     <span className="text-slate-500 italic">unavailable</span>
                   )}
@@ -998,8 +1012,8 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
               <>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Significant Wave Height", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">{ocean.significant_wave_height_m} m</td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">{ocean.significant_wave_height_m} m</td>
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     {/* Sea state is classified by the risk engine against
                         INCOIS/WMO thresholds. The browser must not re-derive it
                         from a wave height with its own cut points. */}
@@ -1011,17 +1025,17 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 </tr>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Swell Wave Height", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">
                     {ocean.swell_height_m} m ({ocean.swell_period_sec}s period)
                   </td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     Bearing: {ocean.swell_direction_deg}° Azimuth
                   </td>
                 </tr>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Sea Surface Temperature", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">{ocean.sea_surface_temp_c}°C</td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">{ocean.sea_surface_temp_c}°C</td>
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     {localizeLabel(
                       // No backend field classifies SST, so nothing is
                       // claimed. The browser inventing a 27-30 degree "normal"
@@ -1033,8 +1047,8 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                 </tr>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Ocean Surface Current", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">{ocean.ocean_current_speed_m_s} m/s</td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">{ocean.ocean_current_speed_m_s} m/s</td>
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     Drift: {ocean.ocean_current_direction_deg}° Azimuth
                   </td>
                 </tr>
@@ -1045,17 +1059,17 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
               <>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Wind Speed & Gusts", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">
                     {weather.wind_speed_knots} kt (Gusts: {weather.wind_gust_knots} kt)
                   </td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     {weather.alert_level} · Vector {weather.wind_direction_deg}°
                   </td>
                 </tr>
                 <tr className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Atmospheric Visibility", activeLang)}</td>
-                  <td className="py-2 px-3 font-mono text-slate-200">{weather.visibility_km} km</td>
-                  <td className="py-2 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2 px-3 font-mono tabular-nums text-slate-200">{weather.visibility_km} km</td>
+                  <td className="py-2 px-3 text-right font-mono tabular-nums text-slate-300">
                     {localizeLabel(
                       // Same: no backend field classifies visibility.
                       "—",

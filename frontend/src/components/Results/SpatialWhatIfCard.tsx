@@ -57,11 +57,11 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
       {/* 1. Header with Vector Displacement Journey */}
       <div className="border-b border-white/[0.06] pb-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider font-mono">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider font-mono tabular-nums">
             <Compass className="w-4 h-4 text-cyan-400" />
             <span>Spatial What-If & Displacement Analysis</span>
           </div>
-          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-mono font-medium">
+          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-mono tabular-nums font-medium">
             {data.temporal_label}
           </span>
         </div>
@@ -74,9 +74,9 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
               A
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] uppercase font-bold text-emerald-400 font-mono">Origin Anchor</div>
+              <div className="text-[10px] uppercase font-bold text-emerald-400 font-mono tabular-nums">Origin Anchor</div>
               <div className="font-bold text-white text-sm truncate">{data.origin.name}</div>
-              <div className="text-[10px] text-slate-400 font-mono">
+              <div className="text-[10px] text-slate-400 font-mono tabular-nums">
                 {data.origin.latitude.toFixed(3)}°N, {data.origin.longitude.toFixed(3)}°E
               </div>
             </div>
@@ -91,7 +91,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
                 style={{ transform: `rotate(${data.bearing_deg}deg)` }}
               />
             </div>
-            <span className="text-[10px] text-slate-400 font-mono">
+            <span className="text-[10px] text-slate-400 font-mono tabular-nums">
               Azimuth {data.bearing_deg.toFixed(0)}° Bearing
             </span>
           </div>
@@ -102,9 +102,9 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
               B
             </div>
             <div className="min-w-0 text-left md:text-right">
-              <div className="text-[10px] uppercase font-bold text-cyan-400 font-mono">Displaced Target</div>
+              <div className="text-[10px] uppercase font-bold text-cyan-400 font-mono tabular-nums">Displaced Target</div>
               <div className="font-bold text-white text-sm truncate">{data.displaced.name}</div>
-              <div className="text-[10px] text-slate-400 font-mono">
+              <div className="text-[10px] text-slate-400 font-mono tabular-nums">
                 {data.displaced.latitude.toFixed(3)}°N, {data.displaced.longitude.toFixed(3)}°E
               </div>
             </div>
@@ -115,11 +115,11 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
       {/* 2. Hero Callout: Top Changed Condition with 3-Tier Scientific Breakdown */}
       <div className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-blue-950/40 via-orca-panel to-cyan-950/30 border border-cyan-500/30 space-y-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider font-extrabold text-cyan-400 flex items-center gap-1.5 font-mono">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-cyan-400 flex items-center gap-1.5 font-mono tabular-nums">
             <BarChart3 className="w-4 h-4" />
             <span>Condition Changing Most</span>
           </span>
-          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono font-bold">
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono tabular-nums font-bold">
             Rank #1 Operational Shift
           </span>
         </div>
@@ -131,7 +131,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
         <div className="grid grid-cols-1 gap-2 pt-1">
           {/* Tier 1: Computed Fact */}
           <div className="p-3 rounded-lg bg-orca-darkest/80 border border-cyan-500/25 flex items-start gap-2.5 text-xs">
-            <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
+            <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono tabular-nums font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
               1. Computed Fact
             </span>
             <span className="text-slate-100 font-medium leading-relaxed">
@@ -141,7 +141,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
 
           {/* Tier 2: Data-Supported Interpretation */}
           <div className="p-3 rounded-lg bg-orca-darkest/80 border border-emerald-500/25 flex items-start gap-2.5 text-xs">
-            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono tabular-nums font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
               2. Data Interpretation
             </span>
             <span className="text-emerald-100 leading-relaxed">
@@ -151,7 +151,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
 
           {/* Tier 3: Physical Hypothesis / Causality */}
           <div className="p-3 rounded-lg bg-orca-darkest/80 border border-white/[0.08] flex items-start gap-2.5 text-xs">
-            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
+            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono tabular-nums font-bold text-[10px] uppercase flex-shrink-0 mt-0.5">
               3. Physical Hypothesis
             </span>
             <span className="text-slate-300 italic leading-relaxed">
@@ -189,11 +189,11 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
       {/* 4. Ranked Conditions of Change Breakdown */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
+          <div className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-1.5 font-mono tabular-nums">
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <span>Ranked Environmental Variations</span>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">Normalized Maritime Impact</span>
+          <span className="text-[10px] text-slate-400 font-mono tabular-nums">Normalized Maritime Impact</span>
         </div>
 
         <div className="space-y-2.5">
@@ -209,7 +209,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-orca-card border border-white/[0.1] flex items-center justify-center text-[10px] font-bold text-cyan-400 font-mono flex-shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-orca-card border border-white/[0.1] flex items-center justify-center text-[10px] font-bold text-cyan-400 font-mono tabular-nums flex-shrink-0">
                       #{item.rank}
                     </span>
                     <Icon className="w-4 h-4 text-cyan-400 flex-shrink-0" />
@@ -228,7 +228,7 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
                     </span>
 
                     <span
-                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                      className={`text-xs font-mono tabular-nums font-bold px-2 py-0.5 rounded ${
                         isZero
                           ? "bg-slate-800 text-slate-400"
                           : isIncrease
@@ -282,13 +282,13 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
 
       {/* 5. Complete Parameter Comparison Table */}
       <div className="space-y-2 pt-2 border-t border-white/[0.06]">
-        <div className="text-xs uppercase font-bold text-slate-400 font-mono">
+        <div className="text-xs uppercase font-bold text-slate-400 font-mono tabular-nums">
           All Evaluated Marine Parameters (Origin vs Displaced)
         </div>
         <div className="overflow-x-auto rounded-xl border border-white/[0.06] bg-orca-darkest/70">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-white/[0.06] text-[10px] uppercase text-slate-400 font-mono bg-orca-darkest/90">
+              <tr className="border-b border-white/[0.06] text-[10px] uppercase text-slate-400 font-mono tabular-nums bg-orca-darkest/90">
                 <th className="py-2.5 px-3">Parameter</th>
                 <th className="py-2.5 px-3 text-right">{data.origin.name}</th>
                 <th className="py-2.5 px-3 text-right">{data.displaced.name}</th>
@@ -300,13 +300,13 @@ export const SpatialWhatIfCard: React.FC<SpatialWhatIfCardProps> = ({ data }) =>
               {data.metrics_summary.map((m, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-2.5 px-3 font-medium text-white">{m.metric_name}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-slate-300">
+                  <td className="py-2.5 px-3 text-right font-mono tabular-nums text-slate-300">
                     {m.location_a_value} <span className="text-[10px] text-slate-400">{m.unit}</span>
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-white font-bold">
+                  <td className="py-2.5 px-3 text-right font-mono tabular-nums text-white font-bold">
                     {m.location_b_value} <span className="text-[10px] text-slate-400">{m.unit}</span>
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono font-bold">
+                  <td className="py-2.5 px-3 text-right font-mono tabular-nums font-bold">
                     <span
                       className={
                         m.difference > 0

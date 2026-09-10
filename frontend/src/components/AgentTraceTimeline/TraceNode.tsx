@@ -18,6 +18,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { TraceItem } from "@/lib/types";
+import { NUM, PALETTE } from "@/components/ui/tone";
 
 interface TraceNodeProps {
   item: TraceItem;
@@ -30,6 +31,8 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
   const isCompleted = item.status === "COMPLETED";
   const isReplanned = item.status === "REPLANNED";
   const isFailed = item.status === "FAILED";
+  const isSkipped = (item.status as string) === "SKIPPED";
+  const detail: string | undefined = item.metadata?.details ?? item.metadata?.detail;
 
   // Dedicated Agent Icons
   const getAgentIcon = (name: string) => {
@@ -43,7 +46,7 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
   };
 
   // Status visual configurations
-  const statusConfig = {
+  const statusConfig = ({
     RUNNING: {
       bullet: (
         <div className="relative flex items-center justify-center">
@@ -81,14 +84,14 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
     },
     // The backend emits SKIPPED whenever a provider tier is passed over, e.g.
     // the ISRO tier with no MOSDAC token. Without this key the whole lookup
-    // failed to typecheck and `next build` refused to compile.
+    // failed to typecheck and `next build` refused to compile. Keep it.
     SKIPPED: {
-      bullet: <span className="w-2 h-2 rounded-full bg-amber-400/70" />,
-      bulletBg: "bg-orca-dark border-amber-500/40 text-amber-300",
-      badge: "text-amber-300 bg-amber-500/10 border-amber-500/30",
-      label: "Skipped",
+      bullet: <span className="w-2 h-2 rounded-full border border-[#ffb443]" />,
+      bulletBg: "bg-[#04141d] border-[#12384a] text-[#7a94a3]",
+      badge: "text-[#ffb443] border-[#ffb443]/60 bg-transparent",
+      label: "SKIPPED",
     },
-  }[item.status] || {
+  } as Record<string, { bullet: React.ReactNode; bulletBg: string; badge: string; label: string }>)[item.status as string] || {
     bullet: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
     bulletBg: "bg-orca-dark border-emerald-500/40 text-emerald-300",
     badge: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30",
@@ -130,7 +133,9 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
           aria-expanded={isExpanded}
           className={`w-full text-left p-2.5 rounded-lg border transition-all focus:outline-none focus:ring-1 focus:ring-orca-cyan ${
             isRunning
-              ? "bg-orca-dark/90 border-orca-cyan/40 shadow-[0_0_12px_rgba(0,240,208,0.06)]"
+              ? "bg-orca-dark/90 border-orca-cyan/40"
+              : isSkipped
+              ? "bg-transparent border-[#12384a] border-dashed opacity-80 hover:opacity-100"
               : "bg-orca-dark/60 border-orca-border/60 hover:border-orca-cyan/30 hover:bg-orca-dark/80"
           }`}
         >
@@ -138,23 +143,23 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-orca-muted">{getAgentIcon(item.agent)}</span>
-              <span className="font-semibold text-white text-[11.5px] truncate">
+              <span className={`font-semibold text-[11.5px] truncate ${isSkipped ? "text-[#7a94a3]" : "text-white"}`}>
                 {item.title || item.agent}
               </span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${statusConfig.badge}`}>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${NUM} ${statusConfig.badge}`}>
                 {statusConfig.label}
               </span>
             </div>
 
             <div className="flex items-center gap-2 text-orca-muted flex-shrink-0">
               {durationText && (
-                <span className="text-[10px] font-mono text-orca-muted flex items-center gap-1">
+                <span className={`text-[10px] ${NUM} text-orca-muted flex items-center gap-1`}>
                   <Clock className="w-3 h-3" />
                   {durationText}
                 </span>
               )}
               {evidenceCount > 0 && (
-                <span className="text-[10px] font-mono text-slate-300 px-1.5 py-0.5 rounded bg-white/[0.04] border border-orca-border flex items-center gap-1">
+                <span className="text-[10px] font-mono tabular-nums text-slate-300 px-1.5 py-0.5 rounded bg-white/[0.04] border border-orca-border flex items-center gap-1">
                   <FileText className="w-2.5 h-2.5 text-orca-cyan" />
                   Evidence × {evidenceCount}
                 </span>
@@ -168,19 +173,24 @@ export const TraceNode: React.FC<TraceNodeProps> = ({ item, isLast = false }) =>
           {/* Subtitle / Summary snippet */}
           <div className="mt-1 text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
             {isRunning ? (
-              <span className="text-orca-cyan flex items-center gap-1.5 font-mono text-[10.5px]">
+              <span className="text-orca-cyan flex items-center gap-1.5 font-mono tabular-nums text-[10.5px]">
                 <span className="w-1.5 h-1.5 rounded-full bg-orca-cyan animate-ping" />
                 {item.summary || "Analyzing telemetry and running physical models..."}
               </span>
             ) : (
-              item.summary
+              <span className={isSkipped ? "text-[#7a94a3]" : undefined}>{item.summary}</span>
             )}
           </div>
+          {detail && (
+            <div className={`mt-1 text-[10.5px] ${NUM} leading-snug break-words ${isSkipped ? "text-[#7a94a3]" : "text-[#7a94a3]"} ${isExpanded ? "" : "line-clamp-2"}`}>
+              {detail}
+            </div>
+          )}
         </button>
 
         {/* Expandable Details Drawer */}
         {isExpanded && (
-          <div className="mt-2 p-2.5 rounded-lg bg-orca-darkest/75 border border-orca-border/60 space-y-2 text-[11px] font-mono">
+          <div className="mt-2 p-2.5 rounded-lg bg-orca-darkest/75 border border-orca-border/60 space-y-2 text-[11px] font-mono tabular-nums">
             {/* Action / Full Summary */}
             <div>
               <span className="text-[10px] uppercase text-orca-muted tracking-wider block mb-0.5">

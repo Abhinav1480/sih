@@ -111,10 +111,10 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
                 )}
               </div>
               <div className="leading-none">
-                <span className="font-display text-[22px] font-bold text-white">{m.value}</span>
-                {m.unit && <span className="text-xs text-orca-muted ml-1">{m.unit}</span>}
+                <span className="font-mono tabular-nums text-[22px] font-bold text-white">{m.value}</span>
+                {m.unit && <span className="text-xs text-orca-muted ml-1 font-mono tabular-nums">{m.unit}</span>}
               </div>
-              {m.sub && <div className="text-[10.5px] text-orca-dim font-mono truncate mt-1">{m.sub}</div>}
+              {m.sub && <div className="text-[10.5px] text-orca-dim font-mono tabular-nums truncate mt-1">{m.sub}</div>}
             </div>
           );
         })}

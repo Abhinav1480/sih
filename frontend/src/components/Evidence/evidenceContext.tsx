@@ -14,18 +14,30 @@ import { dedupeById, matchRecord, parseCoordinates } from "./evidenceUtils";
 
 export type EvidenceMode = "record" | "registry" | "calculation";
 
+/** Contract 1.3.0 envelope slices the drawer needs; registered by ResultContainer. */
+export interface EvidenceEnvelope {
+  risk?: any | null;
+  meta?: any | null;
+  cards?: any[];
+}
+
 interface EvidenceContextValue {
   /** Deduped evidence records for the CURRENT result only. */
   records: EvidenceRecord[];
   risk?: DeterministicRiskResult;
+  envelope: EvidenceEnvelope;
   isLoading: boolean;
 
   isOpen: boolean;
   mode: EvidenceMode;
   focusedId: string | null;
+  /** When set, the registry lists only these ids (a card's evidence_ids). */
+  filterIds: string[] | null;
 
   /** Open the drawer focused on the evidence behind a specific value. */
   openWhy: (variableHint: string, title?: string) => void;
+  /** Open the drawer at exactly these evidence ids (1 → record, n → filtered registry). */
+  openRecords: (ids: string[]) => void;
   /** Open the consolidated registry of every source for this result. */
   openRegistry: () => void;
   /** Open the derived-calculation view (risk factors). */
@@ -35,6 +47,8 @@ interface EvidenceContextValue {
   /** Return to the consolidated registry view (keeps the drawer open). */
   backToRegistry: () => void;
   close: () => void;
+  /** Result components register envelope slices (meta.limitations, risk) here. */
+  registerEnvelope: (env: EvidenceEnvelope) => void;
 
   /** Center the persistent map on a record's coordinates (no remount). */
   viewOnMap: (rec: EvidenceRecord) => void;
@@ -50,6 +64,11 @@ export function useEvidence(): EvidenceContextValue {
     throw new Error("useEvidence must be used within an <EvidenceProvider>");
   }
   return ctx;
+}
+
+/** Same as useEvidence but null outside a provider (styleguide, storybook-ish pages). */
+export function useEvidenceOptional(): EvidenceContextValue | null {
+  return useContext(EvidenceContext);
 }
 
 interface EvidenceProviderProps {
@@ -76,6 +95,8 @@ export const EvidenceProvider: React.FC<EvidenceProviderProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<EvidenceMode>("registry");
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [filterIds, setFilterIds] = useState<string[] | null>(null);
+  const [envelope, setEnvelope] = useState<EvidenceEnvelope>({});
 
   // Focus restoration: remember the element that opened the drawer.
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -90,13 +111,22 @@ export const EvidenceProvider: React.FC<EvidenceProviderProps> = ({
   useEffect(() => {
     setIsOpen(false);
     setFocusedId(null);
+    setFilterIds(null);
     setMode("registry");
+    setEnvelope({});
   }, [queryKey]);
+
+  const registerEnvelope = useCallback((env: EvidenceEnvelope) => {
+    setEnvelope((prev) =>
+      prev.risk === env.risk && prev.meta === env.meta && prev.cards === env.cards ? prev : env
+    );
+  }, []);
 
   const openWhy = useCallback(
     (variableHint: string) => {
       rememberTrigger();
       const match = matchRecord(deduped, variableHint);
+      setFilterIds(null);
       if (match) {
         setFocusedId(match.id);
         setMode("record");
@@ -111,8 +141,27 @@ export const EvidenceProvider: React.FC<EvidenceProviderProps> = ({
     [deduped]
   );
 
+  const openRecords = useCallback(
+    (ids: string[]) => {
+      rememberTrigger();
+      const known = ids.filter((id) => deduped.some((r) => r.id === id));
+      if (known.length === 1) {
+        setFilterIds(null);
+        setFocusedId(known[0]);
+        setMode("record");
+      } else {
+        setFilterIds(known.length > 0 ? known : null);
+        setFocusedId(null);
+        setMode("registry");
+      }
+      setIsOpen(true);
+    },
+    [deduped]
+  );
+
   const openRegistry = useCallback(() => {
     rememberTrigger();
+    setFilterIds(null);
     setFocusedId(null);
     setMode("registry");
     setIsOpen(true);
@@ -132,6 +181,7 @@ export const EvidenceProvider: React.FC<EvidenceProviderProps> = ({
 
   const backToRegistry = useCallback(() => {
     setFocusedId(null);
+    setFilterIds(null);
     setMode("registry");
   }, []);
 
@@ -163,32 +213,40 @@ export const EvidenceProvider: React.FC<EvidenceProviderProps> = ({
     () => ({
       records: deduped,
       risk,
+      envelope,
       isLoading,
       isOpen,
       mode,
       focusedId,
+      filterIds,
       openWhy,
+      openRecords,
       openRegistry,
       openCalculation,
       focusRecord,
       backToRegistry,
       close,
+      registerEnvelope,
       viewOnMap,
       canViewOnMap,
     }),
     [
       deduped,
       risk,
+      envelope,
       isLoading,
       isOpen,
       mode,
       focusedId,
+      filterIds,
       openWhy,
+      openRecords,
       openRegistry,
       openCalculation,
       focusRecord,
       backToRegistry,
       close,
+      registerEnvelope,
       viewOnMap,
       canViewOnMap,
     ]

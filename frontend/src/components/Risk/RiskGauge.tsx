@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
-import { ShieldCheck, AlertTriangle, AlertOctagon, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ShieldCheck, AlertTriangle, AlertOctagon, ShieldAlert, HelpCircle } from "lucide-react";
 import { RiskCategory } from "@/lib/types";
+import { NUM, PALETTE, bandTone, verdictTone } from "@/components/ui/tone";
+import { EvidenceTrigger } from "@/components/Evidence/EvidenceTrigger";
 
 export interface RiskGaugeProps {
   score: number;
-  band: RiskCategory;
+  band: RiskCategory | string;
   verdict?: "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE" | string;
   label?: string;
   size?: "sm" | "md" | "lg";
@@ -15,140 +17,87 @@ export interface RiskGaugeProps {
   className?: string;
 }
 
+const ICONS: Record<string, React.ElementType> = {
+  LOW: ShieldCheck,
+  MODERATE: AlertTriangle,
+  HIGH: AlertOctagon,
+  SEVERE: ShieldAlert,
+};
+
+// 240° arc, opening at the bottom.
+const R = 44;
+const SWEEP = 240;
+const START = 150; // degrees, clockwise from +x axis (SVG y-down)
+const polar = (deg: number) => {
+  const a = (deg * Math.PI) / 180;
+  return { x: 60 + R * Math.cos(a), y: 60 + R * Math.sin(a) };
+};
+const arcPath = (fromDeg: number, toDeg: number) => {
+  const s = polar(fromDeg);
+  const e = polar(toDeg);
+  const large = toDeg - fromDeg > 180 ? 1 : 0;
+  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+};
+const TRACK = arcPath(START, START + SWEEP);
+const ARC_LEN = (SWEEP / 360) * 2 * Math.PI * R;
+
+/** Animate 0 → target once per distinct target; never replays on re-render. */
+function useOnceAnimated(target: number, ms = 700) {
+  const [v, setV] = useState(0);
+  const seen = useRef<number | null>(null);
+  useEffect(() => {
+    if (seen.current === target) return;
+    seen.current = target;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / ms);
+      setV(target * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+  return v;
+}
+
 export const RiskGauge: React.FC<RiskGaugeProps> = ({
   score,
   band,
   verdict,
   label = "MARINE RISK",
-  size = "md",
   compact = false,
-  showTrack = true,
   className = "",
 }) => {
-  const normBand = (band || "LOW").toUpperCase() as RiskCategory;
-  const clampedScore = Math.min(100, Math.max(0, Math.round(score)));
+  const normBand = (band || "").toUpperCase();
+  const tone = bandTone(normBand);
+  const Icon = ICONS[normBand] || HelpCircle;
+  const clamped = Math.min(100, Math.max(0, Math.round(Number(score) || 0)));
+  const animated = useOnceAnimated(clamped);
+  const vt = verdict ? verdictTone(verdict) : null;
 
-  // Authoritative FE-01 Risk Palette & Typography Config
-  const bandConfig = {
-    LOW: {
-      label: "LOW",
-      icon: ShieldCheck,
-      color: "text-emerald-400",
-      border: "border-emerald-500/40",
-      bg: "bg-emerald-500/10",
-      trackColor: "bg-emerald-500",
-      glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]",
-      desc: "Safe for routine maritime passage",
-    },
-    MODERATE: {
-      label: "MODERATE",
-      icon: AlertTriangle,
-      color: "text-amber-400",
-      border: "border-amber-500/40",
-      bg: "bg-amber-500/10",
-      trackColor: "bg-amber-500",
-      glow: "shadow-[0_0_12px_rgba(245,158,11,0.2)]",
-      desc: "Marginal sea conditions; caution advised",
-    },
-    HIGH: {
-      label: "HIGH",
-      icon: AlertOctagon,
-      color: "text-orange-400",
-      border: "border-orange-500/40",
-      bg: "bg-orange-500/10",
-      trackColor: "bg-orange-500",
-      glow: "shadow-[0_0_12px_rgba(249,115,22,0.2)]",
-      desc: "Elevated hazard; small-craft restriction",
-    },
-    SEVERE: {
-      label: "SEVERE",
-      icon: ShieldAlert,
-      color: "text-rose-400",
-      border: "border-rose-500/40",
-      bg: "bg-rose-500/10",
-      trackColor: "bg-rose-500",
-      glow: "shadow-[0_0_12px_rgba(239,68,68,0.25)]",
-      desc: "Critical hazards active; no-go advisory",
-    },
-  }[normBand] || {
-    label: "LOW",
-    icon: ShieldCheck,
-    color: "text-emerald-400",
-    border: "border-emerald-500/40",
-    bg: "bg-emerald-500/10",
-    trackColor: "bg-emerald-500",
-    glow: "shadow-[0_0_12px_rgba(16,185,129,0.2)]",
-    desc: "Safe for standard operations",
+  const meter = {
+    role: "meter" as const,
+    "aria-label": `${label}: ${tone.word} (${clamped}/100)`,
+    "aria-valuenow": clamped,
+    "aria-valuemin": 0,
+    "aria-valuemax": 100,
+    "aria-valuetext": `${tone.word} risk, score ${clamped} out of 100`,
   };
-
-  const Icon = bandConfig.icon;
-
-  // Verdict Styling
-  const getVerdictBadge = (v: string) => {
-    const vUpper = v.toUpperCase();
-    if (vUpper === "GO") {
-      return {
-        text: "GO",
-        icon: CheckCircle2,
-        class: "bg-emerald-500/15 text-emerald-300 border-emerald-500/35",
-      };
-    }
-    if (vUpper === "CAUTION") {
-      return {
-        text: "CAUTION",
-        icon: AlertTriangle,
-        class: "bg-amber-500/15 text-amber-300 border-amber-500/35",
-      };
-    }
-    if (vUpper === "NO_GO" || vUpper === "NO-GO") {
-      return {
-        text: "NO-GO",
-        icon: XCircle,
-        class: "bg-rose-500/15 text-rose-300 border-rose-500/35",
-      };
-    }
-    return {
-      text: vUpper,
-      icon: ShieldCheck,
-      class: "bg-white/[0.05] text-slate-300 border-white/[0.12]",
-    };
-  };
-
-  const verdictBadge = verdict ? getVerdictBadge(verdict) : null;
-
-  // Segment widths based on authoritative thresholds:
-  // LOW (0–29): 30% | MODERATE (30–54): 25% | HIGH (55–74): 20% | SEVERE (75–100): 25%
-  const segments = [
-    { key: "LOW", label: "0-29", width: "30%", color: "bg-emerald-500/30", activeColor: "bg-emerald-400" },
-    { key: "MODERATE", label: "30-54", width: "25%", color: "bg-amber-500/30", activeColor: "bg-amber-400" },
-    { key: "HIGH", label: "55-74", width: "20%", color: "bg-orange-500/30", activeColor: "bg-orange-400" },
-    { key: "SEVERE", label: "75-100", width: "25%", color: "bg-rose-500/30", activeColor: "bg-rose-400" },
-  ];
 
   if (compact) {
     return (
-      <div
-        role="meter"
-        aria-label={`${label}: ${normBand} (${clampedScore}/100)`}
-        aria-valuenow={clampedScore}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuetext={`${normBand} risk, score ${clampedScore} out of 100`}
-        className={`flex items-center gap-2.5 ${className}`}
-      >
+      <div {...meter} className={`flex items-center gap-2 ${className}`}>
         <span
-          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-mono font-semibold ${bandConfig.bg} ${bandConfig.border} ${bandConfig.color}`}
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] ${NUM} font-semibold`}
+          style={{ color: tone.hex, borderColor: tone.hex }}
         >
           <Icon className="w-3 h-3 flex-shrink-0" />
-          <span>{bandConfig.label}</span>
-          <span className="opacity-40">·</span>
-          <span>{clampedScore}</span>
+          {tone.word} · {clamped}/100
         </span>
-        {verdictBadge && (
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10.5px] font-mono font-semibold ${verdictBadge.class}`}
-          >
-            {verdictBadge.text}
+        {vt && (
+          <span className={`px-2 py-0.5 rounded border text-[10.5px] ${NUM} font-semibold`} style={{ color: vt.hex, borderColor: vt.hex }}>
+            {vt.word}
           </span>
         )}
       </div>
@@ -156,91 +105,60 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
   }
 
   return (
-    <div
-      role="meter"
-      aria-label={`${label}: ${normBand} (${clampedScore}/100)`}
-      aria-valuenow={clampedScore}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuetext={`${normBand} risk, score ${clampedScore} out of 100`}
-      className={`space-y-2.5 ${className}`}
-    >
-      {/* Top Header: Label + Monospace Score + Verdict */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-orca-muted">
-            {label}
-          </span>
-          {verdictBadge && (
-            <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9.5px] font-mono font-bold tracking-wide ${verdictBadge.class}`}
-            >
-              <verdictBadge.icon className="w-2.5 h-2.5" />
-              VERDICT: {verdictBadge.text}
-            </span>
-          )}
-        </div>
+    <div {...meter} className={`flex items-center gap-4 ${className}`}>
+      {/* SVG arc gauge */}
+      <svg viewBox="0 0 120 120" className="w-[124px] h-[124px] flex-shrink-0" aria-hidden="true">
+        <path d={TRACK} fill="none" stroke={PALETTE.raised} strokeWidth="9" strokeLinecap="butt" />
+        <path
+          d={TRACK}
+          fill="none"
+          stroke={tone.hex}
+          strokeWidth="9"
+          strokeLinecap="butt"
+          strokeDasharray={`${(animated / 100) * ARC_LEN} ${ARC_LEN}`}
+        />
+        {/* band boundaries at 30 / 55 / 75 */}
+        {[30, 55, 75].map((b) => {
+          const d = START + (b / 100) * SWEEP;
+          const p1 = polar(d);
+          const a = (d * Math.PI) / 180;
+          const p2 = { x: 60 + (R + 7) * Math.cos(a), y: 60 + (R + 7) * Math.sin(a) };
+          return <line key={b} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={PALETTE.base} strokeWidth="1.5" />;
+        })}
+        <text x="60" y="58" textAnchor="middle" fill={PALETTE.text} fontSize="28" fontWeight="700" fontFamily="JetBrains Mono, ui-monospace, monospace">
+          {Math.round(animated)}
+        </text>
+        <text x="60" y="74" textAnchor="middle" fill={PALETTE.muted} fontSize="9" fontFamily="JetBrains Mono, ui-monospace, monospace">
+          / 100
+        </text>
+      </svg>
 
-        <div className="font-mono text-xs text-slate-300">
-          <span className="text-base font-bold text-white tracking-tight">{clampedScore}</span>
-          <span className="text-orca-muted text-[11px]"> / 100</span>
-        </div>
-      </div>
-
-      {/* Dominant Band Display */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0 space-y-1.5">
+        <div className={`text-[10px] ${NUM} font-semibold uppercase tracking-wider text-[#7a94a3]`}>{label}</div>
         <div className="flex items-center gap-2">
-          <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center border ${bandConfig.border} ${bandConfig.bg} ${bandConfig.color} ${bandConfig.glow}`}
-          >
-            <Icon className="w-4 h-4 stroke-[2.2]" />
-          </div>
-          <div>
-            <span className={`font-display text-xl font-bold tracking-tight ${bandConfig.color}`}>
-              {bandConfig.label}
-            </span>
-            <span className="block text-[11px] text-orca-muted leading-none mt-0.5">
-              {bandConfig.desc}
-            </span>
-          </div>
+          <Icon className="w-5 h-5 flex-shrink-0" style={{ color: tone.hex }} />
+          <span className="font-display text-[26px] font-bold tracking-tight leading-none" style={{ color: tone.hex }}>
+            {tone.word}
+          </span>
         </div>
+        <div className={`text-[12px] ${NUM} text-[#e8f4f8] flex items-center gap-2`}>
+          <span>
+            {tone.word} · {clamped}/100
+          </span>
+          <EvidenceTrigger kind="calc" label="Σ how" />
+        </div>
+        {vt && (
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] ${NUM} text-[#7a94a3] uppercase`}>verdict</span>
+            <span
+              className={`px-1.5 py-px rounded border text-[11px] ${NUM} font-bold tracking-wide`}
+              style={{ color: vt.hex, borderColor: vt.hex }}
+            >
+              {vt.word}
+            </span>
+          </div>
+        )}
       </div>
-
-      {/* Calibrated Segmented Track Gauge */}
-      {showTrack && (
-        <div className="space-y-1 pt-0.5">
-          <div className="relative h-2 rounded-full overflow-hidden bg-white/[0.04] border border-orca-border/80 flex gap-[2px] p-[1px]">
-            {segments.map((seg) => {
-              const isCurrentBand = normBand === seg.key;
-              return (
-                <div
-                  key={seg.key}
-                  style={{ width: seg.width }}
-                  className={`h-full rounded-sm transition-colors duration-300 ${
-                    isCurrentBand ? `${seg.activeColor} shadow-sm` : seg.color
-                  }`}
-                  title={`${seg.key} (${seg.label})`}
-                />
-              );
-            })}
-
-            {/* Precision Indicator Pip */}
-            <div
-              className="absolute top-0 bottom-0 w-1 bg-white rounded-full shadow-[0_0_6px_rgba(255,255,255,0.9)] transition-all duration-500 ease-out pointer-events-none"
-              style={{ left: `calc(${clampedScore}% - 2px)` }}
-            />
-          </div>
-
-          {/* Scale Labels */}
-          <div className="flex justify-between text-[9px] font-mono text-orca-dim px-0.5 select-none">
-            <span>0 LOW</span>
-            <span>30 MODERATE</span>
-            <span>55 HIGH</span>
-            <span>75 SEVERE</span>
-            <span>100</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

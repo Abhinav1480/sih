@@ -19,7 +19,7 @@ export const FishingZonesCard: React.FC<FishingZonesCardProps> = ({ zones, locat
         <h3 className="text-[13px] font-semibold text-slate-200">
           Fishing Zones near {locationName}
         </h3>
-        <span className="text-[10px] text-orca-dim font-mono">{zones.length} evaluated</span>
+        <span className="text-[10px] text-orca-dim font-mono tabular-nums">{zones.length} evaluated</span>
       </div>
 
       <div className="divide-y divide-orca-border/50">
@@ -28,7 +28,7 @@ export const FishingZonesCard: React.FC<FishingZonesCardProps> = ({ zones, locat
             {/* Row header */}
             <div className="flex items-center gap-2.5">
               <span
-                className={`w-6 h-6 rounded-full font-bold text-[11px] flex items-center justify-center flex-shrink-0 font-mono ${
+                className={`w-6 h-6 rounded-full font-bold text-[11px] flex items-center justify-center flex-shrink-0 font-mono tabular-nums ${
                   zone.within_mpa
                     ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
                     : zone.rank === 1
@@ -41,7 +41,7 @@ export const FishingZonesCard: React.FC<FishingZonesCardProps> = ({ zones, locat
               <span className="font-semibold text-[13.5px] text-white flex-1 truncate">{zone.name}</span>
               <span className="text-right flex-shrink-0">
                 <span
-                  className={`font-mono font-semibold text-[13px] ${
+                  className={`font-mono tabular-nums font-semibold text-[13px] ${
                     zone.within_mpa
                       ? "text-rose-400"
                       : zone.suitability_score >= 70
@@ -66,7 +66,7 @@ export const FishingZonesCard: React.FC<FishingZonesCardProps> = ({ zones, locat
             </div>
 
             {/* Compact metrics */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-orca-dim">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono tabular-nums text-orca-dim">
               <span>Chl <span className="text-emerald-400">{zone.chlorophyll_mg_m3}</span> mg/m³</span>
               <span>SST <span className="text-slate-300">{zone.sst_c}</span>°C</span>
               <span><span className="text-slate-300">{zone.distance_km}</span> km · {zone.bearing_deg}°</span>

@@ -13,6 +13,12 @@
  * any component.
  */
 
+import { voice } from "./voice";
+import { geofence } from "./geofence";
+import { offline } from "./offline";
+import { fisherman } from "./fisherman";
+import { backend } from "./backend";
+
 export const SUPPORTED_LANGS = [
   "en",
   "te",
@@ -22,11 +28,17 @@ export const SUPPORTED_LANGS = [
   "kn",
   "bn",
   "mr",
+  "gu",
+  "or",
 ] as const;
 
 export type LangCode = (typeof SUPPORTED_LANGS)[number];
 
-type Dict = Record<string, string>;
+export type Dict = Record<string, string>;
+/** Per-track dictionaries: `en` is required, other languages override. */
+export type LangDicts = { en: Dict } & Partial<Record<LangCode, Dict>>;
+
+const MODULES: LangDicts[] = [voice, geofence, offline, fisherman, backend];
 
 const en: Dict = {
   // Mode
@@ -75,21 +87,7 @@ const en: Dict = {
   // Loading
   "loading.analyzing": "Analyzing marine conditions…",
 
-  // Voice input
-  "voice.speak": "Speak your question",
-  "voice.listening": "Listening…",
-  "voice.processing": "Processing…",
-  "voice.stopListening": "Stop listening",
-  "voice.input.unavailable": "Voice input is unavailable on this browser.",
-  "voice.input.denied":
-    "Microphone access is unavailable. You can still type your question.",
-  "voice.input.error": "Voice input error. You can still type your question.",
-
-  // Voice output
-  "voice.listen": "Listen",
-  "voice.playing": "Playing",
-  "voice.stop": "Stop",
-  "voice.output.unavailable": "Voice playback is unavailable on this browser.",
+  // Voice strings live in ./voice.ts (with te/hi/ta translations).
 };
 
 // Per-language overrides. Left intentionally sparse — English is the base and
@@ -102,6 +100,8 @@ const overrides: Partial<Record<LangCode, Dict>> = {
   kn: {},
   bn: {},
   mr: {},
+  gu: {},
+  or: {},
 };
 
 /**
@@ -117,8 +117,17 @@ export function t(
   const code = (SUPPORTED_LANGS as readonly string[]).includes(lang)
     ? (lang as LangCode)
     : "en";
-  const localized = overrides[code]?.[key];
-  let out = localized ?? en[key] ?? key;
+  let out: string | undefined = overrides[code]?.[key] ?? en[key];
+  if (out === undefined) {
+    for (const m of MODULES) {
+      const hit = m[code]?.[key] ?? m.en[key];
+      if (hit !== undefined) {
+        out = hit;
+        break;
+      }
+    }
+  }
+  if (out === undefined) out = key;
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       out = out.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));

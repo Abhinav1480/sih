@@ -4,8 +4,7 @@ import {
   TraceItemStatus,
   OrcaAnalysisResponse,
 } from "./types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+import { getApiBase, getBackendMode } from "./backend/config";
 
 export interface StreamCallbacks {
   onEvent: (event: SSETraceEvent) => void;
@@ -58,7 +57,6 @@ export function accumulateTraceItems(
       const id = `agent-${agentName.toLowerCase().replace(/\s+/g, "-")}`;
       const existingIdx = items.findIndex((i) => i.id === id);
       if (existingIdx >= 0) {
-        // If already completed or replanned, do not regress to RUNNING unless requested
         if (items[existingIdx].status === "PENDING") {
           items[existingIdx] = {
             ...items[existingIdx],
@@ -86,8 +84,6 @@ export function accumulateTraceItems(
       const fromAgent = payload.from_agent || agentName;
       const toAgent = payload.to_agent || "Specialist";
       const message = payload.message || event.action || "";
-
-      // Try finding the sender or receiver agent node to attach collaboration note
       const senderId = `agent-${fromAgent.toLowerCase().replace(/\s+/g, "-")}`;
       const parentIdx = items.findIndex((i) => i.id === senderId);
 
@@ -104,51 +100,51 @@ export function accumulateTraceItems(
 
       if (parentIdx >= 0) {
         const existingChildren = items[parentIdx].children || [];
-        items[parentIdx] = {
-          ...items[parentIdx],
-          children: [...existingChildren, messageChild],
-        };
+        items[parentIdx] = { ...items[parentIdx], children: [...existingChildren, messageChild] };
       } else {
-        // Render inline if parent agent hasn't arrived yet (out-of-order resilience)
         items.push(messageChild);
       }
       break;
     }
 
     case "agent_result": {
-      const id = `agent-${agentName.toLowerCase().replace(/\s+/g, "-")}`;
+      // Contract 1.3.0 trace rows carry seq/status/detail; SKIPPED rows are kept
+      // as their own nodes (never merged away) so unavailable sources stay visible.
+      const rowStatus = ((event.status || payload.status || "COMPLETED") as string).toUpperCase() as TraceItemStatus;
+      const seq = event.seq ?? payload.seq;
+      const id =
+        rowStatus === "SKIPPED" || seq != null
+          ? `trace-${seq ?? Date.now()}-${agentName.toLowerCase().replace(/\s+/g, "-")}`
+          : `agent-${agentName.toLowerCase().replace(/\s+/g, "-")}`;
       const existingIdx = items.findIndex((i) => i.id === id);
       const durMs = payload.duration_ms || event.duration_ms || 0;
       const evIds = payload.evidence_ids || event.evidence_ids || [];
+      const detail = event.detail || payload.detail || payload.details;
 
       const resultItem: Partial<TraceItem> = {
-        status: "COMPLETED" as TraceItemStatus,
+        status: rowStatus,
         summary: payload.summary || event.action || "Telemetry evaluated",
         duration_ms: durMs,
         duration: durMs ? Number((durMs / 1000).toFixed(2)) : undefined,
         evidenceIds: evIds,
-        metadata: { ...(payload.metadata || {}), raw_summary: payload.summary },
+        metadata: { ...(payload.metadata || {}), tool: (event as any).tool ?? payload.tool, details: detail },
       };
 
       if (existingIdx >= 0) {
-        items[existingIdx] = {
-          ...items[existingIdx],
-          ...resultItem,
-        };
+        items[existingIdx] = { ...items[existingIdx], ...resultItem };
       } else {
-        // Arrived before agent_start (out-of-order event handling)
         items.push({
           id,
           type: "agent_result",
           timestamp: now,
           agent: agentName,
           title: agentName,
-          summary: payload.summary || event.action || "Analysis completed",
-          status: "COMPLETED",
+          summary: resultItem.summary!,
+          status: rowStatus,
           duration_ms: durMs,
-          duration: durMs ? Number((durMs / 1000).toFixed(2)) : undefined,
+          duration: resultItem.duration,
           evidenceIds: evIds,
-          metadata: payload.metadata,
+          metadata: resultItem.metadata,
           children: [],
         });
       }
@@ -158,8 +154,6 @@ export function accumulateTraceItems(
     case "replan": {
       const replanId = `replan-${Date.now()}`;
       const failedAgent = payload.failed_agent;
-
-      // Correlate and annotate the affected agent if identified
       if (failedAgent) {
         const failedId = `agent-${failedAgent.toLowerCase().replace(/\s+/g, "-")}`;
         const fIdx = items.findIndex((i) => i.id === failedId);
@@ -171,7 +165,6 @@ export function accumulateTraceItems(
           };
         }
       }
-
       items.push({
         id: replanId,
         type: "replan",
@@ -195,22 +188,16 @@ export function accumulateTraceItems(
     }
 
     case "correlation": {
-      const corrId = `corr-${Date.now()}`;
       const agentsInvolved = payload.agents || [];
       items.push({
-        id: corrId,
+        id: `corr-${Date.now()}`,
         type: "correlation",
         timestamp: now,
         agent: agentsInvolved.join(" + ") || "Cross-Agent Correlation",
         title: "CROSS-AGENT FINDING",
         summary: payload.finding || event.action || "Cross-agent correlation established",
         status: "COMPLETED",
-        metadata: {
-          agents: agentsInvolved,
-          finding: payload.finding,
-          impact: payload.impact,
-          title: payload.title,
-        },
+        metadata: { agents: agentsInvolved, finding: payload.finding, impact: payload.impact, title: payload.title },
       });
       break;
     }
@@ -219,8 +206,6 @@ export function accumulateTraceItems(
       const existingIdx = items.findIndex((i) => i.type === "risk");
       const riskScore = typeof payload.score === "number" ? payload.score : 0;
       const riskBand = payload.band || "LOW";
-      const factors = payload.key_factors || [];
-
       const riskItem: TraceItem = {
         id: "node-risk-engine",
         type: "risk",
@@ -229,18 +214,10 @@ export function accumulateTraceItems(
         title: "RISK ENGINE",
         summary: `${riskBand} · ${riskScore} / 100`,
         status: "COMPLETED",
-        metadata: {
-          score: riskScore,
-          band: riskBand,
-          key_factors: factors,
-        },
+        metadata: { score: riskScore, band: riskBand, key_factors: payload.key_factors || [] },
       };
-
-      if (existingIdx >= 0) {
-        items[existingIdx] = { ...items[existingIdx], ...riskItem };
-      } else {
-        items.push(riskItem);
-      }
+      if (existingIdx >= 0) items[existingIdx] = { ...items[existingIdx], ...riskItem };
+      else items.push(riskItem);
       break;
     }
 
@@ -257,39 +234,31 @@ export function accumulateTraceItems(
         status: isReady ? "COMPLETED" : "RUNNING",
         metadata: payload,
       };
-
-      if (existingIdx >= 0) {
-        items[existingIdx] = { ...items[existingIdx], ...synthItem };
-      } else {
-        items.push(synthItem);
-      }
+      if (existingIdx >= 0) items[existingIdx] = { ...items[existingIdx], ...synthItem };
+      else items.push(synthItem);
       break;
     }
 
     case "done": {
       const existingIdx = items.findIndex((i) => i.type === "done");
-      const totalAgents = payload.total_agents || items.filter((i) => i.type === "agent_start" || i.type === "agent_result").length;
+      const totalAgents =
+        payload.total_agents || items.filter((i) => i.type === "agent_start" || i.type === "agent_result").length;
       const totalDur = payload.total_duration_ms || event.duration_ms || 0;
       const secStr = (totalDur / 1000).toFixed(1);
-
       const doneItem: TraceItem = {
         id: "node-done",
         type: "done",
         timestamp: now,
         agent: "ORCA Orchestrator",
         title: "✓ ANALYSIS COMPLETE",
-        summary: `${totalAgents} agents · ${secStr}s`,
+        summary: event.detail || payload.detail || `${totalAgents} agents · ${secStr}s`,
         status: "COMPLETED",
         duration_ms: totalDur,
         duration: Number(secStr),
         metadata: payload,
       };
-
-      if (existingIdx >= 0) {
-        items[existingIdx] = { ...items[existingIdx], ...doneItem };
-      } else {
-        items.push(doneItem);
-      }
+      if (existingIdx >= 0) items[existingIdx] = { ...items[existingIdx], ...doneItem };
+      else items.push(doneItem);
       break;
     }
 
@@ -302,29 +271,75 @@ export function accumulateTraceItems(
         title: "ANALYSIS FAILED",
         summary: payload.message || event.action || "Execution error encountered.",
         status: "FAILED",
-        metadata: {
-          recoverable: payload.recoverable !== false,
-          message: payload.message,
-        },
+        metadata: { recoverable: payload.recoverable !== false, message: payload.message },
       });
       break;
     }
 
     default:
-      // Ignore unknown stages safely
       break;
   }
 
   return items;
 }
 
+/** Parse one SSE frame body into a trace event and hand it to callbacks. */
+function dispatchSSEFrame(rawMessage: string, callbacks: StreamCallbacks) {
+  let stage = "";
+  let dataStr = "";
+  for (const line of rawMessage.split("\n")) {
+    if (line.startsWith("event:")) stage = line.slice(6).trim();
+    else if (line.startsWith("data:")) dataStr = line.slice(5).trim();
+  }
+  if (!dataStr) return;
+  try {
+    const parsed = JSON.parse(dataStr);
+    callbacks.onEvent({
+      stage: (stage || parsed.stage || parsed.type || "agent_result") as any,
+      seq: parsed.seq,
+      agent: parsed.agent,
+      action: parsed.action,
+      duration_ms: parsed.duration_ms,
+      status: parsed.status,
+      detail: parsed.detail,
+      evidence_ids: parsed.evidence_ids,
+      payload: parsed.payload || parsed,
+      timestamp: parsed.timestamp || new Date().toISOString(),
+    });
+  } catch {
+    // Ignore unparseable raw chunks
+  }
+}
+
+async function readSSE(response: Response, callbacks: StreamCallbacks) {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const f of frames) if (f.trim()) dispatchSSEFrame(f, callbacks);
+  }
+}
+
+const isSSE = (r: Response) =>
+  r.ok && !!r.body && (r.headers.get("content-type") || "").includes("text/event-stream");
 
 /**
- * Primary streaming orchestrator.
- * Tries the real SSE endpoint. When it is unavailable -- it 404s today,
- * BE-04 is unbuilt -- this resolves with no events and emits no telemetry of
- * its own. The caller falls back to the trace[] the completed /api/query
- * response already carries.
+ * Live trace stream. Tries POST then GET {getApiBase()}/api/query/stream. When
+ * the endpoint is unavailable -- it 404s today, BE-04 is unbuilt -- this
+ * resolves with no events and emits no telemetry of its own; the caller then
+ * reveals the real `trace[]` the completed /api/query response already carries
+ * (see AgentActivityFeed's staggered reveal).
+ *
+ * No mock telemetry is ever emitted here, ever. This function used to replay
+ * src/mocks/mockSSEEvents.ts whenever the endpoint was missing, which is
+ * always -- so every query rendered a scripted, query-keyed agent trace with
+ * invented durations as live telemetry. A scripted replay presented as live
+ * agent progress is a lie about what the system did.
  */
 export async function streamOrcaAnalysis(
   query: string,
@@ -333,82 +348,38 @@ export async function streamOrcaAnalysis(
   callbacks: StreamCallbacks,
   abortController?: AbortController
 ): Promise<void> {
-  // Attempt real SSE stream if supported by backend (/api/query/stream)
+  if (getBackendMode() === "cached") {
+    callbacks.onComplete();
+    return;
+  }
+  // Attempt the real SSE stream if the backend supports it.
+  const url = `${getApiBase()}/api/query/stream`;
+  const signal = abortController?.signal;
   try {
-    const streamUrl = `${API_BASE}/api/query/stream`;
-    const response = await fetch(streamUrl, {
+    let res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify({
-        query,
-        conversation_id: conversationId,
-        preferred_language: language,
-      }),
-      signal: abortController?.signal,
+      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      body: JSON.stringify({ query, conversation_id: conversationId, preferred_language: language }),
+      signal,
     });
-
-    if (response.ok && response.body && response.headers.get("content-type")?.includes("text/event-stream")) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-
-        for (const rawMessage of lines) {
-          if (!rawMessage.trim()) continue;
-
-          let stage: string = "";
-          let dataStr: string = "";
-
-          for (const line of rawMessage.split("\n")) {
-            if (line.startsWith("event:")) {
-              stage = line.slice(6).trim();
-            } else if (line.startsWith("data:")) {
-              dataStr = line.slice(5).trim();
-            }
-          }
-
-          if (dataStr) {
-            try {
-              const parsed = JSON.parse(dataStr);
-              const eventStage = (stage || parsed.stage || parsed.type || "agent_result") as any;
-              callbacks.onEvent({
-                stage: eventStage,
-                agent: parsed.agent,
-                action: parsed.action,
-                duration_ms: parsed.duration_ms,
-                payload: parsed.payload || parsed,
-                timestamp: parsed.timestamp || new Date().toISOString(),
-              });
-            } catch (e) {
-              // Ignore unparseable raw chunks
-            }
-          }
-        }
-      }
-
+    if (!isSSE(res)) {
+      const qs = new URLSearchParams({ query, preferred_language: language });
+      if (conversationId) qs.set("conversation_id", conversationId);
+      res = await fetch(`${url}?${qs}`, { headers: { Accept: "text/event-stream" }, signal });
+    }
+    if (isSSE(res)) {
+      await readSSE(res, callbacks);
       callbacks.onComplete();
       return;
     }
+    callbacks.onError(`stream endpoint unavailable (${res.status})`, true);
   } catch (err: any) {
-    // If aborted by user, return cleanly
-    if (err.name === "AbortError") return;
-    // The endpoint is unavailable. Resolve with no events rather than
-    // inventing any: the caller then reveals the real trace[] from the
-    // completed /api/query response.
+    // Aborted by the user: return cleanly.
+    if (err?.name === "AbortError") return;
+    // The endpoint is unavailable. Report that and resolve with no events
+    // rather than inventing any -- the caller reveals the real trace[] the
+    // completed /api/query response already carries.
+    callbacks.onError(err?.message || "stream failed", true);
   }
-
-  // /api/query/stream does not exist yet (BE-04). No telemetry is emitted
-  // here, ever. A scripted replay presented as live agent progress is a lie
-  // about what the system did.
   callbacks.onComplete();
 }

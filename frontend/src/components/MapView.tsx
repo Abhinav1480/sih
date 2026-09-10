@@ -7,12 +7,20 @@ import {
   Satellite,
   Navigation,
   Waves,
+  Moon,
 } from "lucide-react";
 import { MapLayerData, VisualizationPlan, TemporalState, LayerStatus } from "@/lib/types";
 import { LayerControl, LayerLegend, TimeScrubber } from "./Map";
+import { P, HAIRLINE, NUM, layerIdOf } from "./Map/theme";
+import { defaultOpacity } from "./Map/LayerControl";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
+// Bootstrap view: Kakinada / central Bay of Bengal.
+const BOOT_LAT = 16.9891;
+const BOOT_LON = 82.2475;
 
 interface MapViewProps {
-  layers: MapLayerData[];
+  layers?: MapLayerData[];
   visualizationPlan?: VisualizationPlan;
   onCoordinateSelect?: (lat: number, lon: number) => void;
   /**
@@ -33,6 +41,18 @@ interface MapViewProps {
 
 // Genuinely keyless, legally compliant tile providers with ZERO watermarks
 const KEYLESS_BASEMAPS = {
+  dark: {
+    id: "dark",
+    name: "Dark",
+    // CARTO dark_all now watermarks tiles without an API key; Esri's dark canvas is keyless.
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      subdomains: [],
+      attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
+      maxZoom: 16,
+    },
+    icon: Moon,
+  },
   standard: {
     id: "standard",
     name: "Standard",
@@ -95,8 +115,44 @@ const shown = (value: unknown, unit = ""): string =>
     ? '<span class="text-slate-500 italic">unavailable</span>'
     : `${value}${unit}`;
 
+// ── Offline basemap fallback (Track D) ──────────────────────────────────────
+// public/tiles/{z}/{x}/{y}.png ships in the APK (see scripts/fetch-tiles.mjs);
+// Capacitor serves the app from https://localhost, so this is a same-origin path.
+const LOCAL_TILE = "/tiles/{z}/{x}/{y}.png";
+// Bundle stops at z12: deeper zooms upscale z12 tiles instead of going blank.
+const LOCAL_MAX_NATIVE_ZOOM = 12;
+
+function createBasemap(L: any, config: { url: string; options: Record<string, any> }) {
+  const OfflineTileLayer = L.TileLayer.extend({
+    getTileUrl(coords: any) {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        return L.Util.template(LOCAL_TILE, coords);
+      }
+      return L.TileLayer.prototype.getTileUrl.call(this, coords);
+    },
+  });
+  const layer = new OfflineTileLayer(config.url, {
+    ...config.options,
+    maxNativeZoom: LOCAL_MAX_NATIVE_ZOOM,
+  });
+  // Remote tile failed (captive portal, flaky signal): retry the bundled tile once.
+  layer.on("tileerror", (e: any) => {
+    const local = L.Util.template(LOCAL_TILE, e.coords);
+    if (e.tile && !e.tile.src.endsWith(local)) e.tile.src = local;
+  });
+  // Re-resolve every visible tile when connectivity flips.
+  const redraw = () => layer.redraw();
+  window.addEventListener("online", redraw);
+  window.addEventListener("offline", redraw);
+  layer.on("remove", () => {
+    window.removeEventListener("online", redraw);
+    window.removeEventListener("offline", redraw);
+  });
+  return layer;
+}
+
 export const MapView: React.FC<MapViewProps> = ({
-  layers,
+  layers: propLayers,
   visualizationPlan,
   onCoordinateSelect,
   resizeSignal,
@@ -107,11 +163,19 @@ export const MapView: React.FC<MapViewProps> = ({
   const tileLayerRef = useRef<any>(null);
   const overlayGroupRef = useRef<any>(null);
   const wmsLayersRef = useRef<Map<string, any>>(new Map());
+  const panesRef = useRef<Map<string, HTMLElement>>(new Map());
+  const layerKeyRef = useRef<string>("");
+
+  // Bootstrap layers shown before any query; replaced (not remounted) once a query supplies layers.
+  const [bootLayers, setBootLayers] = useState<MapLayerData[]>([]);
+  const hasQueryLayers = !!propLayers && propLayers.length > 0;
+  const layers: MapLayerData[] = hasQueryLayers ? (propLayers as MapLayerData[]) : bootLayers;
 
   const [activeLayerIds, setActiveLayerIds] = useState<string[]>([]);
+  const [opacities, setOpacities] = useState<Record<string, number>>({});
   const [layerStatuses, setLayerStatuses] = useState<Record<string, LayerStatus>>({});
   const [showLayerMenu, setShowLayerMenu] = useState(false);
-  const [currentBasemap, setCurrentBasemap] = useState<BasemapKey>("standard");
+  const [currentBasemap, setCurrentBasemap] = useState<BasemapKey>("dark");
   const [selectedCoord, setSelectedCoord] = useState<{ lat: number; lon: number } | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -122,7 +186,38 @@ export const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     setIsClient(true);
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) setShowLayerMenu(true);
   }, []);
+
+  // Fetch bootstrap layers once; any failure leaves the bare basemap (no error UI).
+  useEffect(() => {
+    if (hasQueryLayers) return;
+    const ctrl = new AbortController();
+    fetch(`${API_BASE}/api/layers?lat=${BOOT_LAT}&lon=${BOOT_LON}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.layers)) setBootLayers(d.layers);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const opacityOf = useCallback(
+    (layerId: string) => {
+      const l = layers.find((x) => layerIdOf(x) === layerId);
+      return (opacities[layerId] ?? (l ? defaultOpacity(l) : 100)) / 100;
+    },
+    [layers, opacities]
+  );
+
+  // Apply opacity to live Leaflet objects: WMS tiles via setOpacity, geojson via its pane.
+  useEffect(() => {
+    wmsLayersRef.current.forEach((tl, id) => tl.setOpacity?.(opacityOf(id)));
+    panesRef.current.forEach((pane, id) => {
+      pane.style.opacity = String(opacityOf(id));
+    });
+  }, [opacityOf]);
 
   // Compute available timestamps from layers without inventing synthetic values
   const availableTimes = useMemo(() => {
@@ -175,30 +270,21 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
-    const currentLayerIdSet = new Set(layers.map((l) => l.id || l.layer_id));
+    const ids = layers.map(layerIdOf);
+    const key = ids.slice().sort().join("|");
+    // Same id set (re-render / stream update): keep the user's toggles.
+    if (key === layerKeyRef.current) return;
+    layerKeyRef.current = key;
 
-    setActiveLayerIds((prev) => {
-      // 1. Preserve user-controlled preferences for layers that still exist
-      const preserved = prev.filter((id) => currentLayerIdSet.has(id));
-
-      if (preserved.length > 0) {
-        return preserved;
-      }
-
-      // 2. Otherwise respect visualizationPlan.active_layers if supplied
-      if (visualizationPlan?.active_layers && visualizationPlan.active_layers.length > 0) {
-        const planned = visualizationPlan.active_layers.filter((id) =>
-          currentLayerIdSet.has(id)
-        );
-        if (planned.length > 0) {
-          return planned;
-        }
-      }
-
-      // 3. Fallback: activate only relevant layers marked visible_by_default
-      const defaults = layers.filter((l) => l.visible_by_default).map((l) => l.id || l.layer_id);
-      return defaults.length > 0 ? defaults : [layers[0].id || layers[0].layer_id];
-    });
+    // 1. visible_by_default from the envelope
+    const defaults = layers.filter((l) => l.visible_by_default).map(layerIdOf);
+    if (defaults.length > 0) {
+      setActiveLayerIds(defaults);
+      return;
+    }
+    // 2. Legacy: visualizationPlan.active_layers
+    const planned = (visualizationPlan?.active_layers || []).filter((id) => ids.includes(id));
+    setActiveLayerIds(planned.length > 0 ? planned : [ids[0]]);
   }, [layers, visualizationPlan]);
 
   // Initialize Leaflet Map — Map instance remains persistent (NEVER recreated)
@@ -208,7 +294,7 @@ export const MapView: React.FC<MapViewProps> = ({
     const L = require("leaflet");
 
     const initialLat = visualizationPlan?.center_lat || 16.5;
-    const initialLon = visualizationPlan?.center_lon || 82.5;
+    const initialLon = visualizationPlan?.center_lon || 83.0;
     const initialZoom = visualizationPlan?.default_zoom || 7;
 
     const map = L.map(mapContainerRef.current, {
@@ -220,7 +306,7 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     const basemapConfig = KEYLESS_BASEMAPS[currentBasemap];
-    const tileLayer = L.tileLayer(basemapConfig.url, basemapConfig.options).addTo(map);
+    const tileLayer = createBasemap(L, basemapConfig).addTo(map);
 
     // Zoom controls in bottom right
     L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -302,19 +388,43 @@ export const MapView: React.FC<MapViewProps> = ({
     map.removeLayer(tileLayerRef.current);
 
     const config = KEYLESS_BASEMAPS[key];
-    const newTileLayer = L.tileLayer(config.url, config.options).addTo(map);
+    const newTileLayer = createBasemap(L, config).addTo(map);
     tileLayerRef.current = newTileLayer;
   };
 
-  // Center/fly map when visualizationPlan updates
+  // Fly/fit to new query content without remounting: geojson feature bounds first,
+  // then the plan's centre, else keep the current view. Bootstrap layers never move the view.
   useEffect(() => {
-    if (!mapInstanceRef.current || !visualizationPlan) return;
-    mapInstanceRef.current.flyTo(
-      [visualizationPlan.center_lat, visualizationPlan.center_lon],
-      visualizationPlan.default_zoom || 7,
-      { duration: 1.2 }
+    const map = mapInstanceRef.current;
+    if (!map || !hasQueryLayers) return;
+    const L = require("leaflet");
+    // ponytail: points/lines are query content, polygons are usually reference (MPAs);
+    // prefer the former so a Kakinada query doesn't zoom out to the whole coast.
+    const pts: [number, number][] = [];
+    const polyPts: [number, number][] = [];
+    const walk = (c: any, out: [number, number][]) => {
+      if (!Array.isArray(c)) return;
+      if (typeof c[0] === "number") out.push([c[1], c[0]]);
+      else c.forEach((x) => walk(x, out));
+    };
+    (propLayers || []).forEach((l) =>
+      l.features?.forEach((f: any) => {
+        if (!f?.geometry?.coordinates) return;
+        walk(f.geometry.coordinates, /polygon/i.test(f.geometry.type) ? polyPts : pts);
+      })
     );
-  }, [visualizationPlan?.center_lat, visualizationPlan?.center_lon, visualizationPlan?.default_zoom]);
+    const target = pts.length ? pts : polyPts;
+    if (target.length) {
+      map.flyToBounds(L.latLngBounds(target).pad(0.2), { maxZoom: 9, duration: 1.2 });
+    } else if (visualizationPlan?.center_lat && visualizationPlan?.center_lon) {
+      map.flyTo(
+        [visualizationPlan.center_lat, visualizationPlan.center_lon],
+        visualizationPlan.default_zoom || 7,
+        { duration: 1.2 }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propLayers]);
 
   // Evidence drawer "View on map"
   useEffect(() => {
@@ -366,7 +476,7 @@ export const MapView: React.FC<MapViewProps> = ({
               layers: wmsLayerName,
               format: "image/png",
               transparent: true,
-              opacity: 0.75,
+              opacity: opacityOf(layerId),
               attribution: layer.attribution || "",
               ...(layer.wms_params || {}),
             });
@@ -393,6 +503,7 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!mapInstanceRef.current || !overlayGroupRef.current) return;
     const L = require("leaflet");
+    const map = mapInstanceRef.current;
     const group = overlayGroupRef.current;
     group.clearLayers();
 
@@ -406,6 +517,17 @@ export const MapView: React.FC<MapViewProps> = ({
 
       // Skip WMS layers (they are handled in the WMS effect above)
       if (kind === "wms") return;
+
+      // One pane per layer (nested in overlayPane) so opacity is a single CSS write.
+      const paneName = `orca-${layerId}`;
+      let pane: HTMLElement = map.getPane(paneName);
+      if (!pane) pane = map.createPane(paneName, map.getPane("overlayPane"));
+      pane.style.opacity = String(opacityOf(layerId));
+      panesRef.current.set(layerId, pane);
+      const add = (lyr: any) => {
+        lyr.options.pane = paneName;
+        group.addLayer(lyr);
+      };
 
       // Handle unsupported layer kinds gracefully
       if (kind === "unsupported" || (!layer.features && !layer.temporal_features && !layer.geojson)) {
@@ -451,7 +573,7 @@ export const MapView: React.FC<MapViewProps> = ({
               fillColor: layer.color || "#ff9f1c",
               fillOpacity: 0.12,
             });
-            group.addLayer(outerGlow);
+            add(outerGlow);
 
             // Core concentration circle
             const coreCircle = L.circle([lat, lon], {
@@ -465,10 +587,10 @@ export const MapView: React.FC<MapViewProps> = ({
               <div class="p-2 text-xs space-y-1">
                 <div class="font-bold text-sm text-amber-400">🔥 ${layer.name || "Heatmap Hotspot"}</div>
                 <div>Density Weight: <b>${weight}</b></div>
-                <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat}°N, Lon: ${lon}°E</div>
+                <div class="text-[10px] text-slate-400 num font-mono tabular-nums">Lat: ${lat}°N, Lon: ${lon}°E</div>
               </div>
             `);
-            group.addLayer(coreCircle);
+            add(coreCircle);
           }
         });
         return;
@@ -518,10 +640,10 @@ export const MapView: React.FC<MapViewProps> = ({
                   ${isOrigin ? '⚓ Departure Terminal' : '🏁 Destination Port'}: ${properties.name}
                 </div>
                 <div class="text-slate-300">Passage Endpoint Coordinate</div>
-                <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat}°N, Lon: ${lon}°E</div>
+                <div class="text-[10px] text-slate-400 num font-mono tabular-nums">Lat: ${lat}°N, Lon: ${lon}°E</div>
               </div>
             `);
-            group.addLayer(marker);
+            add(marker);
           } else if (properties.type === "displacement_origin") {
             // Spatial What-If: Origin Marker
             const originPin = L.divIcon({
@@ -554,10 +676,10 @@ export const MapView: React.FC<MapViewProps> = ({
                   📍 Origin Reference: ${properties.name || "Location A"}
                 </div>
                 <div class="text-slate-300">Displacement Baseline Point</div>
-                <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
+                <div class="text-[10px] text-slate-400 num font-mono tabular-nums">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
               </div>
             `);
-            group.addLayer(marker);
+            add(marker);
           } else if (properties.type === "displacement_target") {
             // Spatial What-If: Displaced Target Marker
             const targetPin = L.divIcon({
@@ -590,10 +712,10 @@ export const MapView: React.FC<MapViewProps> = ({
                   🎯 Displaced Target Coordinate
                 </div>
                 <div class="text-slate-300">Offset: <b>${properties.distance_km || properties.displacement_km || "--"} km</b> heading <b>${properties.direction || "--"}</b> (${shown(properties.bearing_deg ?? properties.bearing, "°")})</div>
-                <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
+                <div class="text-[10px] text-slate-400 num font-mono tabular-nums">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
               </div>
             `);
-            group.addLayer(marker);
+            add(marker);
           } else if (properties.type === "target_center") {
             // Target Center Radius Circle
             const circle = L.circle([lat, lon], {
@@ -608,10 +730,10 @@ export const MapView: React.FC<MapViewProps> = ({
               <div class="p-2 text-xs">
                 <div class="font-bold text-sm text-cyan-400 mb-1">🎯 ${properties.title || "Target Center"}</div>
                 <div class="text-slate-300">Coordinated Analysis Radius: <b>${properties.radius_km || 40} km</b></div>
-                <div class="text-[10px] text-slate-400 font-mono mt-1">Lat: ${lat}°N, Lon: ${lon}°E</div>
+                <div class="text-[10px] text-slate-400 num font-mono tabular-nums mt-1">Lat: ${lat}°N, Lon: ${lon}°E</div>
               </div>
             `);
-            group.addLayer(circle);
+            add(circle);
 
             // Center Pin Marker
             const marker = L.circleMarker([lat, lon], {
@@ -621,7 +743,7 @@ export const MapView: React.FC<MapViewProps> = ({
               fillColor: "#00f5d4",
               fillOpacity: 1,
             });
-            group.addLayer(marker);
+            add(marker);
           } else if (properties.type === "route_waypoint") {
             // Segment Risk Sampling Waypoint Marker
             const isMpa = properties.inside_mpa;
@@ -657,7 +779,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 }
               </div>
             `);
-            group.addLayer(wpMarker);
+            add(wpMarker);
           } else if (properties.zone_id || properties.rank !== undefined) {
             // Potential Fishing Zone Marker
             const isMpa = properties.within_mpa;
@@ -712,7 +834,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 }
               </div>
             `);
-            group.addLayer(marker);
+            add(marker);
           } else if (properties.wave_height_m !== undefined) {
             // Wave hazard circle
             const circle = L.circle([lat, lon], {
@@ -728,10 +850,10 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div>Significant Wave Height: <b>${properties.wave_height_m}m</b></div>
                 <div>Sea State: <b>${shown(properties.sea_state)}</b></div>
                 <div>Hazard Category: <b>${shown(properties.risk_level)}</b></div>
-                ${properties.timestamp ? `<div class="text-[10px] text-slate-400 font-mono mt-1">Time: ${properties.timestamp}</div>` : ""}
+                ${properties.timestamp ? `<div class="text-[10px] text-slate-400 num font-mono tabular-nums mt-1">Time: ${properties.timestamp}</div>` : ""}
               </div>
             `);
-            group.addLayer(circle);
+            add(circle);
           }
         }
 
@@ -760,7 +882,7 @@ export const MapView: React.FC<MapViewProps> = ({
               <div class="text-[9px] text-slate-500 mt-1">Authority: ${shown(properties.authority)}</div>
             </div>
           `);
-          group.addLayer(poly);
+          add(poly);
         }
 
         // 3. LINESTRING FEATURES (Vessel transit passage corridors & Displacement Vectors)
@@ -785,7 +907,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div>Origin: <b>${properties.origin || "Location A"}</b></div>
               </div>
             `);
-            group.addLayer(vectorLine);
+            add(vectorLine);
             return;
           }
 
@@ -828,12 +950,13 @@ export const MapView: React.FC<MapViewProps> = ({
               ${properties.trade_offs ? `<div class="text-[10px] text-slate-400 pt-1 border-t border-slate-700/60">${properties.trade_offs}</div>` : ''}
             </div>
           `);
-          group.addLayer(line);
+          add(line);
         }
       });
     });
 
     setNoDataForSelectedTime(missingDynamicDataFound);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layers, activeLayerIds, selectedTime]);
 
   const toggleLayer = useCallback((layerId: string) => {
@@ -842,13 +965,23 @@ export const MapView: React.FC<MapViewProps> = ({
     );
   }, []);
 
+  const setLayerOpacity = useCallback((layerId: string, value: number) => {
+    setOpacities((prev) => ({ ...prev, [layerId]: Math.max(0, Math.min(100, value)) }));
+  }, []);
+
   return (
-    <div className="relative w-full h-full min-h-[400px] flex flex-col bg-orca-darkest rounded-xl overflow-hidden border border-orca-border shadow-card">
+    <div
+      className="relative w-full h-full min-h-[400px] flex flex-col rounded-xl overflow-hidden"
+      style={{ background: P.base, border: `1px solid ${HAIRLINE}` }}
+    >
       {/* 1. Integrated Maritime Map Header Bar */}
-      <div className="h-10 bg-orca-panel/90 backdrop-blur border-b border-orca-border/70 px-3 flex items-center justify-between z-20 flex-shrink-0 text-xs">
+      <div
+        className="h-10 px-3 flex items-center justify-between z-20 flex-shrink-0 text-xs"
+        style={{ background: "rgba(10,36,50,0.85)", borderBottom: `1px solid ${HAIRLINE}`, backdropFilter: "blur(6px)" }}
+      >
         <div className="flex items-center gap-2.5">
           {selectedCoord ? (
-            <div className="text-[11px] text-slate-300 font-mono flex items-center gap-1.5">
+            <div className={`text-[11px] text-slate-300 ${NUM} flex items-center gap-1.5`}>
               <MapPin className="w-3 h-3 text-orca-cyan" />
               <span>{selectedCoord.lat.toFixed(3)}°N, {selectedCoord.lon.toFixed(3)}°E</span>
             </div>
@@ -864,7 +997,10 @@ export const MapView: React.FC<MapViewProps> = ({
         {/* Map Header Controls: Basemap & Expandable Layer Control */}
         <div className="flex items-center gap-2">
           {/* Basemap Switcher */}
-          <div className="bg-orca-dark/80 border border-orca-border rounded-lg p-0.5 flex items-center gap-0.5 text-[10px]">
+          <div
+            className="rounded-lg p-0.5 flex items-center gap-0.5 text-[10px]"
+            style={{ background: "rgba(10,36,50,0.85)", border: `1px solid ${HAIRLINE}` }}
+          >
             {(Object.keys(KEYLESS_BASEMAPS) as BasemapKey[]).map((key) => {
               const config = KEYLESS_BASEMAPS[key];
               const Icon = config.icon;
@@ -873,11 +1009,8 @@ export const MapView: React.FC<MapViewProps> = ({
                 <button
                   key={key}
                   onClick={() => switchBasemap(key)}
-                  className={`px-2 py-0.5 rounded-md transition font-medium flex items-center gap-1 ${
-                    isActive
-                      ? "bg-orca-cyan text-orca-darkest font-bold shadow-xs"
-                      : "text-orca-muted hover:text-white"
-                  }`}
+                  className="px-2 py-0.5 rounded-md transition font-medium flex items-center gap-1"
+                  style={isActive ? { background: P.accent, color: P.base, fontWeight: 700 } : { color: P.muted }}
                   title={config.name}
                 >
                   <Icon className="w-2.5 h-2.5" />
@@ -892,6 +1025,9 @@ export const MapView: React.FC<MapViewProps> = ({
             layers={layers}
             activeLayerIds={activeLayerIds}
             onToggleLayer={toggleLayer}
+            opacities={opacities}
+            onOpacityChange={setLayerOpacity}
+            statuses={layerStatuses}
             isOpen={showLayerMenu}
             onToggleOpen={() => setShowLayerMenu(!showLayerMenu)}
           />
@@ -919,7 +1055,7 @@ export const MapView: React.FC<MapViewProps> = ({
         )}
 
         {/* Clarification State: Subtle neutral "awaiting input" overlay */}
-        {visualizationPlan?.result_type === "clarification" && layers.length === 0 && (
+        {visualizationPlan?.result_type === "clarification" && !hasQueryLayers && (
           <div className="absolute inset-0 z-15 flex items-center justify-center pointer-events-none">
             <div className="bg-orca-panel/90 backdrop-blur border border-orca-border/80 rounded-xl px-5 py-3.5 shadow-2xl text-center max-w-xs pointer-events-auto">
               <div className="flex items-center justify-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1.5">
