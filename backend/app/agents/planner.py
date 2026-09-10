@@ -9,7 +9,12 @@ from app.models.schemas import (
     ConstraintModel,
 )
 from app.agents.intent import classify_intent
-from app.geospatial.boundaries import resolve_location, location_from_coordinates, INDIAN_COASTAL_NODES
+from app.geospatial.boundaries import (
+    INDIAN_COASTAL_NODES,
+    location_from_coordinates,
+    nearest_other_harbor,
+    resolve_location,
+)
 from app.geospatial.calculations import destination_point
 from app.utils.temporal import parse_temporal_context
 from app.utils.multilingual import detect_language, LANGUAGE_CODES
@@ -51,6 +56,9 @@ class OrcaPlanner:
         loc_from_ref = ConversationalReferenceResolver.resolve_location_reference(query_text, conversation_context)
 
         needs_clarification = False
+        # Set when ORCA chose the route destination rather than being told it,
+        # so the response can say so and the user can override.
+        route_destination_inferred: Optional[str] = None
         clarification_question: Optional[str] = None
         missing_information: List[str] = []
         origin_location: Optional[LocationContext] = None
@@ -133,6 +141,26 @@ class OrcaPlanner:
                 if origin_location is None:
                     origin_location = fallback_loc
 
+                # A route query that names no destination is still answerable
+                # when one can be inferred: the vessel is somewhere, and the
+                # nearest other harbour is the shortest real passage from it.
+                # The inference is recorded so the response can say plainly
+                # that ORCA chose the destination, and the user can override it
+                # by naming a port. Canonical query 6 -- "the safest route for
+                # a fishing vessel considering weather and sea state" -- names
+                # no ports and reached this branch, and returning a
+                # clarification to it was the whole of its failure.
+                inferred_destination = False
+                if destination_location is None and origin_location is not None:
+                    inferred = nearest_other_harbor(
+                        origin_location.latitude,
+                        origin_location.longitude,
+                        exclude_name=origin_location.name,
+                    )
+                    if inferred is not None:
+                        destination_location = inferred
+                        inferred_destination = True
+
                 missing = []
                 if origin_location is None:
                     missing.append("departure port or coordinates")
@@ -151,6 +179,8 @@ class OrcaPlanner:
                 else:
                     location = origin_location
                     secondary_location = destination_location
+                    if inferred_destination:
+                        route_destination_inferred = destination_location.name
 
             elif intent == QueryIntent.SPATIAL_WHAT_IF:
                 origin_location, displaced_location, dist_km, direction, bearing = self._extract_displacement_params(
@@ -240,6 +270,7 @@ class OrcaPlanner:
             "location": location,
             "origin_location": origin_location,
             "destination_location": destination_location,
+            "route_destination_inferred": route_destination_inferred,
             "secondary_location": secondary_location,
             "displaced_location": displaced_location,
             "displacement_distance_km": dist_km,

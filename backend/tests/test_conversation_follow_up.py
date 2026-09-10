@@ -62,19 +62,31 @@ async def test_five_turn_conversation_sequence():
     assert "Visakhapatnam" in ra2.destination.name
     # Alternative route is now selected
     assert ra2.selected_route_id == "alternative"
-    assert ra2.total_distance_km == 129.0
-    # The band is the risk engine's call, not the agent's. What is deterministic
-    # here: the sanctuary crossing is a named factor in the breakdown, it is the
-    # only thing separating the two corridors, and the breakdown sums to the score.
     alt = next(c for c in ra2.candidate_routes if c.id == "alternative")
     rec = next(c for c in ra2.candidate_routes if c.id == "recommended")
-    geofence = [f for f in alt.risk_factors if "Geofence" in f.name]
-    assert len(geofence) == 1 and geofence[0].points_added > 0
-    assert alt.risk_score - rec.risk_score == geofence[0].points_added
+
+    # The selected corridor's distance is the selected candidate's distance,
+    # whatever that is. This used to assert a literal 129.0, which only held
+    # because a corridor passing within 35 km of the Coringa sanctuary was
+    # counted as crossing it: that made the detour the recommended route and
+    # the direct line the alternative. Passing near a sanctuary is not
+    # transiting one, so Kakinada to Visakhapatnam now crosses nothing, the
+    # direct line is recommended, and the offshore corridor is the alternative.
+    assert ra2.total_distance_km == alt.distance_km
+
+    # Neither corridor crosses anything, so neither may carry a geofence
+    # penalty or a legal-violation claim.
+    assert ra2.crosses_protected_waters is False
+    assert not [f for f in alt.risk_factors if "Geofence" in f.name], (
+        "a geofence penalty on a corridor that crosses no sanctuary"
+    )
+    assert alt.risk_score == rec.risk_score, (
+        "two corridors under the same forecast, neither crossing anything, "
+        "scored differently"
+    )
+    # The breakdown still sums to the score, whichever corridor is selected.
     assert sum(f.points_added for f in alt.risk_factors) == alt.risk_score
     assert ra2.overall_route_risk == alt.marine_risk
-    assert ra2.overall_route_risk.value in ("MODERATE", "HIGH", "SEVERE")
-    assert ra2.crosses_protected_waters is True
     # Has trade-off comparison data
     assert t2_res.route_comparison is not None
     assert len(t2_res.route_comparison.metrics) >= 4
@@ -110,7 +122,7 @@ async def test_five_turn_conversation_sequence():
     # =========================================================================
     # TURN 4: Relative Temporal Shift on Selected Alternative Route
     # "What if I leave two hours later?"
-    # MUST evaluate selected alternative route (129 km, NOT revert to 140.6 km)
+    # MUST stay on the selected alternative corridor, not revert to the recommended one
     # =========================================================================
     t4_text = "What if I leave two hours later?"
     t4_req = UserQueryRequest(query=t4_text, conversation_id=conv_id)
@@ -121,10 +133,17 @@ async def test_five_turn_conversation_sequence():
     ra4 = t4_res.route_analysis
     assert "Kakinada" in ra4.origin.name
     assert "Visakhapatnam" in ra4.destination.name
-    # CRITICAL: selected_route_id remains alternative and distance remains 129.0 km
+    # CRITICAL: the selection survives the temporal shift, and the distance
+    # reported is still the selected corridor's own, not the other one's.
     assert ra4.selected_route_id == "alternative"
-    assert ra4.total_distance_km == 129.0
-    assert ra4.crosses_protected_waters is True
+    alt4 = next(c for c in ra4.candidate_routes if c.id == "alternative")
+    rec4 = next(c for c in ra4.candidate_routes if c.id == "recommended")
+    assert ra4.total_distance_km == alt4.distance_km
+    assert ra4.total_distance_km != rec4.distance_km, (
+        "the two corridors report the same distance, so this proves nothing "
+        "about which one is selected"
+    )
+    assert ra4.crosses_protected_waters is False
     # Temporal horizon shifted
     assert t4_res.temporal.offset_hours == 26  # 24h tomorrow morning baseline + 2h
     assert "Selected Alternative Corridor" in t4_res.executive_summary

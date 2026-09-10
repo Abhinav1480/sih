@@ -1,4 +1,41 @@
 # Operational Assumptions, Limitations & Safety Disclaimers
+## Vessel routing is geometric, not optimised
+
+`app/geospatial/routing.py` builds a **great-circle path**, samples it every
+5 km, and intersects every segment against the real marine protected area
+polygons with Shapely. When the direct path is blocked it displaces the
+midpoint perpendicular to the track by the smallest offset that actually
+clears every polygon, and returns that. If no offset up to 150 km clears, it
+returns nothing and the response says so.
+
+**What it is not.** It does not search a cost surface. It knows nothing about
+bathymetry, currents, traffic separation schemes, fuel, vessel draught or
+weather routing, and it does not claim the corridor it returns is optimal in
+any sense — only that it is a real path whose length is the sum of its own legs
+and whose protected-water status has been tested rather than asserted. A* over
+a bathymetric cost raster is the real thing and it is future work.
+
+**What it replaced.** The previous route was a straight line whose "safe
+offshore corridor" was three hardcoded coordinate offsets, a length of
+`direct × 1.09`, and `crosses_protected_waters = False` written as a literal —
+on a corridor that ended inside the Gulf of Mannar. Nothing about that detour
+had ever been tested against anything.
+
+**Proximity is not a crossing.** A corridor passing within 35 km of a sanctuary
+used to set `crosses_protected_waters`, which made the risk engine attach
+"Wildlife Protection Act: transiting X constitutes a legal violation" to a route
+that never entered it. Sailing 34 km outside a sanctuary is not a legal
+violation. Nearby zones are now reported as proximity, with the real distance
+and no penalty. This is the same defect class as P0-3, where a fisherman's own
+home port tested as inside an MPA.
+
+**Destination inference.** A route query that names no destination is answered
+to the nearest harbour other than the departure point, and the response says so
+in `meta.limitations` so the user can name a port instead. Canonical query 6
+names no ports and had never been answerable.
+
+---
+
 ## ORCA Decision Support System: SIH 2026 PS 26176
 
 To uphold absolute technical honesty in front of SIH judges, this document outlines the operational boundaries, scientific assumptions, and limitations of the ORCA platform.

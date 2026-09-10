@@ -16,7 +16,34 @@ from app.geospatial.calculations import (
     destination_point,
 )
 from app.geospatial.protected_areas import check_point_in_mpa, check_route_crosses_mpa, get_nearest_mpa
+from app.geospatial.routing import detour_route, direct_route, path_length_km
 from app.risk.engine import calculate_marine_risk
+
+# How many named waypoints a route reports. The path itself is sampled every
+# 5 km for the crossing test and for its length; this is only how much of it is
+# given a name and a per-segment risk, so a 600 km passage does not return 120
+# rows nobody reads.
+REPORTED_WAYPOINTS = 9
+
+
+def _sample_with_distance(points: List[Tuple[float, float]]) -> List[Tuple[float, float, float]]:
+    """Evenly spaced samples of a tested path, each with its along-track distance.
+
+    The distance is measured along the real path, so a detour's waypoints are
+    at their true distances rather than at fractions of the straight line.
+    """
+    if not points:
+        return []
+    cumulative = [0.0]
+    for i in range(len(points) - 1):
+        cumulative.append(cumulative[-1] + path_length_km(points[i:i + 2]))
+    if len(points) <= REPORTED_WAYPOINTS:
+        chosen = range(len(points))
+    else:
+        step = (len(points) - 1) / (REPORTED_WAYPOINTS - 1)
+        chosen = [min(len(points) - 1, int(round(i * step))) for i in range(REPORTED_WAYPOINTS)]
+    return [(points[i][0], points[i][1], round(cumulative[i], 1)) for i in chosen]
+
 
 def _fmt(value, unit: str) -> str:
     return "unavailable" if value is None else f"{value} {unit}"
@@ -41,18 +68,21 @@ class VesselAgent(BaseSpecialistAgent):
         origin: LocationContext = context.get("origin_location") or context["location"]
         dest: LocationContext = context.get("destination_location") or context.get("secondary_location") or origin
 
-        # Generate intermediate route waypoints for direct route
-        dist_km = haversine_distance(origin.latitude, origin.longitude, dest.latitude, dest.longitude)
+        # The direct route is a real great circle, sampled finely enough that a
+        # segment cannot step over a sanctuary between samples, and tested
+        # against every MPA polygon by Shapely. Its length is the sum of its own
+        # legs; there is no multiplier anywhere in this agent.
+        direct_path = direct_route(
+            origin.latitude, origin.longitude, dest.latitude, dest.longitude
+        )
+        dist_km = direct_path.length_km
         bearing = initial_bearing(origin.latitude, origin.longitude, dest.latitude, dest.longitude)
 
-        num_points = 5
+        direct_coords: List[Tuple[float, float]] = list(direct_path.points)
+        mpas_hit: List[str] = list(direct_path.protected_area_names)
+        crosses_mpa = direct_path.crosses_protected_waters
+
         direct_waypoints: List[RouteWaypoint] = []
-        direct_coords: List[Tuple[float, float]] = []
-
-        crosses_mpa = False
-        mpas_hit = []
-
-        step_dist = dist_km / (num_points - 1) if dist_km > 0 else 0.0
 
         # Forecast conditions along the corridor. One observation covers the
         # whole passage; a missing feed stays missing rather than becoming a
@@ -72,17 +102,17 @@ class VesselAgent(BaseSpecialistAgent):
 
         clear_water = assess()
 
-        for i in range(num_points):
-            cur_dist = i * step_dist
-            pt_lat, pt_lon = destination_point(origin.latitude, origin.longitude, cur_dist, bearing)
-            direct_coords.append((pt_lat, pt_lon))
-
+        # Named waypoints are a readable sample of the tested path. The crossing
+        # test above, and the stated length, use every point of it.
+        for i, (pt_lat, pt_lon, cur_dist) in enumerate(_sample_with_distance(direct_coords)):
             in_mpa, mpa_info = check_point_in_mpa(pt_lat, pt_lon)
             if in_mpa and mpa_info:
                 crosses_mpa = True
                 if mpa_info["name"] not in mpas_hit:
                     mpas_hit.append(mpa_info["name"])
 
+            # Every segment risk in this agent comes from calculate_marine_risk
+            # via assess(). There is no second scoring formula.
             seg_risk = (
                 assess(inside=True, inside_name=mpa_info["name"]).category
                 if in_mpa and mpa_info else clear_water.category
@@ -99,49 +129,79 @@ class VesselAgent(BaseSpecialistAgent):
                 restriction_detail=f"Inside {mpa_info['name']}" if in_mpa else None
             ))
 
-        # Check line-polygon intersection with MPAs
-        route_crossings = check_route_crosses_mpa(direct_coords)
-        for r_mpa in route_crossings:
-            crosses_mpa = True
-            if r_mpa["name"] not in mpas_hit:
-                mpas_hit.append(r_mpa["name"])
-
-        # Check proximity to MPAs along corridor (< 35 km sanctuary buffer zone)
+        # Proximity to a sanctuary is NOT a crossing, and must not be scored as
+        # one. This used to set crosses_mpa, which made the risk engine attach
+        # "Wildlife Protection Act: transiting X constitutes a legal violation"
+        # to a corridor passing 34 km outside a sanctuary it never entered --
+        # the same defect as P0-3, which had a fisherman's own home port
+        # testing as inside an MPA. Nearby zones are now reported as proximity,
+        # with no penalty and no legal claim.
         constraints = context.get("constraints")
         avoid_req = constraints.avoid_protected_areas if constraints else False
+        buffer_km = 60.0 if avoid_req else 35.0
+        nearby_mpas: List[str] = []
+        nearest_mpa_km: float = float("inf")
         for pt_lat, pt_lon in direct_coords:
             n_mpa, d_km = get_nearest_mpa(pt_lat, pt_lon)
-            if d_km < 35.0 or (avoid_req and d_km < 60.0):
-                crosses_mpa = True
-                if n_mpa["name"] not in mpas_hit:
-                    mpas_hit.append(n_mpa["name"])
+            nearest_mpa_km = min(nearest_mpa_km, d_km)
+            if d_km < buffer_km and n_mpa["name"] not in mpas_hit and n_mpa["name"] not in nearby_mpas:
+                nearby_mpas.append(n_mpa["name"])
 
         direct_dist = round(dist_km, 1)
         direct_transit = round(dist_km / 18.5, 1)
         direct_risk = assess(crosses=crosses_mpa, areas=mpas_hit) if crosses_mpa else clear_water
-        direct_mpa_exp = f"Intersects {', '.join(mpas_hit)}" if crosses_mpa else "None (Cleared)"
+        if crosses_mpa:
+            direct_mpa_exp = f"Intersects {', '.join(mpas_hit)}"
+        elif nearby_mpas:
+            direct_mpa_exp = (
+                f"No crossing; passes within {nearest_mpa_km:.0f} km of "
+                f"{', '.join(nearby_mpas)}"
+            )
+        else:
+            direct_mpa_exp = "None (Cleared)"
 
-        # Safe Offshore Detour Route (Detour avoiding sanctuary buffer)
-        alt_coords: List[List[float]] = [
-            [origin.longitude, origin.latitude],
-            [origin.longitude + 0.32, origin.latitude + 0.12],
-            [(origin.longitude + dest.longitude) / 2 + 0.22, (origin.latitude + dest.latitude) / 2],
-            [dest.longitude, dest.latitude]
-        ]
-        detour_dist = round(dist_km * 1.09, 1)
-        detour_transit = round(detour_dist / 18.5, 1)
+        # The offshore alternative is a real dog-leg: the midpoint of the direct
+        # track displaced perpendicular to it by the smallest offset that
+        # actually clears every polygon, tested the same way the direct route
+        # was. It used to be three hardcoded coordinate offsets, a length of
+        # `direct * 1.09`, and `crosses_protected_waters=False` written beside
+        # them -- on a corridor that ended inside the Gulf of Mannar. Nothing
+        # here is asserted: when no offset clears, detour_path is None and that
+        # is reported rather than papered over.
+        detour_path = detour_route(
+            origin.latitude, origin.longitude, dest.latitude, dest.longitude
+        )
+        detour_available = detour_path is not None
+        detour_coords_pts = list(detour_path.points) if detour_available else list(direct_coords)
+        detour_dist = detour_path.length_km if detour_available else dist_km
+        detour_transit = round(detour_dist / 18.5, 1) if detour_dist else 0.0
+        alt_coords: List[List[float]] = [[lon, lat] for lat, lon in detour_coords_pts]
+
         detour_waypoints: List[RouteWaypoint] = []
-        for idx, (c_lon, c_lat) in enumerate(alt_coords):
+        for idx, (c_lat, c_lon, _d) in enumerate(_sample_with_distance(detour_coords_pts)):
+            d_in_mpa, d_mpa = check_point_in_mpa(c_lat, c_lon)
             detour_waypoints.append(RouteWaypoint(
                 name=f"Offshore Waypoint {idx+1}",
                 latitude=c_lat,
                 longitude=c_lon,
-                segment_risk=clear_water.category,
+                segment_risk=(
+                    assess(inside=True, inside_name=d_mpa["name"]).category
+                    if d_in_mpa and d_mpa else clear_water.category
+                ),
                 wave_height_m=base_wave,
                 wind_knots=base_wind,
-                inside_restricted_zone=False,
-                restriction_detail=None
+                inside_restricted_zone=d_in_mpa,
+                restriction_detail=f"Inside {d_mpa['name']}" if d_in_mpa else None
             ))
+
+        # Computed from the tested geometry, never asserted.
+        detour_crosses = (not detour_available) or detour_path.crosses_protected_waters
+        detour_areas = list(detour_path.protected_area_names) if detour_available else list(mpas_hit)
+        detour_exposure = (
+            "None (Cleared - 0 violations)" if not detour_crosses
+            else f"Intersects {', '.join(detour_areas)}" if detour_areas
+            else "No clear offshore alternative was found within 150 km of the direct track"
+        )
 
         target_corridor = (
             context.get("selected_route_id") or
@@ -165,10 +225,18 @@ class VesselAgent(BaseSpecialistAgent):
                 risk_factors=clear_water.contributing_factors,
                 wave_exposure_m=base_wave,
                 wind_exposure_knots=base_wind,
-                protected_area_exposure="None (Cleared - 0 violations)",
-                crosses_protected_waters=False,
-                protected_areas=[],
-                trade_offs=f"+{round(detour_dist - direct_dist, 1)} km distance (+{round(detour_transit - direct_transit, 1)}h transit) in exchange for zero sanctuary violation. Same forecast conditions along both corridors.",
+                protected_area_exposure=detour_exposure,
+                crosses_protected_waters=detour_crosses,
+                protected_areas=detour_areas,
+                trade_offs=(
+                    f"+{round(detour_dist - direct_dist, 1)} km distance "
+                    f"(+{round(detour_transit - direct_transit, 1)}h transit), routed "
+                    f"{detour_path.offset_km:.0f} km off the direct track, in exchange for "
+                    f"zero sanctuary violation. Same forecast conditions along both corridors."
+                ) if detour_available else (
+                    "No offset up to 150 km from the direct track clears every protected area; "
+                    "this corridor is the direct route and it does cross."
+                ),
                 is_recommended=True,
                 is_selected=not is_alt_selected,
                 waypoints=detour_waypoints,
@@ -185,7 +253,8 @@ class VesselAgent(BaseSpecialistAgent):
                 wave_exposure_m=base_wave,
                 wind_exposure_knots=base_wind,
                 protected_area_exposure=direct_mpa_exp,
-                crosses_protected_waters=True,
+                # From the geometry test, like every other flag here.
+                crosses_protected_waters=crosses_mpa,
                 protected_areas=mpas_hit,
                 trade_offs=f"Saves {round(detour_dist - direct_dist, 1)} km and ~{int((detour_transit - direct_transit)*60)} mins, but intersects {', '.join(mpas_hit)}: {direct_risk.category.value} risk, {direct_risk.overall_score}/100.",
                 is_recommended=False,
@@ -225,9 +294,9 @@ class VesselAgent(BaseSpecialistAgent):
                 risk_factors=clear_water.contributing_factors,
                 wave_exposure_m=base_wave,
                 wind_exposure_knots=base_wind,
-                protected_area_exposure="None (Cleared)",
-                crosses_protected_waters=False,
-                protected_areas=[],
+                protected_area_exposure=direct_mpa_exp,
+                crosses_protected_waters=crosses_mpa,
+                protected_areas=mpas_hit,
                 trade_offs="Direct passage; no restricted zone on the corridor.",
                 is_recommended=True,
                 is_selected=not is_alt_selected,
@@ -244,10 +313,14 @@ class VesselAgent(BaseSpecialistAgent):
                 risk_factors=clear_water.contributing_factors,
                 wave_exposure_m=base_wave,
                 wind_exposure_knots=base_wind,
-                protected_area_exposure="None (Cleared)",
-                crosses_protected_waters=False,
-                protected_areas=[],
-                trade_offs="+9% distance for an offshore alternative; same forecast conditions along both corridors.",
+                protected_area_exposure=detour_exposure,
+                crosses_protected_waters=detour_crosses,
+                protected_areas=detour_areas,
+                trade_offs=(
+                    f"+{round(detour_dist - dist_km, 1)} km over the direct passage "
+                    f"({detour_path.offset_km:.0f} km offshore of the direct track); "
+                    f"same forecast conditions along both corridors."
+                ) if detour_available else "No clear offshore alternative was found.",
                 is_recommended=False,
                 is_selected=is_alt_selected,
                 waypoints=detour_waypoints,

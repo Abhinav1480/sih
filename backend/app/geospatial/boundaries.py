@@ -307,3 +307,37 @@ def find_nearest_harbor(lat: float, lon: float) -> Tuple[str, float]:
             min_dist = d
             best_port = node["nearest_port"]
     return best_port, round(min_dist, 1)
+
+
+def nearest_other_harbor(
+    lat: float, lon: float, exclude_name: Optional[str] = None, min_km: float = 25.0
+) -> Optional[LocationContext]:
+    """The nearest coastal node that is not where the vessel already is.
+
+    Used to infer a destination for a route query that names none. A vessel
+    leaves from where it is, and the nearest other harbour is the shortest real
+    passage available to it -- not a guess about intent, but a stated default
+    the caller must disclose and the user can override by naming a port.
+
+    `min_km` keeps the origin itself, and any node sharing its harbour, out of
+    the answer. Returns None when nothing qualifies rather than inventing one.
+    """
+    best: Optional[Dict[str, Any]] = None
+    best_dist = float("inf")
+    for node in INDIAN_COASTAL_NODES.values():
+        if exclude_name and node["name"].lower() == exclude_name.lower():
+            continue
+        d = haversine_distance(lat, lon, node["latitude"], node["longitude"])
+        if d < min_km or d >= best_dist:
+            continue
+        best, best_dist = node, d
+    if best is None:
+        return None
+    return LocationContext(
+        name=best["name"],
+        latitude=best["latitude"],
+        longitude=best["longitude"],
+        nearest_port=best.get("nearest_port"),
+        state=best.get("state"),
+        maritime_zone=best.get("maritime_zone"),
+    )

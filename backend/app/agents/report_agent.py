@@ -136,6 +136,17 @@ class ReportAgent(BaseSpecialistAgent):
         """
         gaps: List[str] = []
 
+        # ORCA chose the destination rather than being told it. Saying so is
+        # the difference between a helpful default and a silent assumption
+        # about where someone intends to sail.
+        inferred = context.get("route_destination_inferred")
+        if inferred:
+            gaps.append(
+                f"No destination was named, so this route was planned to {inferred}, "
+                f"the nearest harbour other than the departure point. Name a port "
+                f"in your question to route somewhere else."
+            )
+
         tide = context.get("tide_observation")
         if tide is not None and tide.status == DataFreshness.UNAVAILABLE:
             gaps.append(
