@@ -55,6 +55,17 @@ yarn-error.log*
 # Personal assistant memory, never part of the product
 memory/
 
+# Raw satellite granules: hundreds of MB to GB, fetched out of band, never committed.
+# Clipped fixtures live in backend/fixtures/isro/ and are committed.
+/orca-data/
+C:/orca-data/
+data/granules/
+**/mosdac/*.h5
+**/mosdac/*.nc
+**/bhoonidhi/*.h5
+**/bhoonidhi/*.nc
+*.filepart
+
 # IDE
 .vscode/
 .idea/
