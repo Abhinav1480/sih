@@ -1,5 +1,5 @@
 import pytest
-from app.models.schemas import UserQueryRequest
+from app.models.schemas import UserQueryRequest, QueryIntent
 from app.agents.orchestrator import orchestrator
 
 # 30+ completely distinct unseen queries across Indian coastal waters
@@ -75,14 +75,17 @@ async def test_generalization_unseen_query(query_text: str):
     assert res.temporal is not None
     assert len(res.agent_activity) >= 2
     assert len(res.evidence) >= 1
-    assert len(res.map_layers) >= 1
+    # Clarification responses intentionally have empty map layers (clean neutral map)
+    if res.intent != QueryIntent.NEEDS_CLARIFICATION:
+        assert len(res.map_layers) >= 1
     assert res.visualization_plan.result_type in [
         "marine_safety",
         "fishing_zones",
         "route_analysis",
         "regional_comparison",
         "historical_trend",
-        "general"
+        "general",
+        "clarification"
     ]
     # Verify no unformatted error strings
     assert "error" not in res.executive_summary.lower() or "warning" in res.executive_summary.lower()

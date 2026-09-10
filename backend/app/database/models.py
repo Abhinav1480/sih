@@ -1,8 +1,11 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database.session import Base
+
+def get_utc_now():
+    return datetime.now(timezone.utc)
 
 class ConversationDB(Base):
     __tablename__ = "conversations"
@@ -11,8 +14,8 @@ class ConversationDB(Base):
     title = Column(String(255), default="New Marine Analysis")
     last_location_json = Column(Text, nullable=True)
     context_state_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
+    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
 
     messages = relationship("MessageDB", back_populates="conversation", cascade="all, delete-orphan")
     analyses = relationship("AnalysisDB", back_populates="conversation", cascade="all, delete-orphan")
@@ -24,7 +27,7 @@ class MessageDB(Base):
     conversation_id = Column(String(64), ForeignKey("conversations.id"), nullable=False)
     role = Column(String(32), default="user")  # "user", "assistant"
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
 
     conversation = relationship("ConversationDB", back_populates="messages")
 
@@ -39,6 +42,6 @@ class AnalysisDB(Base):
     summary = Column(Text, nullable=False)
     risk_score = Column(Integer, nullable=True)
     response_json = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_utc_now)
 
     conversation = relationship("ConversationDB", back_populates="analyses")

@@ -25,6 +25,20 @@ from app.models.schemas import QueryIntent
 # Ordered most-specific-intent first. Iteration order doubles as the
 # deterministic tie-break when two intents score equally.
 INTENT_SIGNALS: Dict[QueryIntent, List[Tuple[str, float]]] = {
+    # Displacement what-if: "20 km north of Kakinada", "10 km offshore".
+    # A distance immediately followed by a direction is the decisive signal;
+    # movement verbs, bare directions and what-if phrasing only reinforce it,
+    # so "within 50 km of Vizag" (distance, no direction) stays a PFZ query.
+    QueryIntent.SPATIAL_WHAT_IF: [
+        (r"\b\d+(?:\.\d+)?\s*(?:km|nautical\s*miles|nm|kilo\s*met(?:er|re)s?)\s*(?:farther\s+|further\s+|due\s+)?"
+         r"(?:north|south|east|west|north-?\s?east|north-?\s?west|south-?\s?east|south-?\s?west|offshore|inshore|"
+         r"closer\s+to\s+shore|towards?\s+(?:the\s+)?(?:coast|shore))\b", 6.0),
+        (r"\b(?:what changes if|what happens (?:if i|to)|which (?:marine )?conditions (?:are likely to )?(?:change|improve)|"
+         r"compare current position with a displaced)\b", 3.0),
+        (r"\b(?:move|moving|travel\w*|shift\w*|relocat\w*|head|heading|sail|sailing)\b", 1.5),
+        (r"\b(?:north|south|east|west|offshore|inshore|farther out)\b", 1.5),
+        (r"\b\d+(?:\.\d+)?\s*(?:km|nautical\s*miles|nm|kilo\s*met(?:er|re)s?)\b", 1.5),
+    ],
     QueryIntent.ROUTE_ANALYSIS: [
         (r"\bsafest route\b", 4.0),
         (r"\broutes?\b", 3.0),
@@ -34,6 +48,11 @@ INTENT_SIGNALS: Dict[QueryIntent, List[Tuple[str, float]]] = {
         (r"\bvoyage\b", 2.5),
         (r"\bnavigat\w*\b", 2.0),
         (r"\bfrom .{2,30} to \b", 2.0),
+        (r"\bsail from\b", 3.0),
+        (r"\bnavigation corridor\b", 3.0),
+        # "from X to Y" plus a passage verb. Deliberately excludes `safe` and
+        # `risk`, the two words whose substring matches broke canonical routing.
+        (r"(?=.*\bfrom\b)(?=.*\bto\b)(?=.*\b(?:avoiding|lower-risk|cross\w*|travel\w*|navigat\w*|reach)\b)", 3.0),
         (r"\bvessel\b", 1.0),
     ],
     QueryIntent.REGIONAL_COMPARISON: [
@@ -50,7 +69,9 @@ INTENT_SIGNALS: Dict[QueryIntent, List[Tuple[str, float]]] = {
         (r"\bfishing zones?\b", 6.0),
         (r"\bpfzs?\b", 5.0),
         (r"\bpotential fishing\b", 4.0),
-        (r"\bfishing (?:area|ground|spot)s?\b", 4.0),
+        (r"\bfishing (?:area|ground|spot|location)s?\b", 4.0),
+        (r"\bfishing potential\b", 3.0),
+        (r"\btop \d+ fishing\b", 3.0),
         (r"\bchlorophyll\b", 4.0),
         (r"\bwhere to fish\b", 3.5),
         (r"\bfish catch\b", 3.0),

@@ -30,8 +30,14 @@ VALID_CARD_TYPES = {
 }
 
 
-def post(query: str) -> QueryEnvelope:
-    response = client.post("/api/query", json={"query": query})
+# Kakinada. The canonical queries say "my area" and "near my fishing location";
+# the device position is what gives those words a place.
+USER_LOCATION = {"latitude": 16.9891, "longitude": 82.2475}
+
+
+def post(query: str, **body) -> QueryEnvelope:
+    payload = {"query": query, "user_location": USER_LOCATION, **body}
+    response = client.post("/api/query", json=payload)
     assert response.status_code == 200, response.text
     # Round-trips through the model, so any contract violation raises here.
     return QueryEnvelope.model_validate(response.json())
@@ -134,3 +140,27 @@ def test_export_accepts_the_envelope_it_was_given():
     # Every figure in the report must carry its tier.
     for record in envelope.evidence:
         assert record.provider_tier.value in markdown
+
+
+def test_user_location_is_honoured_not_a_default_port():
+    """Coordinates in Tamil Nadu once returned a Visakhapatnam advisory.
+
+    The answer must be about where the user is. 200 km is generous; the
+    Visakhapatnam default was 700 km away.
+    """
+    from app.geospatial.calculations import haversine_distance
+
+    lat, lon = 10.7672, 79.8428  # off Nagapattinam
+    envelope = post("Is it safe to venture into the sea tomorrow morning?",
+                    user_location={"latitude": lat, "longitude": lon})
+    loc = envelope.meta.location
+    assert haversine_distance(lat, lon, loc.latitude, loc.longitude) < 200
+    assert envelope.risk is not None
+
+
+def test_no_place_and_no_position_asks_instead_of_assuming():
+    response = client.post("/api/query", json={"query": "Is it safe to venture into the sea tomorrow morning?"})
+    assert response.status_code == 200
+    envelope = QueryEnvelope.model_validate(response.json())
+    assert envelope.intent.value == "needs_clarification"
+    assert envelope.risk is None

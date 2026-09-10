@@ -17,7 +17,7 @@ from datetime import datetime
 import pytest
 
 from app.agents.orchestrator import orchestrator
-from app.models.schemas import DataFreshness, ProviderTier, UserQueryRequest
+from app.models.schemas import Coordinates, DataFreshness, ProviderTier, UserQueryRequest
 from app.providers.demo_provider import HighFidelityDemoProvider
 from app.providers.open_meteo import OpenMeteoProvider
 from app.providers.provenance import classify_tier, is_synthetic
@@ -30,8 +30,12 @@ QUERIES = [
 ]
 
 
+# Kakinada. "Nearest PFZ today" names no place; the device position supplies one.
+USER_LOCATION = Coordinates(latitude=16.9891, longitude=82.2475)
+
+
 def analyse(query: str):
-    return asyncio.run(orchestrator.execute_query(UserQueryRequest(query=query)))
+    return asyncio.run(orchestrator.execute_query(UserQueryRequest(query=query, user_location=USER_LOCATION)))
 
 
 @pytest.mark.parametrize("query", QUERIES, ids=[q[:40] for q in QUERIES])

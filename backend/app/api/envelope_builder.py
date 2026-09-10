@@ -86,6 +86,9 @@ def _headline(analysis: OrcaAnalysisResponse) -> str:
     risk = analysis.risk_assessment
     intent = analysis.intent
 
+    if analysis.needs_clarification and analysis.clarification_question:
+        # The question is the answer; no place or verdict to headline.
+        return analysis.clarification_question
     if intent == QueryIntent.FISHING_ZONES and analysis.fishing_zones:
         top = analysis.fishing_zones[0]
         return f"{len(analysis.fishing_zones)} fishing zones ranked near {loc}; best is {top.name} at {top.distance_km:.0f} km"

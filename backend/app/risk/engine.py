@@ -7,6 +7,8 @@ from app.models.schemas import (
     RiskFactor,
     OceanObservation,
     WeatherObservation,
+    DataQuality,
+    DataFreshness,
 )
 from app.risk.thresholds import (
     WAVE_THRESHOLDS,
@@ -218,13 +220,28 @@ def calculate_marine_risk(
     confidence = int(round(50 + 45 * (weights_counted / TOTAL_WEIGHT)))
     confidence = max(50, min(95, confidence))
 
-    if missing_inputs:
-        quality = (
-            f"Partial coverage — {weights_counted}/{TOTAL_WEIGHT} of risk weighting observed; "
-            f"absent factors imputed at the observed mean"
+    # Data quality: what kind of inputs the score was computed from. Synthetic
+    # inputs are named as such; a fallback model is never called authoritative.
+    is_demo = (
+        (ocean is not None and ocean.status == DataFreshness.DEMO)
+        or (weather is not None and weather.status == DataFreshness.DEMO)
+        or (ocean is None and weather is None)
+    )
+    coverage = f"{weights_counted}/{TOTAL_WEIGHT} of risk weighting observed"
+    if is_demo:
+        data_quality = DataQuality.DEMO
+        quality = "Synthetic Test Simulation (DEMO)" + (
+            f" \u2014 partial coverage, {coverage}" if missing_inputs else ""
         )
+        data_quality_notes = f"Calculated from ORCA's deterministic demo model, not live feeds; {coverage}."
+    elif missing_inputs:
+        data_quality = DataQuality.LIMITED
+        quality = f"Partial coverage — {coverage}; absent factors imputed at the observed mean"
+        data_quality_notes = f"Calculated with partial data (missing: {', '.join(missing_inputs)})."
     else:
+        data_quality = DataQuality.HIGH
         quality = "Full factor coverage"
+        data_quality_notes = "Calculated from every configured input; see evidence for each source."
 
     return DeterministicRiskResult(
         overall_score=final_score,
@@ -232,6 +249,8 @@ def calculate_marine_risk(
         contributing_factors=factors,
         triggered_rules=triggered_rules,
         missing_inputs=missing_inputs,
+        data_quality=data_quality,
+        data_quality_notes=data_quality_notes,
         confidence_percentage=confidence,
         data_quality_label=quality,
     )

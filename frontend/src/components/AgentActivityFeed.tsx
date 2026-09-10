@@ -14,18 +14,18 @@ export const AgentActivityFeed: React.FC<AgentActivityFeedProps> = ({ steps }) =
   if (!steps || steps.length === 0) return null;
 
   return (
-    <div className="bg-orca-card/60 border border-orca-border rounded-xl overflow-hidden text-xs">
+    <div className="border border-orca-border/70 rounded-xl overflow-hidden text-xs bg-white/[0.015]">
       {/* Collapsible Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-orca-card transition"
+        className="w-full px-3.5 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition"
       >
-        <div className="flex items-center gap-2 text-orca-cyan font-medium">
-          <Cpu className="w-4 h-4 text-orca-cyan animate-pulse" />
-          <span>Collaborative Agent Telemetry ({steps.length} Agents Executed)</span>
+        <div className="flex items-center gap-2 text-slate-300 font-medium">
+          <Cpu className="w-3.5 h-3.5 text-orca-muted" />
+          <span>Reasoning Trace</span>
+          <span className="text-[10px] text-orca-dim font-mono">{steps.length} agents</span>
         </div>
-        <div className="flex items-center gap-2 text-orca-muted">
-          <span className="text-[10px]">Audit Trail</span>
+        <div className="flex items-center gap-2 text-orca-dim">
           {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </div>
       </button>
