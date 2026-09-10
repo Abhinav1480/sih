@@ -81,9 +81,22 @@ Thumbs.db
 .DS_Store
 .env
 
-# Capacitor Android project: paused track, and it carries gradle build output
-# (.gradle/, app/build/, build/). Regenerate with `npx cap add android`.
-frontend/android/
+# Capacitor Android project. The source is committed -- the manifest with its
+# permissions and <queries>, variables.gradle, MainActivity -- because
+# `npx cap add android` regenerates a bare project and loses them. Build
+# output, the machine-specific SDK path, and the web bundle that `cap sync`
+# copies in are not source and stay out.
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/public/
+frontend/android/app/src/main/assets/capacitor.config.json
+frontend/android/app/src/main/assets/capacitor.plugins.json
+frontend/android/capacitor-cordova-android-plugins/build/
+frontend/android/.idea/
+frontend/android/*.iml
+frontend/android/app/*.iml
 
 # Bundled offline basemap: 876 generated PNGs, reproducible in one command.
 # The generator and the README are committed; the tiles are not.

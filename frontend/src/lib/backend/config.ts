@@ -12,8 +12,21 @@ export interface BackendConfig {
 }
 
 export const DEFAULT_LOCAL_URL = "http://10.134.47.190:8001"; // laptop LAN IP, editable in settings
+/**
+ * The one place the hosted backend's address is written down.
+ *
+ * Deliberately a single value with nothing host-specific around it: the
+ * service is on Render today and moving to AWS, and that move should be this
+ * string (or the env var) changing and nothing else. Do not add Render-shaped
+ * assumptions -- no `.onrender.com` suffix checks, no cold-start special
+ * cases, no provider name in the UI.
+ *
+ * Overridable at build time via NEXT_PUBLIC_DEPLOYED_API_URL, and at runtime
+ * from the settings screen, so the address can change on stage without a
+ * rebuild.
+ */
 export const DEFAULT_DEPLOYED_URL =
-  process.env.NEXT_PUBLIC_DEPLOYED_API_URL || "https://orca-backend.onrender.com";
+  process.env.NEXT_PUBLIC_DEPLOYED_API_URL || "https://orca-backend-zn2e.onrender.com";
 /** Web-dev base: what api.ts used before mode switching existed (env or same origin). */
 const WEB_LOCAL_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";

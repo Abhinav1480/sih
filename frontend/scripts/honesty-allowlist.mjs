@@ -47,6 +47,30 @@ export const ALLOWLIST = [
     why: "an emergency contact label, not an attribution on a value",
   },
   {
+    file: "src/lib/design/verdict.ts",
+    rule: "hardcoded-agency",
+    contains: "ISRO",
+    // Two lookups keyed on `evidence[].provider_tier` exactly as the response
+    // sent it: one maps the tier to its plain-language label, the other to a
+    // badge style. Neither asserts that a value came from ISRO -- they render
+    // the tier the backend already decided. An unknown tier returns null and
+    // the call site shows "source unavailable"; nothing is defaulted and
+    // nothing is upgraded, which verdict.test.mjs asserts.
+    why: "keyed on the provider_tier the response sent; renders provenance, never claims it",
+  },
+  {
+    file: "src/lib/i18n/app.ts",
+    rule: "hardcoded-agency",
+    contains: "ISRO satellite",
+    // The localised wording for a provenance tier, from the Claude Design
+    // file: ISRO -> "ISRO satellite", NATIONAL -> "Government service",
+    // FALLBACK -> "Backup source". A locale string shown only when the
+    // response carried that tier, the same shape as offline.contact.incois
+    // below. Generated from the design by tools/gen_locale.py, not written by
+    // a component.
+    why: "locale wording for a tier the response sent, generated from the design file",
+  },
+  {
     file: "src/components/Evidence/evidenceUtils.ts",
     rule: "client-side-threshold",
     contains: "bestScore",

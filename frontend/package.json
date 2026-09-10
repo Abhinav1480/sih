@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "prebuild": "node scripts/check-honesty.mjs",
+    "prebuild": "node scripts/check-honesty.mjs && node src/lib/design/verdict.test.mjs",
     "check:honesty": "node scripts/check-honesty.mjs",
     "check:honesty:report": "node scripts/check-honesty.mjs --report",
-    "check:honesty:proof": "node scripts/honesty.proof.mjs"
+    "check:honesty:proof": "node scripts/honesty.proof.mjs",
+    "check:verdict": "node src/lib/design/verdict.test.mjs"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "7.0.1",
