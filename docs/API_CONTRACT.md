@@ -1,7 +1,18 @@
 # ORCA API Contract
 
-**Contract version: 1.3.0**
+**Contract version: 1.4.0** — frozen
 Machine-readable definition: [`backend/app/models/envelope.py`](../backend/app/models/envelope.py)
+Reference responses: [`docs/examples/`](examples/) — the real body ORCA returned
+for all eight canonical queries, the alerts endpoint and a three-turn
+conversation, captured verbatim, not hand-written.
+
+**This contract is frozen at 1.4.0.** `backend/tests/test_api_contract_frozen.py`
+re-validates every captured response against the live model *and* compares the
+live response field-for-field against the capture, so a field that quietly
+leaves the response fails the build even though the old capture would still
+validate. Changing the shape is now a deliberate versioned act: edit, re-run
+`python backend/scripts/capture_contract_examples.py`, bump `CONTRACT_VERSION`,
+and add a changelog entry.
 
 This document is the agreement between the ORCA backend and the ORCA frontend.
 It is owned by the backend track and consumed by the frontend track.
@@ -335,19 +346,20 @@ printable report can never disagree with the screen.
 
 ---
 
-## 11. Known gaps at contract 1.0.0
+## 11. Known gaps at contract 1.4.0
 
 Declared here so nothing in this document overclaims:
 
 | Gap | Effect | Closing issue |
 | :--- | :--- | :--- |
-| Only Bhuvan is reachable without credentials | Map layers are `ISRO`; every *observation* is still `FALLBACK` (Open-Meteo in `LIVE`, synthetic in `DEMO`). MOSDAC and Bhoonidhi adapters exist and are skipped with a stated reason until a token or cached granule is present. | Credentials / granule cache |
+| Wind has no ISRO source | Wave height and SST are `ISRO`/`CACHED` from committed granules. Wind is still `FALLBACK`: the nine OSCAT-3 granules ordered hold zero valid retrievals anywhere in the Indian Ocean because those revolutions cross the Pacific. See `docs/DATA_SOURCES.md` §3. | Re-order the correct revolutions |
+| Granules expire | Each product declares its own validity (3 days for a daily scene, 8 for the 8-day composite). Past that the provider declines, the trace says why, and the chain falls to the labelled synthetic model. Set `ORCA_DEMO_NOW` to anchor the demo clock inside the coverage. | Fresh granules |
 | Tide has no provider | Reported unavailable, by name, in `meta.limitations` and the trace | Tidal constituent table |
 | Lightning and cyclone tracking have no provider | Reported unavailable, by name. The wind-derived alert level is **not** presented as a lightning feed. `alerts[].type` never takes `lightning` or `cyclone` today. | MOSDAC token |
 | `alerts[]` is request-scoped | No proactive push | BE-07 |
 | IMBL / EEZ geometry absent | Only MPA polygons drive `geofence_warning` | BE-05 |
-| Route is sampled, not optimised | `route_plan` is a corridor, not a least-cost path | BE-06 |
-| Causal reasoning absent | Canonical query 7 returns a trend, not a cause | BE-08 |
+| Route is geometric, not optimised | `route_plan` is a great-circle corridor whose protected-water crossings are really tested, and whose detour is the smallest offset that actually clears. It is not a least-cost path: no bathymetry, currents, traffic separation or fuel. See `docs/LIMITATIONS.md`. | A* over a cost raster |
+| Causal reasoning absent | Canonical query 7 returns a trend, not a cause. Where only one observation covers the window the summary says so rather than reporting "no measurable change". | BE-08 |
 | Narrative localisation is templated | `language` is detected and honoured; vocabulary is limited | BE-09 |
 
 ---
@@ -356,6 +368,7 @@ Declared here so nothing in this document overclaims:
 
 | Version | Change |
 | :--- | :--- |
+| 1.4.0 | Non-breaking, and the version at which the contract is **frozen**. Real ISRO measurements now reach the response: `evidence[]` records may carry `provider_tier: "ISRO"` with `status: "CACHED"`, naming the granule, the satellite and the real acquisition time. Two records in one response may come from different satellites -- wave height from a SARAL/AltiKa pass, sea surface temperature from an INSAT-3DR scene -- so `evidence[].provider` is per record and must not be assumed uniform. `OceanObservation.swell_height_m`, `swell_period_sec` and `swell_direction_deg` are now nullable: an altimeter measures total significant wave height and does not decompose it, so an ISRO-tier observation has no swell and the engine renormalises. `TimeSeriesPoint` gains `offset_hours`, `source` and `status`, because a series can legitimately span an ISRO granule and the synthetic model and the reader must be able to tell which point is which; the number of points is **not** fixed and depends on how many sampled hours a provider could serve. `route_plan.crosses_protected_waters` is now computed from a real Shapely intersection against the MPA polygons rather than asserted, and `protected_areas_intersected` is empty unless the corridor actually enters one. Canonical query 6 returns `intent: "route_analysis"` instead of `needs_clarification`; when no destination is named one is inferred and `meta.limitations` says so. |
 | 1.3.0 | Non-breaking. Deprecated top-level aliases `executive_summary`, `visualization_plan` and `agent_activity` are emitted for one release, computed from the envelope (see §1). `intent` may be `needs_clarification`, in which case `answer.headline` is the question and `risk` is `null`; `user_location` on the request is honoured as the spatial fallback. `RouteWaypoint.wave_height_m` and `wind_knots` inside `route_plan` are nullable: a missing feed is `null`, never a stand-in number. |
 | 1.2.0 | Non-breaking. `layers[]` now includes `kind="wms"` descriptors for four ISRO Bhuvan layers, tier `ISRO`. `trace[]` gains `status: "SKIPPED"` events naming every provider the chain tried and why it was not used. `meta.limitations` names tide and lightning/cyclone gaps explicitly. |
 | 1.1.0 | **Breaking.** `OceanObservation.sea_surface_temp_c`, `ocean_current_speed_m_s`, `ocean_current_direction_deg` and `TimeSeriesPoint.sst_c` are now nullable. They previously held hardcoded constants that were returned identically for every coordinate; a provider without coverage now returns `null` and emits no evidence record for that variable. Consumers must render null as "unavailable". |

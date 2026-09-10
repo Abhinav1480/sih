@@ -9,6 +9,7 @@ from app.models.schemas import (
 )
 from app.models.schemas import ProviderTier
 from app.risk.pfz import score_zone
+from app.utils import clock  # DEMO's "now", frozen by ORCA_DEMO_NOW
 from app.providers.base import (
     BaseOceanProvider,
     BaseWeatherProvider,
@@ -45,7 +46,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
 
     async def get_ocean_conditions(self, lat: float, lon: float, offset_hours: int = 0) -> OceanObservation:
         seed = self._get_coastal_seed(lat, lon, offset_hours)
-        now = datetime.now(timezone.utc)
+        now = clock.now()
         obs_time = now + timedelta(hours=offset_hours)
 
         # Baseline wave height between 1.1m and 3.2m based on geography & time
@@ -98,7 +99,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
 
     async def get_weather_conditions(self, lat: float, lon: float, offset_hours: int = 0) -> WeatherObservation:
         seed = self._get_coastal_seed(lat + 0.1, lon - 0.1, offset_hours)
-        now = datetime.now(timezone.utc)
+        now = clock.now()
         obs_time = now + timedelta(hours=offset_hours)
 
         # Wind speed correlated with waves
@@ -153,7 +154,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
         chlorophyll-a concentrations, depth, and MPA compliance.
         """
         zones: List[PotentialFishingZone] = []
-        target_time = target_time or datetime.now(timezone.utc)
+        target_time = target_time or clock.now()
 
         # Generate 4-6 realistic offshore candidate zones around the location
         bearings = [45, 90, 135, 180, 220]

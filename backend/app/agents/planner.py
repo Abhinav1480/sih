@@ -19,6 +19,7 @@ from app.geospatial.calculations import destination_point
 from app.utils.temporal import parse_temporal_context
 from app.utils.multilingual import detect_language, LANGUAGE_CODES
 from app.agents.reference_resolver import ConversationalReferenceResolver
+from app.utils import clock
 
 class OrcaPlanner:
     """
@@ -239,7 +240,9 @@ class OrcaPlanner:
             new_offset, new_label, shift_delta_hours = time_shift
             temporal.offset_hours = new_offset
             temporal.label = new_label
-            now = datetime.now(timezone.utc)
+            # A relative shift is relative to the question's now, not to
+            # wall-clock now.
+            now = clock.now()
             temporal.start_time = now + timedelta(hours=new_offset)
             temporal.end_time = temporal.start_time + timedelta(hours=6)
             temporal_shifted = True
