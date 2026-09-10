@@ -85,6 +85,16 @@ const KEYLESS_BASEMAPS = {
 
 type BasemapKey = keyof typeof KEYLESS_BASEMAPS;
 
+// A field the backend did not send must read as unavailable. These popups used
+// to fill every gap with a plausible-looking default -- suitability 85/100,
+// chlorophyll 1.2, SST 28.4, depth 35 m, "Strict No-Take Zone / Transit
+// Prohibited", "Wildlife Protection Act 1972" -- so a missing field was
+// indistinguishable from a measurement, and two of them invented law.
+const shown = (value: unknown, unit = ""): string =>
+  value === null || value === undefined || value === ""
+    ? '<span class="text-slate-500 italic">unavailable</span>'
+    : `${value}${unit}`;
+
 export const MapView: React.FC<MapViewProps> = ({
   layers,
   visualizationPlan,
@@ -568,7 +578,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   white-space: nowrap;
                   cursor: pointer;
                 ">
-                  <span>🎯 Displaced: +${properties.distance_km || properties.displacement_km || 25}km ${properties.direction || ""}</span>
+                  <span>🎯 Displaced: +${shown(properties.distance_km ?? properties.displacement_km, "km")} ${properties.direction || ""}</span>
                 </div>
               `,
               iconAnchor: [45, 14],
@@ -579,7 +589,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div class="font-bold text-sm text-pink-400">
                   🎯 Displaced Target Coordinate
                 </div>
-                <div class="text-slate-300">Offset: <b>${properties.distance_km || properties.displacement_km || "--"} km</b> heading <b>${properties.direction || "--"}</b> (${properties.bearing_deg || properties.bearing || 0}°)</div>
+                <div class="text-slate-300">Offset: <b>${properties.distance_km || properties.displacement_km || "--"} km</b> heading <b>${properties.direction || "--"}</b> (${shown(properties.bearing_deg ?? properties.bearing, "°")})</div>
                 <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
               </div>
             `);
@@ -615,8 +625,17 @@ export const MapView: React.FC<MapViewProps> = ({
           } else if (properties.type === "route_waypoint") {
             // Segment Risk Sampling Waypoint Marker
             const isMpa = properties.inside_mpa;
-            const risk = properties.risk || "LOW";
-            const wpColor = isMpa ? "#e63946" : risk === "HIGH" ? "#e63946" : risk === "MODERATE" ? "#ffb703" : "#00f5d4";
+            const risk = properties.risk ?? null;
+            // An absent risk is neutral grey, not the safe end of the scale.
+            const wpColor = isMpa
+              ? "#e63946"
+              : risk === "HIGH" || risk === "SEVERE"
+              ? "#e63946"
+              : risk === "MODERATE"
+              ? "#ffb703"
+              : risk === "LOW"
+              ? "#00f5d4"
+              : "#7a94a3";
 
             const wpMarker = L.circleMarker([lat, lon], {
               radius: 6,
@@ -677,13 +696,13 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div class="font-bold text-sm ${isMpa ? 'text-rose-400' : 'text-emerald-400'} flex items-center justify-between">
                   <span>Rank #${rank}: ${properties.name || "PFZ Hotspot"}</span>
                   <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono">
-                    ${properties.suitability || 85}/100
+                    ${shown(properties.suitability, "/100")}
                   </span>
                 </div>
                 <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-300 pt-1">
-                  <div>Chlorophyll-a: <b>${properties.chlorophyll || "1.2"} mg/m³</b></div>
-                  <div>SST: <b>${properties.sst_c || "28.4"}°C</b></div>
-                  <div>Depth: <b>${properties.depth_m || "35"}m</b></div>
+                  <div>Chlorophyll-a: <b>${shown(properties.chlorophyll, " mg/m³")}</b></div>
+                  <div>SST: <b>${shown(properties.sst_c, "°C")}</b></div>
+                  <div>Depth: <b>${shown(properties.depth_m, "m")}</b></div>
                   <div>Distance: <b>${properties.distance_km || "--"} km</b></div>
                 </div>
                 ${
@@ -705,10 +724,10 @@ export const MapView: React.FC<MapViewProps> = ({
             });
             circle.bindPopup(`
               <div class="p-2 text-xs">
-                <div class="font-bold text-amber-400 mb-1">🌊 INCOIS Wave Energy Envelope</div>
+                <div class="font-bold text-amber-400 mb-1">🌊 ${shown(properties.layer_name ?? properties.name)} — wave energy</div>
                 <div>Significant Wave Height: <b>${properties.wave_height_m}m</b></div>
-                <div>Sea State: <b>${properties.sea_state || "Moderate"}</b></div>
-                <div>Hazard Category: <b>${properties.risk_level || "Medium"}</b></div>
+                <div>Sea State: <b>${shown(properties.sea_state)}</b></div>
+                <div>Hazard Category: <b>${shown(properties.risk_level)}</b></div>
                 ${properties.timestamp ? `<div class="text-[10px] text-slate-400 font-mono mt-1">Time: ${properties.timestamp}</div>` : ""}
               </div>
             `);
@@ -733,12 +752,12 @@ export const MapView: React.FC<MapViewProps> = ({
               <div class="font-bold text-sm text-pink-400 flex items-center gap-1.5">
                 <span>🛡️ ${properties.name || "Marine Protected Area"}</span>
               </div>
-              <div class="text-[11px] text-slate-300 font-medium">${properties.designation || "Wildlife Sanctuary / Reserve"}</div>
+              <div class="text-[11px] text-slate-300 font-medium">${shown(properties.designation)}</div>
               <div class="text-[10px] text-amber-300 font-mono font-bold bg-amber-950/40 p-1 rounded border border-amber-500/30">
-                Restriction: ${properties.restriction || "Strict No-Take Zone / Transit Prohibited"}
+                Restriction: ${shown(properties.restriction)}
               </div>
-              <div class="text-[11px] text-slate-400">${properties.description || "Critical marine ecology."}</div>
-              <div class="text-[9px] text-slate-500 mt-1">Authority: ${properties.authority || "Wildlife Protection Act 1972"}</div>
+              <div class="text-[11px] text-slate-400">${shown(properties.description)}</div>
+              <div class="text-[9px] text-slate-500 mt-1">Authority: ${shown(properties.authority)}</div>
             </div>
           `);
           group.addLayer(poly);

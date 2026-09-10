@@ -982,14 +982,13 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                     {risk.category} RISK · {risk.overall_score}/100
                   </span>
                 </td>
+                {/* This cell used to manufacture a go/no-go instruction in the
+                    browser from the band string -- "Safe for Normal Navigation"
+                    / "Severe Sea State — Delay Departure". The verdict is the
+                    backend's to make; the UI only shows the one it was given. */}
                 <td className="py-2 px-3 text-right font-mono text-slate-300">
-                  {localizeLabel(
-                    risk.category === "LOW"
-                      ? "Safe for Normal Navigation"
-                      : risk.category === "MODERATE"
-                      ? "Exercise Caution — Swell & Wind Monitored"
-                      : "Severe Sea State — Delay Departure",
-                    activeLang
+                  {(analysis as any)?.answer?.verdict ?? (
+                    <span className="text-slate-500 italic">unavailable</span>
                   )}
                 </td>
               </tr>
@@ -1001,13 +1000,11 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                   <td className="py-2 px-3 text-white font-medium">{localizeLabel("Significant Wave Height", activeLang)}</td>
                   <td className="py-2 px-3 font-mono text-slate-200">{ocean.significant_wave_height_m} m</td>
                   <td className="py-2 px-3 text-right font-mono text-slate-300">
+                    {/* Sea state is classified by the risk engine against
+                        INCOIS/WMO thresholds. The browser must not re-derive it
+                        from a wave height with its own cut points. */}
                     {localizeLabel(
-                      ocean.sea_state ||
-                        (ocean.significant_wave_height_m <= 1.5
-                          ? "Calm / Slight Sea"
-                          : ocean.significant_wave_height_m <= 2.5
-                          ? "Moderate Sea State"
-                          : "Rough Sea State"),
+                      ocean.sea_state || "unavailable",
                       activeLang
                     )}
                   </td>
@@ -1026,9 +1023,10 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                   <td className="py-2 px-3 font-mono text-slate-200">{ocean.sea_surface_temp_c}°C</td>
                   <td className="py-2 px-3 text-right font-mono text-slate-300">
                     {localizeLabel(
-                      ocean.sea_surface_temp_c >= 27 && ocean.sea_surface_temp_c <= 30
-                        ? "Normal Tropical Thermal Range"
-                        : "Monitored Sea Temperature",
+                      // No backend field classifies SST, so nothing is
+                      // claimed. The browser inventing a 27-30 degree "normal"
+                      // band was a threshold judgement it had no basis for.
+                      "—",
                       activeLang
                     )}
                   </td>
@@ -1059,7 +1057,8 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                   <td className="py-2 px-3 font-mono text-slate-200">{weather.visibility_km} km</td>
                   <td className="py-2 px-3 text-right font-mono text-slate-300">
                     {localizeLabel(
-                      weather.visibility_km >= 8 ? "Clear Navigational Sight" : "Restricted Visibility",
+                      // Same: no backend field classifies visibility.
+                      "—",
                       activeLang
                     )}
                   </td>
