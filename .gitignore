@@ -13,7 +13,11 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python virtualenv / package lib dirs only. This was a bare `lib/`, which
+# matches a directory of that name at ANY depth -- including
+# frontend/src/lib, the entire frontend API layer -- held back only by the
+# fragile negation below. Scope it instead of negating it.
+/backend/**/lib/
 lib64/
 !frontend/src/lib/
 parts/
