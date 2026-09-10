@@ -134,6 +134,43 @@ class WeatherObservation(BaseModel):
     source: str = "Demo Provider"
     timestamp: datetime
 
+class TideObservation(BaseModel):
+    """Tidal state at a coastal position.
+
+    Every field is optional because the honest answer is frequently "we do not
+    have this". Tide is not derivable from the wave and wind feeds ORCA already
+    carries; it needs harmonic constituents for the port, which is a separate
+    source. When `status` is UNAVAILABLE, `unavailable_reason` says what is
+    missing and the UI must render the gap rather than a blank that reads as calm.
+    """
+    height_m: Optional[float] = None
+    state: Optional[str] = None            # Rising | Falling | High Water | Low Water
+    next_high_water: Optional[datetime] = None
+    next_low_water: Optional[datetime] = None
+    range_m: Optional[float] = None
+    status: DataFreshness = DataFreshness.UNAVAILABLE
+    source: str = "No tide provider configured"
+    unavailable_reason: Optional[str] = None
+    timestamp: datetime
+
+
+class HazardObservation(BaseModel):
+    """Lightning strikes and cyclone tracks near a position.
+
+    Same contract as TideObservation: an absent capability is reported, never
+    approximated from the wind-derived alert level.
+    """
+    lightning_strike_count: Optional[int] = None
+    lightning_nearest_km: Optional[float] = None
+    cyclone_present: Optional[bool] = None
+    cyclone_name: Optional[str] = None
+    cyclone_distance_km: Optional[float] = None
+    cyclone_category: Optional[str] = None
+    status: DataFreshness = DataFreshness.UNAVAILABLE
+    source: str = "No hazard provider configured"
+    unavailable_reason: Optional[str] = None
+    timestamp: datetime
+
 
 class PotentialFishingZone(BaseModel):
     zone_id: str

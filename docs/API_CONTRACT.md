@@ -1,6 +1,6 @@
 # ORCA API Contract
 
-**Contract version: 1.1.0**
+**Contract version: 1.2.0**
 Machine-readable definition: [`backend/app/models/envelope.py`](../backend/app/models/envelope.py)
 
 This document is the agreement between the ORCA backend and the ORCA frontend.
@@ -160,10 +160,20 @@ sanctuary still surfaces the warning. Never suppress it based on `intent`.
 | `attribution` | string? | Display verbatim when present |
 | `provider_tier` | enum | See §6 |
 
-As of contract 1.1.0 every layer is `kind="geojson"` and tier `FALLBACK` — these
-are ORCA's own derived geometries, not an agency product. `kind="wms"` is
-reserved for the ISRO Bhuvan layers arriving in BE-02; **implement the `wms`
-branch now** so that lands without a contract bump.
+ORCA's own derived geometries are `kind="geojson"` and tier `FALLBACK`. As of
+1.2.0 every response also carries **real ISRO layers** from NRSC Bhuvan as
+`kind="wms"`, tier `ISRO`, with `attribution: "ISRO / NRSC Bhuvan"`:
+
+| `id` | WMS layer | What it is |
+| :--- | :--- | :--- |
+| `layer_bhuvan_coralreefs` | `moef:coralreefs` | Ecologically sensitive zone (req. 8) |
+| `layer_bhuvan_mangroves` | `moef:mangroves` | Ecologically sensitive zone (req. 8) |
+| `layer_bhuvan_coastal_lulc` | `coastal:cps_lulc_mod` | Coastal land use / cover |
+| `layer_bhuvan_islands_ec` | `iland:island_ec_190615` | East coast islands |
+
+Render a `wms` layer with `url` + `wms_params` through the map library's WMS
+tile layer; there are no inline `features`. Display `attribution` verbatim.
+The tiles come from NRSC, not from ORCA.
 
 ---
 
@@ -295,10 +305,9 @@ Declared here so nothing in this document overclaims:
 
 | Gap | Effect | Closing issue |
 | :--- | :--- | :--- |
-| No ISRO provider is wired | Every `provider_tier` is `FALLBACK` today | BE-02 |
-| SST and currents come from Open-Meteo | Real, per-coordinate values, but tier `FALLBACK`; null where Open-Meteo has no coverage | BE-02 |
-| Tide is not modelled | Canonical query 3 answers weather + sea state only | BE-02 |
-| Lightning and cyclone tracks are not modelled | Canonical query 4 answers from the generic alert level | BE-02 |
+| Only Bhuvan is reachable without credentials | Map layers are `ISRO`; every *observation* is still `FALLBACK` (Open-Meteo in `LIVE`, synthetic in `DEMO`). MOSDAC and Bhoonidhi adapters exist and are skipped with a stated reason until a token or cached granule is present. | Credentials / granule cache |
+| Tide has no provider | Reported unavailable, by name, in `meta.limitations` and the trace | Tidal constituent table |
+| Lightning and cyclone tracking have no provider | Reported unavailable, by name. The wind-derived alert level is **not** presented as a lightning feed. `alerts[].type` never takes `lightning` or `cyclone` today. | MOSDAC token |
 | `alerts[]` is request-scoped | No proactive push | BE-07 |
 | IMBL / EEZ geometry absent | Only MPA polygons drive `geofence_warning` | BE-05 |
 | Route is sampled, not optimised | `route_plan` is a corridor, not a least-cost path | BE-06 |
@@ -311,5 +320,6 @@ Declared here so nothing in this document overclaims:
 
 | Version | Change |
 | :--- | :--- |
+| 1.2.0 | Non-breaking. `layers[]` now includes `kind="wms"` descriptors for four ISRO Bhuvan layers, tier `ISRO`. `trace[]` gains `status: "SKIPPED"` events naming every provider the chain tried and why it was not used. `meta.limitations` names tide and lightning/cyclone gaps explicitly. |
 | 1.1.0 | **Breaking.** `OceanObservation.sea_surface_temp_c`, `ocean_current_speed_m_s`, `ocean_current_direction_deg` and `TimeSeriesPoint.sst_c` are now nullable. They previously held hardcoded constants that were returned identically for every coordinate; a provider without coverage now returns `null` and emits no evidence record for that variable. Consumers must render null as "unavailable". |
 | 1.0.0 | Initial contract. `/api/query` returns the envelope; `EvidenceRecord` gains `provider_tier`; `/api/export/report` takes the envelope. |
