@@ -213,6 +213,23 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
     }
 }
 
+def location_from_coordinates(lat: float, lon: float, label: str = "Coord") -> LocationContext:
+    """A LocationContext for a raw coordinate, named after the nearest known harbour.
+
+    Used for coordinates typed into the query and for the device position sent
+    as `user_location`. It never invents a place name; the coordinate is the name.
+    """
+    nearest_name, nearest_dist = find_nearest_harbor(lat, lon)
+    return LocationContext(
+        name=f"{label} ({lat:.4f}\u00b0N, {lon:.4f}\u00b0E)",
+        latitude=lat,
+        longitude=lon,
+        radius_km=40.0,
+        nearest_port=f"{nearest_name} ({nearest_dist:.1f} km)",
+        state="Indian Maritime Zone",
+        maritime_zone="Offshore Waters",
+    )
+
 def resolve_location(query_text: str, default_fallback: Optional[LocationContext] = None) -> Optional[LocationContext]:
     """Dynamically extracts location from query text using coordinate regex, alias lookup, or fallback."""
     clean_text = query_text.lower()
@@ -242,24 +259,7 @@ def resolve_location(query_text: str, default_fallback: Optional[LocationContext
             else:
                 lat, lon = val1, val2
 
-            # Find nearest known coastal node
-            nearest_name = "Offshore Coordinate"
-            nearest_dist = float("inf")
-            for node in INDIAN_COASTAL_NODES.values():
-                d = haversine_distance(lat, lon, node["latitude"], node["longitude"])
-                if d < nearest_dist:
-                    nearest_dist = d
-                    nearest_name = node["nearest_port"]
-
-            return LocationContext(
-                name=f"Coord ({lat:.4f}°N, {lon:.4f}°E)",
-                latitude=lat,
-                longitude=lon,
-                radius_km=40.0,
-                nearest_port=f"{nearest_name} ({nearest_dist:.1f} km)",
-                state="Indian Maritime Zone",
-                maritime_zone="Offshore Waters"
-            )
+            return location_from_coordinates(lat, lon)
         except Exception:
             pass
 

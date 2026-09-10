@@ -3,12 +3,13 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone, timedelta
 from app.models.schemas import (
     QueryIntent,
+    Coordinates,
     LocationContext,
     TemporalContext,
     ConstraintModel,
 )
 from app.agents.intent import classify_intent
-from app.geospatial.boundaries import resolve_location, INDIAN_COASTAL_NODES
+from app.geospatial.boundaries import resolve_location, location_from_coordinates, INDIAN_COASTAL_NODES
 from app.geospatial.calculations import destination_point
 from app.utils.temporal import parse_temporal_context
 from app.utils.multilingual import detect_language, LANGUAGE_CODES
@@ -26,7 +27,8 @@ class OrcaPlanner:
         self,
         query_text: str,
         conversation_context: Optional[Dict[str, Any]] = None,
-        preferred_language: Optional[str] = None
+        preferred_language: Optional[str] = None,
+        user_location: Optional[Coordinates] = None,
     ) -> Dict[str, Any]:
         text = query_text.lower().strip()
         detected = detect_language(query_text)
@@ -62,13 +64,23 @@ class OrcaPlanner:
         selected_route_id: Optional[str] = None
         is_route_follow_up: bool = False
 
-        # Prior location fallback
+        # Spatial fallback when the text names no place. The conversation's last
+        # location wins so "what about tomorrow?" stays where the user was
+        # looking; the device position wins when the user says "my area" or
+        # "near me", and is the only fallback on a fresh conversation. If none
+        # of these exist the planner asks rather than assuming a port.
         prev_loc = None
         if conversation_context and "last_location" in conversation_context:
             try:
                 prev_loc = LocationContext(**conversation_context["last_location"])
             except Exception:
                 pass
+        gps_loc = None
+        if user_location is not None:
+            gps_loc = location_from_coordinates(user_location.latitude, user_location.longitude, label="Your position")
+        fallback_loc = prev_loc or gps_loc
+        if gps_loc is not None and re.search(r"\b(?:my (?:location|area|position|spot)|near me|around me|where i am|here)\b", text):
+            fallback_loc = gps_loc
 
         if route_ref is not None:
             # CASE A: User is explicitly following up or comparing route candidates
@@ -116,6 +128,11 @@ class OrcaPlanner:
                     destination_location = destination_location or dest_ctx
                     is_route_follow_up = True
 
+                # A vessel leaves from where it is. Only the destination is
+                # unknowable from the device position.
+                if origin_location is None:
+                    origin_location = fallback_loc
+
                 missing = []
                 if origin_location is None:
                     missing.append("departure port or coordinates")
@@ -137,7 +154,7 @@ class OrcaPlanner:
 
             elif intent == QueryIntent.SPATIAL_WHAT_IF:
                 origin_location, displaced_location, dist_km, direction, bearing = self._extract_displacement_params(
-                    query_text, text, prev_loc
+                    query_text, text, fallback_loc
                 )
                 if origin_location is None:
                     needs_clarification = True
@@ -157,7 +174,7 @@ class OrcaPlanner:
                 if loc_from_ref is not None:
                     location = loc_from_ref
                 else:
-                    location = resolve_location(query_text, default_fallback=prev_loc)
+                    location = resolve_location(query_text, default_fallback=fallback_loc)
 
                 if location is None:
                     needs_clarification = True

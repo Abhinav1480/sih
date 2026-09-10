@@ -66,7 +66,8 @@ class AgentOrchestrator:
         plan_context = self.planner.parse_plan(
             request.query,
             conversation_context,
-            preferred_language=request.preferred_language
+            preferred_language=request.preferred_language,
+            user_location=request.user_location,
         )
         p_dur = int((time.time() - p_start) * 1000)
 
