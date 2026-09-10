@@ -8,6 +8,7 @@ from app.models.schemas import (
     DataFreshness,
 )
 from app.models.schemas import ProviderTier
+from app.risk.pfz import score_zone
 from app.providers.base import (
     BaseOceanProvider,
     BaseWeatherProvider,
@@ -176,29 +177,18 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
             zone_wave = round(1.2 + (seed * 1.4), 2)
             zone_wind = round(11.0 + (seed * 12.0), 1)
 
-            # Calculate composite suitability score (0 - 100)
-            # High chlorophyll (+), favorable SST (+), low waves (+), not inside MPA (+)
-            score = 50.0
-            if chlorophyll > 1.2:
-                score += 25.0
-            elif chlorophyll > 0.8:
-                score += 15.0
-
-            if 27.8 <= sst <= 29.2:
-                score += 15.0  # Ideal thermal front
-
-            if zone_wave < 1.8:
-                score += 10.0
-            elif zone_wave > 2.5:
-                score -= 20.0
-
-            if is_in_mpa:
-                score -= 40.0  # Severe penalty for protected sanctuary
-
-            score = max(5.0, min(98.0, score))
+            # One suitability formula, in app/risk/pfz.py. This block was a
+            # verbatim second copy of it, so a zone scored here and the same
+            # zone scored anywhere else could disagree -- the same shape as the
+            # second risk formula P0-10 removed.
+            score, advisory = score_zone(
+                chlorophyll_mg_m3=chlorophyll,
+                sst_c=sst,
+                wave_height_m=zone_wave,
+                within_mpa=is_in_mpa,
+            )
 
             name_prefix = f"Zone {chr(65 + idx)} ({d:.1f} km {b}°)"
-            advisory = "Highly Favorable" if score > 75 else ("Moderate Potential" if score > 50 else "Marginal / Restricted")
 
             zones.append(PotentialFishingZone(
                 zone_id=f"pfz_{idx+1}",

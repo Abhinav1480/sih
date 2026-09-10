@@ -8,7 +8,6 @@ sqlalchemy>=2.0.0
 aiosqlite>=0.20.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
-python-multipart>=0.0.9
 python-dotenv>=1.0.0
 # ISRO granule fixtures (HDF5 / NetCDF readers)
 h5py>=3.10.0
