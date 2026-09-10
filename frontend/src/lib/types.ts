@@ -49,6 +49,122 @@ export interface AgentStepRecord {
   timestamp: string;
 }
 
+// ── FE-03: ORCA AGENT TRACE TIMELINE TYPES ──────────────────────────────────
+
+export type TraceEventType =
+  | "planner"
+  | "agent_start"
+  | "agent_message"
+  | "agent_result"
+  | "replan"
+  | "correlation"
+  | "risk"
+  | "synthesis"
+  | "done"
+  | "error";
+
+export type TraceItemStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "COMPLETED"
+  | "REPLANNED"
+  | "FAILED";
+
+export interface TraceItem {
+  id: string;
+  type: TraceEventType;
+  timestamp: string;
+  agent: string;
+  title: string;
+  summary: string;
+  status: TraceItemStatus;
+  duration?: number;
+  duration_ms?: number;
+  evidenceIds?: string[];
+  metadata?: Record<string, any>;
+  children?: TraceItem[];
+}
+
+export interface PlannerPayload {
+  intent: string;
+  spatial_target: string;
+  temporal_window: string;
+  constraints?: string[];
+  selected_agents: string[];
+}
+
+export interface AgentStartPayload {
+  agent: string;
+  task?: string;
+}
+
+export interface AgentMessagePayload {
+  from_agent: string;
+  to_agent: string;
+  message: string;
+}
+
+export interface AgentResultPayload {
+  agent: string;
+  summary: string;
+  duration_ms: number;
+  evidence_ids?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ReplanPayload {
+  reason: string;
+  failed_source?: string;
+  failed_agent?: string;
+  reassigned_to?: string;
+  new_source?: string;
+  action_taken: string;
+}
+
+export interface CorrelationPayload {
+  agents: string[];
+  title?: string;
+  finding: string;
+  impact?: string;
+}
+
+export interface RiskPayload {
+  score: number;
+  band: RiskCategory;
+  key_factors: string[];
+}
+
+export interface SynthesisPayload {
+  status: "generating" | "ready";
+  headline?: string;
+}
+
+export interface DonePayload {
+  total_agents: number;
+  total_duration_ms: number;
+  completed_at: string;
+}
+
+export interface ErrorPayload {
+  message: string;
+  recoverable: boolean;
+}
+
+export interface SSETraceEvent {
+  id?: string;
+  seq?: number;
+  stage: TraceEventType;
+  agent?: string;
+  action?: string;
+  timestamp?: string;
+  payload?: any;
+  data?: any;
+  duration_ms?: number;
+  status?: string;
+  detail?: string;
+  evidence_ids?: string[];
+}
+
 export interface OceanObservation {
   significant_wave_height_m: number;
   swell_height_m: number;
@@ -168,6 +284,13 @@ export interface RiskFactor {
   value: string;
   points_added: number;
   description: string;
+  key?: string;
+  label?: string;
+  raw_value?: string | number;
+  unit?: string;
+  weight?: number;
+  points?: number;
+  rule_fired?: string;
 }
 
 export interface DeterministicRiskResult {
@@ -180,6 +303,10 @@ export interface DeterministicRiskResult {
   data_quality_notes?: string;
   data_quality_label?: string;
   confidence_percentage?: number;
+  score?: number;
+  band?: RiskCategory;
+  factors?: RiskFactor[];
+  total_check?: boolean;
 }
 
 export interface EvidenceRecord {
@@ -206,15 +333,42 @@ export interface MapLayerFeature {
   properties: Record<string, any>;
 }
 
+export type LayerKind = "geojson" | "wms" | "heatmap" | "unsupported";
+export type LayerPurposeGroup = "intelligence" | "reference" | "remote_gis";
+export type LayerStatus = "ready" | "loading" | "unavailable" | "unsupported";
+
 export interface MapLayerData {
-  layer_id: string;
-  name: string;
-  layer_type: string;
+  layer_id: string; // Contract fallback: id || layer_id
+  id?: string;
+  name: string; // Contract fallback: label || name
+  label?: string;
+  layer_type: string; // Contract: kind || layer_type
+  kind?: LayerKind;
   features: MapLayerFeature[];
+  geojson?: any;
   visible_by_default: boolean;
   color: string;
   legend_title: string;
   legend_unit?: string;
+  purpose_group?: LayerPurposeGroup;
+  time_varying?: boolean;
+  timestamps?: string[];
+  temporal_features?: Record<string, MapLayerFeature[]>;
+  attribution?: string;
+  url?: string;
+  layer_name?: string;
+  wms_params?: Record<string, any>;
+  status?: LayerStatus;
+  error_message?: string;
+}
+
+export interface TemporalState {
+  selectedTime: string | null;
+  availableTimes: string[];
+  startTime: string | null;
+  endTime: string | null;
+  isTimeVarying: boolean;
+  isPlaying: boolean;
 }
 
 export interface VisualizationPlan {

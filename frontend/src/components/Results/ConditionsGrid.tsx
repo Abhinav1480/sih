@@ -3,6 +3,7 @@
 import React from "react";
 import { Waves, Wind, Thermometer, Compass, Eye, AlertOctagon } from "lucide-react";
 import { OceanObservation, WeatherObservation } from "@/lib/types";
+import { EvidenceTrigger } from "@/components/Evidence/EvidenceTrigger";
 
 interface ConditionsGridProps {
   ocean?: OceanObservation;
@@ -16,6 +17,8 @@ interface Metric {
   sub?: string;
   icon: React.ElementType;
   accent?: string;
+  /** Backend evidence `variable` label this metric maps to (for "Why?"). */
+  hint?: string;
 }
 
 export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }) => {
@@ -29,6 +32,7 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
       sub: ocean.sea_state,
       icon: Waves,
       accent: "text-orca-cyan",
+      hint: "Significant Wave Height",
     });
   }
   if (weather) {
@@ -39,6 +43,7 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
       sub: `Gusts ${weather.wind_gust_knots} · ${weather.wind_direction_deg}°`,
       icon: Wind,
       accent: "text-sky-400",
+      hint: "Wind Speed",
     });
   }
   if (ocean) {
@@ -49,6 +54,7 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
       sub: `T ${ocean.swell_period_sec}s · ${ocean.swell_direction_deg}°`,
       icon: Compass,
       accent: "text-teal-400",
+      hint: "Swell Height",
     });
     metrics.push({
       label: "SST",
@@ -57,6 +63,7 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
       sub: `Current ${ocean.ocean_current_speed_m_s} m/s`,
       icon: Thermometer,
       accent: "text-amber-400",
+      hint: "Sea Surface Temperature",
     });
   }
   if (weather) {
@@ -67,6 +74,7 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
       sub: `Rain ${weather.precipitation_mm} mm/h`,
       icon: Eye,
       accent: "text-slate-300",
+      hint: "Visibility",
     });
   }
 
@@ -89,9 +97,14 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
           const Icon = m.icon;
           return (
             <div key={m.label} className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-orca-dim font-semibold mb-1">
-                <Icon className={`w-3 h-3 ${m.accent}`} />
-                <span>{m.label}</span>
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-orca-dim font-semibold min-w-0">
+                  <Icon className={`w-3 h-3 ${m.accent}`} />
+                  <span className="truncate">{m.label}</span>
+                </div>
+                {m.hint && (
+                  <EvidenceTrigger variableHint={m.hint} iconOnly className="flex-shrink-0" />
+                )}
               </div>
               <div className="leading-none">
                 <span className="font-display text-[22px] font-bold text-white">{m.value}</span>

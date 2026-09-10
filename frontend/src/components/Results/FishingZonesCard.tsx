@@ -3,6 +3,7 @@
 import React from "react";
 import { ShieldAlert, CheckCircle } from "lucide-react";
 import { PotentialFishingZone } from "@/lib/types";
+import { EvidenceTrigger } from "@/components/Evidence/EvidenceTrigger";
 
 interface FishingZonesCardProps {
   zones: PotentialFishingZone[];
@@ -70,6 +71,11 @@ export const FishingZonesCard: React.FC<FishingZonesCardProps> = ({ zones, locat
               <span>SST <span className="text-slate-300">{zone.sst_c}</span>°C</span>
               <span><span className="text-slate-300">{zone.distance_km}</span> km · {zone.bearing_deg}°</span>
               <span>Wave <span className="text-slate-300">{zone.wave_height_m}</span> m</span>
+              <EvidenceTrigger
+                variableHint={zone.name}
+                label={`Why ranked #${zone.rank}?`}
+                className="ml-auto"
+              />
             </div>
 
             {/* Status line */}

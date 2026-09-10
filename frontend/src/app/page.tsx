@@ -8,7 +8,10 @@ import { QueryInput } from "@/components/QueryInput";
 import { ResultContainer } from "@/components/Results/ResultContainer";
 import { SummaryTable } from "@/components/Results/SummaryTable";
 import { AgentActivityFeed } from "@/components/AgentActivityFeed";
-import { EvidenceDrawer } from "@/components/EvidenceDrawer";
+import { AgentTraceTimeline } from "@/components/AgentTraceTimeline";
+import { EvidenceProvider } from "@/components/Evidence/evidenceContext";
+import { EvidencePanel } from "@/components/Evidence/EvidencePanel";
+import { EvidenceRegistry } from "@/components/Evidence/EvidenceRegistry";
 import { AlertsModal } from "@/components/AlertsModal";
 import { ReportModal } from "@/components/ReportModal";
 import {
@@ -21,11 +24,16 @@ import {
   OrcaAnalysisResponse,
   MarineAlert,
   ConversationSummary,
+  TraceItem,
 } from "@/lib/types";
+import { streamOrcaAnalysis, accumulateTraceItems } from "@/lib/stream";
 import { Waves, Compass, MessageSquare, Map as MapIcon } from "lucide-react";
 
 export default function Home() {
   const [currentAnalysis, setCurrentAnalysis] = useState<OrcaAnalysisResponse | null>(null);
+  const [activeTraceItems, setActiveTraceItems] = useState<TraceItem[]>([]);
+  const traceAbortRef = useRef<AbortController | null>(null);
+  const lastQueryRef = useRef<string>("");
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>(undefined);
   const [alerts, setAlerts] = useState<MarineAlert[]>([]);
@@ -55,6 +63,15 @@ export default function Home() {
   // Imperative reflow signal handed to MapView — bumped after layout shifts a
   // ResizeObserver may not settle in time (drag end, tab reveal, breakpoint).
   const [resizeSignal, setResizeSignal] = useState(0);
+
+  // FE-04: "View on map" target from the Evidence drawer → flies the existing
+  // persistent map (never remounts / never creates a second map).
+  const [mapFocus, setMapFocus] = useState<{ lat: number; lon: number; nonce: number } | null>(null);
+  const handleViewOnMap = (lat: number, lon: number) => {
+    setMapFocus((prev) => ({ lat, lon, nonce: (prev?.nonce || 0) + 1 }));
+    setMobileTab("map"); // ensure the map is the visible pane on mobile
+    setResizeSignal((s) => s + 1);
+  };
 
   // Load initial data
   useEffect(() => {
@@ -104,6 +121,7 @@ export default function Home() {
 
   // Submit query handler
   const handleQuerySubmit = async (queryText: string) => {
+    lastQueryRef.current = queryText;
     if (isFirstSubmit.current) {
       // One-time landing → split-canvas reveal. The map is already mounted
       // underneath the landing overlay, so this only uncovers + animates it in.
@@ -116,14 +134,45 @@ export default function Home() {
       setTimeout(() => setCenterRevealDone(false), 700);
     }
 
+    // Abort any prior active trace stream
+    if (traceAbortRef.current) {
+      traceAbortRef.current.abort();
+    }
+    const abortCtrl = new AbortController();
+    traceAbortRef.current = abortCtrl;
+
+    // Reset trace for the new query (requirement 15: active query only)
+    setActiveTraceItems([]);
     setIsLoading(true);
     setErrorMessage(null);
+
+    // Launch streaming trace in parallel with query request
+    const streamPromise = streamOrcaAnalysis(
+      queryText,
+      activeConversationId,
+      selectedLanguage,
+      {
+        onEvent: (event) => {
+          setActiveTraceItems((prev) => accumulateTraceItems(prev, event));
+        },
+        onComplete: () => {},
+        onError: (err) => {
+          console.warn("[ORCA Trace] Stream error:", err);
+        },
+      },
+      abortCtrl
+    );
+
     try {
       const response = await submitMarineQuery(
         queryText,
         activeConversationId,
         selectedLanguage
       );
+
+      // Await stream completion or small delay for smooth visual transition
+      await streamPromise.catch(() => {});
+
       setCurrentAnalysis(response);
       setActiveConversationId(response.conversation_id);
 
@@ -155,6 +204,10 @@ export default function Home() {
   };
 
   const handleNewAnalysis = () => {
+    if (traceAbortRef.current) {
+      traceAbortRef.current.abort();
+    }
+    setActiveTraceItems([]);
     setCurrentAnalysis(null);
     setActiveConversationId(undefined);
     setErrorMessage(null);
@@ -212,7 +265,15 @@ export default function Home() {
           hasAnalysis={!!currentAnalysis}
         />
 
-        {/* Center / Right Intelligence Studio */}
+        {/* Center / Right Intelligence Studio — wrapped so any result card can
+            open the shared Evidence drawer (FE-04) without prop drilling. */}
+        <EvidenceProvider
+          records={currentAnalysis?.evidence}
+          risk={currentAnalysis?.risk_assessment}
+          isLoading={isLoading}
+          queryKey={currentAnalysis?.query_id}
+          onViewOnMap={handleViewOnMap}
+        >
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Location / temporal context strip — calm and minimal, only after analysis */}
           {!isInitialCenterState && (
@@ -303,17 +364,20 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Loading skeleton — map remains visible/mounted alongside */}
-                  {isLoading && !currentAnalysis && (
+                  {/* Live Agent Trace Stream while processing (Mission-Control Reasoning View) */}
+                  {isLoading && (
                     <div className="space-y-3 pt-1">
-                      <div className="h-4 w-40 rounded bg-white/[0.05] animate-pulse" />
-                      <div className="h-24 rounded-xl bg-white/[0.04] animate-pulse" />
-                      <div className="h-32 rounded-xl bg-white/[0.03] animate-pulse" />
+                      <AgentTraceTimeline
+                        items={activeTraceItems}
+                        isRunning={true}
+                        defaultCollapsed={false}
+                        onRetry={() => handleQuerySubmit(lastQueryRef.current)}
+                      />
                     </div>
                   )}
 
                   {/* Dynamic Result Container */}
-                  {currentAnalysis && (
+                  {currentAnalysis && !isLoading && (
                     <ResultContainer
                       analysis={currentAnalysis}
                       onSelectLocation={(locName) => {
@@ -323,15 +387,18 @@ export default function Home() {
                     />
                   )}
 
-                  {/* Agent Telemetry Timeline */}
-                  {currentAnalysis && (
-                    <AgentActivityFeed steps={currentAnalysis.agent_activity} />
+                  {/* Agent Reasoning Trace Timeline */}
+                  {currentAnalysis && !isLoading && (
+                    <AgentActivityFeed
+                      steps={currentAnalysis.agent_activity}
+                      traceItems={activeTraceItems.length > 0 ? activeTraceItems : undefined}
+                      defaultCollapsed={true}
+                    />
                   )}
 
-                  {/* Evidence & Provenance Drawer */}
-                  {currentAnalysis && (
-                    <EvidenceDrawer evidence={currentAnalysis.evidence} />
-                  )}
+                  {/* Evidence & Provenance — consolidated registry summary that
+                      opens the shared drawer (FE-04). */}
+                  {currentAnalysis && <EvidenceRegistry />}
 
                   {/* Final Decision Summary Table (End of Result) */}
                   {currentAnalysis && (
@@ -405,6 +472,7 @@ export default function Home() {
                     visualizationPlan={currentAnalysis?.visualization_plan}
                     onCoordinateSelect={handleCoordinateSelect}
                     resizeSignal={resizeSignal}
+                    focusCoordinate={mapFocus || undefined}
                   />
                 </div>
               </section>
@@ -491,6 +559,10 @@ export default function Home() {
             )}
           </div>
         </div>
+        {/* Shared Evidence & Provenance drawer (FE-04) — one instance for the
+            whole workspace; reads from the current result only. */}
+        <EvidencePanel />
+        </EvidenceProvider>
       </div>
 
       {/* Coastal Alerts Modal */}

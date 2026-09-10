@@ -3,6 +3,7 @@
 import React from "react";
 import { Navigation, AlertTriangle, CheckCircle, ShieldAlert, Clock, Compass } from "lucide-react";
 import { VesselRouteAnalysis } from "@/lib/types";
+import { RiskGauge } from "../Risk/RiskGauge";
 
 interface RouteAnalysisCardProps {
   route: VesselRouteAnalysis;
@@ -10,6 +11,14 @@ interface RouteAnalysisCardProps {
 
 export const RouteAnalysisCard: React.FC<RouteAnalysisCardProps> = ({ route }) => {
   if (!route) return null;
+
+  const scoreMap = {
+    LOW: 18,
+    MODERATE: 30,
+    HIGH: 65,
+    SEVERE: 85,
+  };
+  const routeScore = scoreMap[route.overall_route_risk] ?? 30;
 
   return (
     <div className="maritime-card p-5 space-y-4">
@@ -22,15 +31,12 @@ export const RouteAnalysisCard: React.FC<RouteAnalysisCardProps> = ({ route }) =
             {route.origin.name} → {route.destination.name}
           </div>
         </div>
-        <div
-          className={`px-3 py-1 rounded-full text-xs font-bold border font-mono ${
-            route.crosses_protected_waters
-              ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
-              : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-          }`}
-        >
-          {route.overall_route_risk} RISK
-        </div>
+        <RiskGauge
+          band={route.overall_route_risk}
+          score={routeScore}
+          label="CORRIDOR HAZARD"
+          compact
+        />
       </div>
 
       {/* Corridor Summary */}

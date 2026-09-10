@@ -54,6 +54,7 @@ import {
   LoadingState,
   ErrorState,
 } from "@/components/ui";
+import { RiskGauge, RiskFactorList, RiskIntelligenceModule } from "@/components/Risk";
 import { colors, spacing, radius, typography, breakpoints } from "@/lib/tokens";
 
 export default function StyleguidePage() {
@@ -528,9 +529,69 @@ export default function StyleguidePage() {
         ================================================== */}
         <section id="risk" className="space-y-4">
           <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-            <h2 className="orca-heading text-text-primary">8. Marine Risk Presentation</h2>
-            <span className="text-xs font-mono text-text-muted">Deterministic Risk Categories</span>
+            <h2 className="orca-heading text-text-primary">8. Marine Risk Presentation &amp; Factor Decomposition</h2>
+            <span className="text-xs font-mono text-text-muted">FE-05 Authoritative Risk Intelligence</span>
           </div>
+
+          <Panel title="Calibrated Segmented Risk Gauges" description="Clean mission-control indicators with dominant bands and verdict pairing">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle">
+                <RiskGauge score={14} band="LOW" verdict="GO" label="COASTAL SAFETY" />
+              </div>
+              <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle">
+                <RiskGauge score={30} band="MODERATE" verdict="CAUTION" label="PASSAGE HAZARD" />
+              </div>
+              <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle">
+                <RiskGauge score={74} band="HIGH" verdict="NO_GO" label="CORRIDOR RISK (TEST CASE: 74)" />
+              </div>
+              <div className="p-4 rounded-xl bg-surface-subtle border border-border-subtle">
+                <RiskGauge score={88} band="SEVERE" verdict="NO_GO" label="CYCLONE SQUALL WARNING" />
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Deterministic Factor Decomposition (Score = 74 Test Case)" description="Points sum faithfully to total score (32 + 22 + 12 + 8 = 74 pts)">
+            <RiskFactorList
+              overallScore={74}
+              factors={[
+                {
+                  name: "Significant Wave Height (SWH)",
+                  value: "3.2 m",
+                  points_added: 32,
+                  description: "SWH above 3.0 m: INCOIS high wave alert threshold for small-craft restriction",
+                  weight: 0.4,
+                },
+                {
+                  name: "Surface Wind Velocity",
+                  value: "24.5 kt (45.4 km/h)",
+                  points_added: 22,
+                  description: "IMD Squally Wind Advisory: Surface winds exceed safe offshore operational limits",
+                  weight: 0.3,
+                },
+                {
+                  name: "Swell Wave Surge",
+                  value: "2.4 m (Period: 9.5s)",
+                  points_added: 12,
+                  description: "INCOIS Swell Surge Alert: High swell creates hazardous coastal surf breaking",
+                  weight: 0.15,
+                },
+                {
+                  name: "MoEFCC Geofence Sanctuary Proximity",
+                  value: "Buffer Clearance 3.2 km",
+                  points_added: 8,
+                  description: "Proximity caution: within 5 km of protected marine sanctuary boundary",
+                  weight: 0.15,
+                },
+              ]}
+              triggeredRules={[
+                "INCOIS High Wave Alert: SWH 3.2m exceeds 3.0m threshold",
+                "IMD Squally Wind Advisory: 24.5 kt surface wind warning active",
+              ]}
+              dataQualityLabel="Authoritative INCOIS OSF & IMD Calibrated Marine Telemetry"
+              showTotalCheck={true}
+              defaultExpanded={true}
+            />
+          </Panel>
 
           <Panel title="Risk Badges &amp; Score Meters" description="Values reflect deterministic backend calculations">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

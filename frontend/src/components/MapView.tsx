@@ -1,22 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
-  Layers,
-  Eye,
-  EyeOff,
   MapPin,
-  Shield,
-  Fish,
-  Navigation,
-  Info,
   Compass,
   Satellite,
+  Navigation,
   Waves,
-  Map as MapIcon,
-  Sun,
 } from "lucide-react";
-import { MapLayerData, VisualizationPlan } from "@/lib/types";
+import { MapLayerData, VisualizationPlan, TemporalState, LayerStatus } from "@/lib/types";
+import { LayerControl, LayerLegend, TimeScrubber } from "./Map";
 
 interface MapViewProps {
   layers: MapLayerData[];
@@ -30,6 +23,12 @@ interface MapViewProps {
    * reinitialization. The map instance itself is never recreated.
    */
   resizeSignal?: number;
+  /**
+   * FE-04: imperative "View on map" target from the Evidence drawer. When
+   * `nonce` changes, the existing map flies to the coordinate — it is never
+   * remounted and no second map is created.
+   */
+  focusCoordinate?: { lat: number; lon: number; nonce: number };
 }
 
 // Genuinely keyless, legally compliant tile providers with ZERO watermarks
@@ -91,41 +90,108 @@ export const MapView: React.FC<MapViewProps> = ({
   visualizationPlan,
   onCoordinateSelect,
   resizeSignal,
+  focusCoordinate,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const overlayGroupRef = useRef<any>(null);
+  const wmsLayersRef = useRef<Map<string, any>>(new Map());
 
   const [activeLayerIds, setActiveLayerIds] = useState<string[]>([]);
+  const [layerStatuses, setLayerStatuses] = useState<Record<string, LayerStatus>>({});
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [currentBasemap, setCurrentBasemap] = useState<BasemapKey>("standard");
   const [selectedCoord, setSelectedCoord] = useState<{ lat: number; lon: number } | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  // ── FE-06 TEMPORAL STATE MODEL ──────────────────────────────────────────
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [noDataForSelectedTime, setNoDataForSelectedTime] = useState(false);
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Update active layer defaults when layers or visualization plan changes
+  // Compute available timestamps from layers without inventing synthetic values
+  const availableTimes = useMemo(() => {
+    const timeSet = new Set<string>();
+    layers.forEach((l) => {
+      if (l.timestamps && Array.isArray(l.timestamps)) {
+        l.timestamps.forEach((t) => timeSet.add(t));
+      }
+      if (l.temporal_features) {
+        Object.keys(l.temporal_features).forEach((t) => timeSet.add(t));
+      }
+      l.features?.forEach((f) => {
+        if (f.properties?.timestamp) timeSet.add(f.properties.timestamp);
+      });
+    });
+
+    return Array.from(timeSet).sort();
+  }, [layers]);
+
+  const isTimeVarying = useMemo(() => {
+    return layers.some((l) => l.time_varying) || availableTimes.length > 1;
+  }, [layers, availableTimes]);
+
+  // Synchronize selectedTime with available times
   useEffect(() => {
-    if (layers && layers.length > 0) {
+    if (availableTimes.length > 0) {
+      if (!selectedTime || !availableTimes.includes(selectedTime)) {
+        setSelectedTime(availableTimes[0]);
+      }
+    } else {
+      setSelectedTime(null);
+      setIsPlaying(false);
+    }
+  }, [availableTimes]);
+
+  // Temporal state object for TimeScrubber
+  const temporalState: TemporalState = useMemo(() => ({
+    selectedTime,
+    availableTimes,
+    startTime: availableTimes.length > 0 ? availableTimes[0] : null,
+    endTime: availableTimes.length > 0 ? availableTimes[availableTimes.length - 1] : null,
+    isTimeVarying,
+    isPlaying,
+  }), [selectedTime, availableTimes, isTimeVarying, isPlaying]);
+
+  // Manage layer visibility state cleanly across queries (Requirement 7)
+  useEffect(() => {
+    if (!layers || layers.length === 0) {
+      setActiveLayerIds([]);
+      return;
+    }
+
+    const currentLayerIdSet = new Set(layers.map((l) => l.id || l.layer_id));
+
+    setActiveLayerIds((prev) => {
+      // 1. Preserve user-controlled preferences for layers that still exist
+      const preserved = prev.filter((id) => currentLayerIdSet.has(id));
+
+      if (preserved.length > 0) {
+        return preserved;
+      }
+
+      // 2. Otherwise respect visualizationPlan.active_layers if supplied
       if (visualizationPlan?.active_layers && visualizationPlan.active_layers.length > 0) {
-        // Activate all layers specified in visualization plan that exist in layers
         const planned = visualizationPlan.active_layers.filter((id) =>
-          layers.some((l) => l.layer_id === id)
+          currentLayerIdSet.has(id)
         );
         if (planned.length > 0) {
-          setActiveLayerIds(planned);
-          return;
+          return planned;
         }
       }
-      const defaults = layers.filter((l) => l.visible_by_default).map((l) => l.layer_id);
-      setActiveLayerIds(defaults.length > 0 ? defaults : layers.map((l) => l.layer_id));
-    }
+
+      // 3. Fallback: activate only relevant layers marked visible_by_default
+      const defaults = layers.filter((l) => l.visible_by_default).map((l) => l.id || l.layer_id);
+      return defaults.length > 0 ? defaults : [layers[0].id || layers[0].layer_id];
+    });
   }, [layers, visualizationPlan]);
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map — Map instance remains persistent (NEVER recreated)
   useEffect(() => {
     if (!isClient || !mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -170,23 +236,26 @@ export const MapView: React.FC<MapViewProps> = ({
     }, 250);
 
     return () => {
+      // Clean up WMS layers
+      wmsLayersRef.current.forEach((layer) => {
+        try {
+          map.removeLayer(layer);
+        } catch {}
+      });
+      wmsLayersRef.current.clear();
+
       map.remove();
       mapInstanceRef.current = null;
     };
   }, [isClient]);
 
-  // Keep Leaflet's internal size in sync with its container WITHOUT ever
-  // reinitializing the map. A single ResizeObserver transparently covers every
-  // resize source — window resize, sidebar toggle, split-divider drag, and the
-  // mobile chat/map tab switch (display none -> block) — so tiles never reset.
+  // Keep Leaflet's internal size in sync with its container WITHOUT ever reinitializing
   useEffect(() => {
     if (!isClient || !mapContainerRef.current) return;
     if (typeof ResizeObserver === "undefined") return;
 
     let frame = 0;
     const observer = new ResizeObserver(() => {
-      // Coalesce bursts of resize callbacks (e.g. during a divider drag) into a
-      // single invalidateSize per animation frame to avoid tile flicker.
       if (frame) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (mapInstanceRef.current) {
@@ -202,8 +271,7 @@ export const MapView: React.FC<MapViewProps> = ({
     };
   }, [isClient]);
 
-  // Imperative reflow hook: the parent bumps `resizeSignal` after layout shifts
-  // that a ResizeObserver might not settle in time (drag end, tab reveal).
+  // Imperative reflow hook for layout shifts
   useEffect(() => {
     if (resizeSignal === undefined) return;
     if (!mapInstanceRef.current) return;
@@ -238,20 +306,168 @@ export const MapView: React.FC<MapViewProps> = ({
     );
   }, [visualizationPlan?.center_lat, visualizationPlan?.center_lon, visualizationPlan?.default_zoom]);
 
-  // Render Dynamic GIS Overlays
+  // Evidence drawer "View on map"
+  useEffect(() => {
+    if (!focusCoordinate || !mapInstanceRef.current) return;
+    mapInstanceRef.current.flyTo(
+      [focusCoordinate.lat, focusCoordinate.lon],
+      Math.max(mapInstanceRef.current.getZoom?.() || 8, 9),
+      { duration: 1.0 }
+    );
+  }, [focusCoordinate?.nonce]);
+
+  // ── WMS LAYER MANAGEMENT ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const L = require("leaflet");
+    const map = mapInstanceRef.current;
+
+    // Prune removed WMS layers
+    const activeWmsMap = wmsLayersRef.current;
+    activeWmsMap.forEach((tileLayer, layerId) => {
+      const isStillActive = activeLayerIds.includes(layerId);
+      const existsInLayers = layers.some((l) => (l.id || l.layer_id) === layerId);
+      if (!isStillActive || !existsInLayers) {
+        try {
+          map.removeLayer(tileLayer);
+        } catch {}
+        activeWmsMap.delete(layerId);
+      }
+    });
+
+    // Add or update active WMS layers
+    layers.forEach((layer) => {
+      const layerId = layer.id || layer.layer_id;
+      const kind = (layer.kind || layer.layer_type || "").toLowerCase();
+
+      if (kind === "wms") {
+        const isActive = activeLayerIds.includes(layerId);
+
+        if (isActive && !activeWmsMap.has(layerId)) {
+          if (!layer.url || !layer.layer_name) {
+            setLayerStatuses((prev) => ({ ...prev, [layerId]: "unavailable" }));
+            return;
+          }
+
+          try {
+            const wmsTileLayer = L.tileLayer.wms(layer.url, {
+              layers: layer.layer_name,
+              format: "image/png",
+              transparent: true,
+              opacity: 0.75,
+              attribution: layer.attribution || "",
+              ...(layer.wms_params || {}),
+            });
+
+            // Handle WMS failures gracefully without breaking the map
+            wmsTileLayer.on("tileerror", () => {
+              console.warn(`[ORCA Map] Remote WMS tile load failure for layer ${layerId}`);
+              setLayerStatuses((prev) => ({ ...prev, [layerId]: "unavailable" }));
+            });
+
+            wmsTileLayer.addTo(map);
+            activeWmsMap.set(layerId, wmsTileLayer);
+            setLayerStatuses((prev) => ({ ...prev, [layerId]: "ready" }));
+          } catch (err) {
+            console.error(`[ORCA Map] Error initializing WMS layer ${layerId}:`, err);
+            setLayerStatuses((prev) => ({ ...prev, [layerId]: "unavailable" }));
+          }
+        }
+      }
+    });
+  }, [layers, activeLayerIds]);
+
+  // ── RENDER DYNAMIC GEOJSON & HEATMAP OVERLAYS ────────────────────────────
   useEffect(() => {
     if (!mapInstanceRef.current || !overlayGroupRef.current) return;
     const L = require("leaflet");
     const group = overlayGroupRef.current;
     group.clearLayers();
 
+    let missingDynamicDataFound = false;
+
     layers.forEach((layer) => {
-      if (!activeLayerIds.includes(layer.layer_id)) return;
+      const layerId = layer.id || layer.layer_id;
+      if (!activeLayerIds.includes(layerId)) return;
 
-      layer.features.forEach((feature) => {
-        const { geometry, properties } = feature;
+      const kind = (layer.kind || layer.layer_type || "").toLowerCase();
 
-        // 1. POINT FEATURES (Ports, Target Pin, PFZ Hotspots, Wave Centers, Route Waypoints)
+      // Skip WMS layers (they are handled in the WMS effect above)
+      if (kind === "wms") return;
+
+      // Handle unsupported layer kinds gracefully
+      if (kind === "unsupported" || (!layer.features && !layer.temporal_features && !layer.geojson)) {
+        return;
+      }
+
+      // Determine the features for this layer at the currently selected time
+      let featuresToRender: any[] = [];
+
+      if (layer.time_varying) {
+        if (layer.temporal_features && selectedTime) {
+          featuresToRender = layer.temporal_features[selectedTime] || [];
+        } else if (layer.features) {
+          if (selectedTime) {
+            featuresToRender = layer.features.filter((f) => {
+              return !f.properties?.timestamp || f.properties.timestamp === selectedTime;
+            });
+          } else {
+            featuresToRender = layer.features;
+          }
+        }
+
+        if (featuresToRender.length === 0 && layer.features && layer.features.length > 0) {
+          missingDynamicDataFound = true;
+        }
+      } else {
+        featuresToRender = layer.features || (layer.geojson?.features ? layer.geojson.features : []);
+      }
+
+      // Render HEATMAP kind
+      if (kind === "heatmap") {
+        featuresToRender.forEach((feature) => {
+          if (feature.geometry?.type === "Point") {
+            const [lon, lat] = feature.geometry.coordinates;
+            const weight = feature.properties?.weight || feature.properties?.intensity || 1;
+            const radius = Math.min(60000, Math.max(15000, weight * 25000));
+
+            // Outer soft glow ring
+            const outerGlow = L.circle([lat, lon], {
+              radius: radius * 1.5,
+              color: layer.color || "#ff9f1c",
+              weight: 0,
+              fillColor: layer.color || "#ff9f1c",
+              fillOpacity: 0.12,
+            });
+            group.addLayer(outerGlow);
+
+            // Core concentration circle
+            const coreCircle = L.circle([lat, lon], {
+              radius: radius,
+              color: layer.color || "#e71d36",
+              weight: 1,
+              fillColor: layer.color || "#e71d36",
+              fillOpacity: 0.35,
+            });
+            coreCircle.bindPopup(`
+              <div class="p-2 text-xs space-y-1">
+                <div class="font-bold text-sm text-amber-400">🔥 ${layer.name || "Heatmap Hotspot"}</div>
+                <div>Density Weight: <b>${weight}</b></div>
+                <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat}°N, Lon: ${lon}°E</div>
+              </div>
+            `);
+            group.addLayer(coreCircle);
+          }
+        });
+        return;
+      }
+
+      // Render GEOJSON features
+      featuresToRender.forEach((feature) => {
+        const { geometry, properties = {} } = feature;
+        if (!geometry) return;
+
+        // 1. POINT FEATURES (Ports, Origin/Target pins, PFZ Hotspots, Wave Centers, Route Waypoints)
         if (geometry.type === "Point") {
           const [lon, lat] = geometry.coordinates;
 
@@ -350,7 +566,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   white-space: nowrap;
                   cursor: pointer;
                 ">
-                  <span>🎯 Displaced: +${properties.displacement_km || 25}km ${properties.direction || ""}</span>
+                  <span>🎯 Displaced: +${properties.distance_km || properties.displacement_km || 25}km ${properties.direction || ""}</span>
                 </div>
               `,
               iconAnchor: [45, 14],
@@ -361,7 +577,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div class="font-bold text-sm text-pink-400">
                   🎯 Displaced Target Coordinate
                 </div>
-                <div class="text-slate-300">Offset: <b>${properties.displacement_km || "--"} km</b> heading <b>${properties.direction || "--"}</b> (${properties.bearing || 0}°)</div>
+                <div class="text-slate-300">Offset: <b>${properties.distance_km || properties.displacement_km || "--"} km</b> heading <b>${properties.direction || "--"}</b> (${properties.bearing_deg || properties.bearing || 0}°)</div>
                 <div class="text-[10px] text-slate-400 font-mono">Lat: ${lat.toFixed(4)}°N, Lon: ${lon.toFixed(4)}°E</div>
               </div>
             `);
@@ -476,14 +692,14 @@ export const MapView: React.FC<MapViewProps> = ({
               </div>
             `);
             group.addLayer(marker);
-          } else if (properties.wave_height_m) {
+          } else if (properties.wave_height_m !== undefined) {
             // Wave hazard circle
             const circle = L.circle([lat, lon], {
               radius: properties.radius || 35000,
               color: layer.color || "#ff9f1c",
               weight: 1.5,
               fillColor: layer.color || "#ff9f1c",
-              fillOpacity: 0.1,
+              fillOpacity: 0.12,
             });
             circle.bindPopup(`
               <div class="p-2 text-xs">
@@ -491,6 +707,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div>Significant Wave Height: <b>${properties.wave_height_m}m</b></div>
                 <div>Sea State: <b>${properties.sea_state || "Moderate"}</b></div>
                 <div>Hazard Category: <b>${properties.risk_level || "Medium"}</b></div>
+                ${properties.timestamp ? `<div class="text-[10px] text-slate-400 font-mono mt-1">Time: ${properties.timestamp}</div>` : ""}
               </div>
             `);
             group.addLayer(circle);
@@ -503,10 +720,10 @@ export const MapView: React.FC<MapViewProps> = ({
           const latLngs = rawCoords.map((c: any) => [c[1], c[0]]);
 
           const poly = L.polygon(latLngs, {
-            color: "#f72585",
+            color: layer.color || "#f72585",
             weight: 2,
             dashArray: "5, 5",
-            fillColor: "#f72585",
+            fillColor: layer.color || "#f72585",
             fillOpacity: 0.22,
           });
           poly.bindPopup(`
@@ -543,7 +760,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   ➡️ Spatial Displacement Vector
                 </div>
                 <div>Distance: <b>${properties.distance_km || "--"} km</b></div>
-                <div>Bearing: <b>${properties.bearing !== undefined ? properties.bearing + "°" : "--"}</b></div>
+                <div>Bearing: <b>${properties.bearing_deg !== undefined ? properties.bearing_deg + "°" : properties.bearing !== undefined ? properties.bearing + "°" : "--"}</b></div>
                 <div>Origin: <b>${properties.origin || "Location A"}</b></div>
               </div>
             `);
@@ -556,12 +773,11 @@ export const MapView: React.FC<MapViewProps> = ({
           const isRecommended = properties.is_recommended;
           const isSelected = properties.is_selected !== undefined ? properties.is_selected : isRecommended;
 
-          // Selected corridor is highlighted with vibrant styling; unselected corridor is dimmed/secondary for comparison
           let color = "#00f5d4";
           if (isSelected) {
             color = crossesMpa ? "#f43f5e" : isRecommended ? "#00f5d4" : "#fbbf24";
           } else {
-            color = crossesMpa ? "#991b1b" : "#64748b"; // Dimmed secondary corridor
+            color = crossesMpa ? "#991b1b" : "#64748b";
           }
 
           const line = L.polyline(latLngs, {
@@ -595,13 +811,15 @@ export const MapView: React.FC<MapViewProps> = ({
         }
       });
     });
-  }, [layers, activeLayerIds]);
 
-  const toggleLayer = (layerId: string) => {
+    setNoDataForSelectedTime(missingDynamicDataFound);
+  }, [layers, activeLayerIds, selectedTime]);
+
+  const toggleLayer = useCallback((layerId: string) => {
     setActiveLayerIds((prev) =>
       prev.includes(layerId) ? prev.filter((id) => id !== layerId) : [...prev, layerId]
     );
-  };
+  }, []);
 
   return (
     <div className="relative w-full h-full min-h-[400px] flex flex-col bg-orca-darkest rounded-xl overflow-hidden border border-orca-border shadow-card">
@@ -622,7 +840,7 @@ export const MapView: React.FC<MapViewProps> = ({
           )}
         </div>
 
-        {/* Map Header Controls: Basemap & Overlays */}
+        {/* Map Header Controls: Basemap & Expandable Layer Control */}
         <div className="flex items-center gap-2">
           {/* Basemap Switcher */}
           <div className="bg-orca-dark/80 border border-orca-border rounded-lg p-0.5 flex items-center gap-0.5 text-[10px]">
@@ -648,66 +866,36 @@ export const MapView: React.FC<MapViewProps> = ({
             })}
           </div>
 
-          {/* Dynamic Layer Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setShowLayerMenu(!showLayerMenu)}
-              className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition flex items-center gap-1.5 ${
-                showLayerMenu || activeLayerIds.length > 0
-                  ? "bg-orca-cyan/15 border-orca-cyan/40 text-orca-cyan"
-                  : "bg-orca-dark/80 border-orca-border text-orca-muted hover:text-white"
-              }`}
-              title="Toggle Marine GIS Layers"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Layers</span>
-              <span className="px-1.5 py-0.2 rounded bg-orca-card text-[9px] font-mono font-bold">
-                {activeLayerIds.length}
-              </span>
-            </button>
-
-            {showLayerMenu && (
-              <div className="absolute right-0 mt-1.5 w-64 bg-orca-panel/95 backdrop-blur-md border border-orca-border rounded-xl p-3 shadow-2xl space-y-2 text-xs z-30">
-                <div className="font-bold text-white uppercase tracking-wider text-[10px] text-orca-muted border-b border-orca-border pb-1.5 flex items-center justify-between">
-                  <span>Marine GIS Overlays</span>
-                  <span className="text-[9px] text-orca-cyan font-mono">{activeLayerIds.length}/{layers.length}</span>
-                </div>
-                {layers.length === 0 ? (
-                  <p className="text-[11px] text-orca-muted italic">No active GIS layers for this query.</p>
-                ) : (
-                  layers.map((layer) => {
-                    const isActive = activeLayerIds.includes(layer.layer_id);
-                    return (
-                      <div
-                        key={layer.layer_id}
-                        onClick={() => toggleLayer(layer.layer_id)}
-                        className="flex items-center justify-between p-1.5 rounded-lg hover:bg-orca-dark/70 cursor-pointer transition"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: layer.color || "#00f0d0" }}
-                          />
-                          <span className="text-white text-[11px]">{layer.name}</span>
-                        </div>
-                        {isActive ? (
-                          <Eye className="w-3 h-3 text-orca-cyan" />
-                        ) : (
-                          <EyeOff className="w-3 h-3 text-orca-muted" />
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
+          {/* Dynamic Layer Control Drawer / Dropdown */}
+          <LayerControl
+            layers={layers}
+            activeLayerIds={activeLayerIds}
+            onToggleLayer={toggleLayer}
+            isOpen={showLayerMenu}
+            onToggleOpen={() => setShowLayerMenu(!showLayerMenu)}
+          />
         </div>
       </div>
 
       {/* 2. Map Target Container */}
       <div className="relative flex-1 w-full h-full min-h-[360px]">
         <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+        {/* Compact Dynamic Legend for visible layers */}
+        <LayerLegend
+          layers={layers}
+          activeLayerIds={activeLayerIds}
+        />
+
+        {/* Temporal Time Scrubber (only shown when data is time-varying) */}
+        {isTimeVarying && (
+          <TimeScrubber
+            temporalState={temporalState}
+            onTimeChange={(time) => setSelectedTime(time)}
+            onTogglePlay={() => setIsPlaying((p) => !p)}
+            noDataForSelectedTime={noDataForSelectedTime}
+          />
+        )}
 
         {/* Clarification State: Subtle neutral "awaiting input" overlay */}
         {visualizationPlan?.result_type === "clarification" && layers.length === 0 && (
@@ -727,4 +915,3 @@ export const MapView: React.FC<MapViewProps> = ({
     </div>
   );
 };
-
