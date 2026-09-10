@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from typing import List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -10,7 +10,7 @@ async def get_active_marine_alerts() -> List[Dict[str, Any]]:
     Returns active INCOIS High Wave & IMD Coastal Marine hazard bulletins
     across Indian coastal sectors.
     """
-    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     return [
         {
             "alert_id": "INCOIS-HWA-2026-089",

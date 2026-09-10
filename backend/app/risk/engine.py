@@ -5,6 +5,8 @@ from app.models.schemas import (
     RiskFactor,
     OceanObservation,
     WeatherObservation,
+    DataQuality,
+    DataFreshness,
 )
 from app.risk.thresholds import (
     WAVE_THRESHOLDS,
@@ -135,9 +137,26 @@ def calculate_marine_risk(
     else:
         category = RiskCategory.SEVERE
 
-    # Confidence based on missing variables
-    confidence = 95 - (len(missing_inputs) * 15)
-    confidence = max(50, confidence)
+    # Data quality assessment
+    is_demo = (
+        (ocean is not None and ocean.status == DataFreshness.DEMO)
+        or (weather is not None and weather.status == DataFreshness.DEMO)
+        or (ocean is None and weather is None)
+    )
+    if is_demo:
+        data_quality = DataQuality.DEMO
+        data_quality_notes = "Calculated from synthetic test simulation data — not live satellite feeds."
+        data_quality_label = "Synthetic Test Simulation (DEMO)"
+    elif len(missing_inputs) > 0:
+        data_quality = DataQuality.LIMITED
+        data_quality_notes = f"Calculated with partial data (missing: {', '.join(missing_inputs)})."
+        data_quality_label = "Partial Observation Coverage"
+    else:
+        data_quality = DataQuality.HIGH
+        data_quality_notes = "Calculated from authoritative operational feeds."
+        data_quality_label = "Operational Model Feeds"
+
+    confidence = max(50, 95 - (len(missing_inputs) * 15))
 
     return DeterministicRiskResult(
         overall_score=final_score,
@@ -145,6 +164,8 @@ def calculate_marine_risk(
         contributing_factors=factors,
         triggered_rules=triggered_rules,
         missing_inputs=missing_inputs,
+        data_quality=data_quality,
+        data_quality_notes=data_quality_notes,
         confidence_percentage=confidence,
-        data_quality_label="Authoritative Observations & Calibrated Forecasts"
+        data_quality_label=data_quality_label,
     )

@@ -1,0 +1,1 @@
+- [ORCA UI design direction](orca-ui-design-direction.md) — calm, premium, map-first; flat sections; never touch backend for UI work
