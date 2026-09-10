@@ -11,6 +11,7 @@ from app.providers.base import (
     BaseOceanProvider,
     BaseWeatherProvider,
     ProviderCapability,
+    ProviderUnavailable,
     TieredProvider,
 )
 
@@ -25,6 +26,29 @@ def _at(hourly: dict, variable: str, idx: int) -> Optional[float]:
         return None
     value = series[idx]
     return round(float(value), 2) if value is not None else None
+
+
+def _required(hourly: dict, variable: str, idx: int, label: str) -> float:
+    """A required value at `idx`, or ProviderUnavailable naming what is missing.
+
+    These six fields used to carry literal fallbacks -- wave 1.5 m, swell 1.0 m,
+    period 8.0 s, direction 160 deg, wind 12.0 kt, air 28.5 C -- returned
+    whenever Open-Meteo omitted or nulled the series, and published under
+    status LIVE with source "Open-Meteo Marine / Copernicus Marine Service".
+    A dead upstream feed therefore rendered as a benign LOW-risk verdict
+    wearing a live badge.
+
+    A provider that does not carry a variable must say so. The chain records
+    the attempt and falls through to the next tier, exactly as tide and
+    lightning already do.
+    """
+    value = _at(hourly, variable, idx)
+    if value is None:
+        raise ProviderUnavailable(
+            f"Open-Meteo returned no {label} for this position and hour "
+            f"(series '{variable}' absent or null). Not substituting a value."
+        )
+    return value
 
 
 class OpenMeteoProvider(TieredProvider, BaseOceanProvider, BaseWeatherProvider):
@@ -74,10 +98,10 @@ class OpenMeteoProvider(TieredProvider, BaseOceanProvider, BaseWeatherProvider):
         elif len(times) > 0:
             idx = min(max(0, offset_hours), len(times) - 1)
 
-        wave_height = hourly.get("wave_height", [1.5])[idx] or 1.5
-        swell_height = hourly.get("swell_wave_height", [1.0])[idx] or 1.0
-        swell_period = hourly.get("swell_wave_period", [8.0])[idx] or 8.0
-        swell_dir = hourly.get("swell_wave_direction", [160.0])[idx] or 160.0
+        wave_height = _required(hourly, "wave_height", idx, "significant wave height")
+        swell_height = _required(hourly, "swell_wave_height", idx, "swell height")
+        swell_period = _required(hourly, "swell_wave_period", idx, "swell period")
+        swell_dir = _required(hourly, "swell_wave_direction", idx, "swell direction")
 
         # Open-Meteo does not carry SST and currents everywhere. When a series
         # is absent or null at this hour we report nothing. These three fields
@@ -129,12 +153,15 @@ class OpenMeteoProvider(TieredProvider, BaseOceanProvider, BaseWeatherProvider):
         elif len(times) > 0:
             idx = min(max(0, offset_hours), len(times) - 1)
 
-        wind_speed = hourly.get("wind_speed_10m", [12.0])[idx] or 12.0
-        wind_gust = hourly.get("wind_gusts_10m", [16.0])[idx] or (wind_speed * 1.3)
-        wind_dir = hourly.get("wind_direction_10m", [180.0])[idx] or 180.0
-        air_temp = hourly.get("temperature_2m", [28.5])[idx] or 28.5
-        precip = hourly.get("precipitation", [0.0])[idx] or 0.0
-        visibility = (hourly.get("visibility", [10000.0])[idx] or 10000.0) / 1000.0  # km
+        wind_speed = _required(hourly, "wind_speed_10m", idx, "wind speed")
+        wind_dir = _required(hourly, "wind_direction_10m", idx, "wind direction")
+        air_temp = _required(hourly, "temperature_2m", idx, "air temperature")
+        wind_gust = _required(hourly, "wind_gusts_10m", idx, "wind gust")
+        # Precipitation and visibility genuinely report 0 and are optional in
+        # the upstream schema, so absence is reported as unavailable too rather
+        # than silently read as "no rain, clear sight".
+        precip = _required(hourly, "precipitation", idx, "precipitation")
+        visibility = _required(hourly, "visibility", idx, "visibility") / 1000.0  # km
 
         alert_level = "None"
         warning = None
