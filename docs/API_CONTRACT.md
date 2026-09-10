@@ -1,6 +1,6 @@
 # ORCA API Contract
 
-**Contract version: 1.2.0**
+**Contract version: 1.3.0**
 Machine-readable definition: [`backend/app/models/envelope.py`](../backend/app/models/envelope.py)
 
 This document is the agreement between the ORCA backend and the ORCA frontend.
@@ -36,6 +36,15 @@ Only `query` is required. An empty or whitespace-only `query` returns `400`.
 inherits the previous turn's resolved location so a follow-up like
 *"what about tomorrow?"* resolves against the same place.
 
+`user_location` is the device position. When the query names no place it is
+the location the planner resolves against ("my area", "near me", or simply a
+query with no place on a fresh conversation). The conversation's last location
+still wins for a follow-up. With no place in the text, no conversation and no
+`user_location`, the response is a clarification: `intent` is
+`needs_clarification`, `answer.headline` is the question to put to the user,
+`answer.verdict` is `NOT_APPLICABLE`, `risk` is `null` and `evidence` is `[]`.
+Send `user_location` whenever the device has one.
+
 ### Response — the envelope
 
 ```jsonc
@@ -57,6 +66,26 @@ inherits the previous turn's resolved location so a follow-up like
 
 Nothing in the envelope is optional-by-omission: every key above is always
 present. Absent data is `null` (for `risk`) or `[]` (for the arrays).
+
+### Deprecated aliases (1.3.0, one release only)
+
+Three pre-envelope fields are also emitted at the top level so the frontend
+built against the old shape keeps rendering while it migrates:
+
+| Alias | Derived from | Read instead |
+| :--- | :--- | :--- |
+| `executive_summary` | `answer.narrative` | `answer.narrative` |
+| `visualization_plan` | `intent`, `layers[]`, `meta.location` | the cards and layers themselves |
+| `agent_activity[]` | `trace[]` without the final `done` event | `trace[]` |
+
+They are **views of the envelope**, computed from it after it is built; they
+can never carry a value the envelope does not. They are marked `deprecated` in
+the JSON schema and are removed at contract 2.0.0 once the frontend reads the
+envelope directly. Nothing else from the old shape is emitted: `recommendation`,
+`risk_assessment`, `route_analysis`, `fishing_zones`, `comparison_data`,
+`historical_trend`, `spatial_what_if`, `route_comparison`, `map_layers`,
+`ocean_conditions` and `weather_conditions` have envelope equivalents
+(`cards[]`, `risk`, `layers[]`, `evidence[]`) or no equivalent yet.
 
 ---
 
@@ -320,6 +349,7 @@ Declared here so nothing in this document overclaims:
 
 | Version | Change |
 | :--- | :--- |
+| 1.3.0 | Non-breaking. Deprecated top-level aliases `executive_summary`, `visualization_plan` and `agent_activity` are emitted for one release, computed from the envelope (see §1). `intent` may be `needs_clarification`, in which case `answer.headline` is the question and `risk` is `null`; `user_location` on the request is honoured as the spatial fallback. `RouteWaypoint.wave_height_m` and `wind_knots` inside `route_plan` are nullable: a missing feed is `null`, never a stand-in number. |
 | 1.2.0 | Non-breaking. `layers[]` now includes `kind="wms"` descriptors for four ISRO Bhuvan layers, tier `ISRO`. `trace[]` gains `status: "SKIPPED"` events naming every provider the chain tried and why it was not used. `meta.limitations` names tide and lightning/cyclone gaps explicitly. |
 | 1.1.0 | **Breaking.** `OceanObservation.sea_surface_temp_c`, `ocean_current_speed_m_s`, `ocean_current_direction_deg` and `TimeSeriesPoint.sst_c` are now nullable. They previously held hardcoded constants that were returned identically for every coordinate; a provider without coverage now returns `null` and emits no evidence record for that variable. Consumers must render null as "unavailable". |
 | 1.0.0 | Initial contract. `/api/query` returns the envelope; `EvidenceRecord` gains `provider_tier`; `/api/export/report` takes the envelope. |

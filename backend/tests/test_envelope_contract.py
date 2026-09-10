@@ -164,3 +164,40 @@ def test_no_place_and_no_position_asks_instead_of_assuming():
     envelope = QueryEnvelope.model_validate(response.json())
     assert envelope.intent.value == "needs_clarification"
     assert envelope.risk is None
+
+
+# --------------------------------------------------------------------------
+# Deprecated aliases (1.3.0): views of the envelope, never a second source
+# --------------------------------------------------------------------------
+
+def test_legacy_aliases_can_only_see_the_envelope():
+    """The structural guarantee: the alias builder takes the envelope and
+    nothing else, so it cannot smuggle internal data past the contract."""
+    import inspect
+    from app.api.envelope_builder import legacy_aliases
+    assert list(inspect.signature(legacy_aliases).parameters) == ["envelope"]
+
+
+@pytest.mark.parametrize("query", CANONICAL_QUERIES, ids=[q[:45] for q in CANONICAL_QUERIES])
+def test_legacy_aliases_are_views_of_the_envelope(query):
+    raw = client.post("/api/query", json={"query": query, "user_location": USER_LOCATION}).json()
+
+    assert raw["executive_summary"] == raw["answer"]["narrative"]
+
+    trace_without_done = [t for t in raw["trace"] if t["stage"] != "done"]
+    assert [a["action"] for a in raw["agent_activity"]] == [t["action"] for t in trace_without_done]
+    assert [a["details"] for a in raw["agent_activity"]] == [t["detail"] for t in trace_without_done]
+
+    plan = raw["visualization_plan"]
+    assert plan["active_layers"] == [layer["id"] for layer in raw["layers"]]
+    if raw["intent"] != "needs_clarification":
+        assert plan["center_lat"] == raw["meta"]["location"]["latitude"]
+        assert plan["center_lon"] == raw["meta"]["location"]["longitude"]
+    else:
+        assert plan["result_type"] == "clarification"
+
+
+def test_legacy_aliases_are_marked_deprecated_in_the_schema():
+    schema = QueryEnvelope.model_json_schema()["properties"]
+    for name in ("executive_summary", "visualization_plan", "agent_activity"):
+        assert schema[name].get("deprecated") is True, name

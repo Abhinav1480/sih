@@ -36,11 +36,13 @@ from app.models.envelope import (
     Verdict,
 )
 from app.models.schemas import (
+    AgentStepRecord,
     DataFreshness,
     OrcaAnalysisResponse,
     ProviderTier,
     QueryIntent,
     RiskCategory,
+    VisualizationPlan,
 )
 from app.providers.provenance import classify_tier, is_synthetic
 from app.providers.registry import registry
@@ -419,8 +421,71 @@ def _degraded(analysis: OrcaAnalysisResponse) -> bool:
     )
 
 
+# Legacy `visualization_plan` per intent: (result_type, components, zoom).
+# This is the table the report agent used before the envelope existed, kept
+# here so the alias is a function of `intent` alone.
+_LEGACY_PLAN = {
+    QueryIntent.FISHING_ZONES: ("fishing_zones", ["fishing_zones_card", "map", "conditions_grid", "evidence_drawer"], 10),
+    QueryIntent.ROUTE_ANALYSIS: ("route_analysis", ["route_comparison_card", "route_analysis_card", "map", "conditions_grid", "evidence_drawer"], 8),
+    QueryIntent.ROUTE_FOLLOW_UP: ("route_analysis", ["route_comparison_card", "route_analysis_card", "map", "conditions_grid", "evidence_drawer"], 8),
+    QueryIntent.ROUTE_COMPARISON: ("route_analysis", ["route_comparison_card", "route_analysis_card", "map", "conditions_grid", "evidence_drawer"], 8),
+    QueryIntent.REGIONAL_COMPARISON: ("regional_comparison", ["comparison_card", "map", "conditions_grid", "evidence_drawer"], 7),
+    QueryIntent.SPATIAL_WHAT_IF: ("spatial_what_if_analysis", ["spatial_what_if_card", "map", "conditions_grid", "evidence_drawer"], 9),
+    QueryIntent.HISTORICAL_TREND: ("historical_trend", ["historical_trend_card", "map", "conditions_grid", "evidence_drawer"], 9),
+    QueryIntent.NEEDS_CLARIFICATION: ("clarification", ["clarification_card", "neutral_map"], 5),
+}
+_LEGACY_PLAN_DEFAULT = ("marine_safety", ["risk_card", "conditions_grid", "map", "evidence_drawer"], 9)
+# Where the legacy neutral map sat while ORCA asked for a location. A UI
+# constant, not a data value.
+_NEUTRAL_MAP_CENTRE = (16.0, 82.0)
+
+
+def legacy_aliases(envelope: QueryEnvelope) -> dict:
+    """Deprecated pre-envelope fields, computed from the envelope and nothing else.
+
+    The signature is the guarantee: this function cannot see the internal
+    analysis, so an alias can never carry a value the envelope does not.
+    Remove with contract 2.0.0 once the frontend reads the envelope directly.
+    """
+    result_type, components, zoom = _LEGACY_PLAN.get(envelope.intent, _LEGACY_PLAN_DEFAULT)
+    if envelope.intent == QueryIntent.NEEDS_CLARIFICATION:
+        centre_lat, centre_lon = _NEUTRAL_MAP_CENTRE
+    else:
+        centre_lat, centre_lon = envelope.meta.location.latitude, envelope.meta.location.longitude
+
+    return {
+        "executive_summary": envelope.answer.narrative,
+        "visualization_plan": VisualizationPlan(
+            result_type=result_type,
+            components_to_render=components,
+            center_lat=centre_lat,
+            center_lon=centre_lon,
+            default_zoom=zoom,
+            active_layers=[layer.id for layer in envelope.layers],
+        ),
+        "agent_activity": [
+            AgentStepRecord(
+                agent=event.agent,
+                action=event.action,
+                tool=event.tool,
+                status=event.status,
+                duration_ms=event.duration_ms,
+                details=event.detail,
+                timestamp=event.timestamp,
+            )
+            for event in envelope.trace
+            if event.stage != "done"
+        ],
+    }
+
+
 def build_envelope(analysis: OrcaAnalysisResponse) -> QueryEnvelope:
     """Convert an internal analysis result into the public API envelope."""
+    envelope = _build_envelope(analysis)
+    return envelope.model_copy(update=legacy_aliases(envelope))
+
+
+def _build_envelope(analysis: OrcaAnalysisResponse) -> QueryEnvelope:
     risk = analysis.risk_assessment
     notes: List[str] = []
     if _degraded(analysis):

@@ -16,6 +16,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 from app.models.schemas import (
+    AgentStepRecord,
     ComparisonMetric,
     DataFreshness,
     EvidenceRecord,
@@ -29,9 +30,10 @@ from app.models.schemas import (
     RouteWaypoint,
     TemporalContext,
     TimeSeriesPoint,
+    VisualizationPlan,
 )
 
-CONTRACT_VERSION = "1.2.0"
+CONTRACT_VERSION = "1.3.0"
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -303,3 +305,26 @@ class QueryEnvelope(BaseModel):
     alerts: List[AlertRecord] = []
     trace: List[TraceEvent] = []
     meta: EnvelopeMeta
+
+    # ------------------------------------------------------------------
+    # Deprecated aliases (contract 1.3.0). Views of the envelope for the
+    # pre-envelope frontend, for one release only. Populated by
+    # `app.api.envelope_builder.legacy_aliases(envelope)`, which sees nothing
+    # but the envelope: an alias can never carry data the envelope does not.
+    # Removal is tracked on the frontend migration issue.
+    # ------------------------------------------------------------------
+    executive_summary: Optional[str] = Field(
+        default=None,
+        deprecated="Read answer.narrative. Alias for one release only.",
+        description="Deprecated alias of `answer.narrative`.",
+    )
+    visualization_plan: Optional[VisualizationPlan] = Field(
+        default=None,
+        deprecated="Derive from intent, cards[] and layers[]. Alias for one release only.",
+        description="Deprecated view of `intent`, `layers[]` and `meta.location`.",
+    )
+    agent_activity: List[AgentStepRecord] = Field(
+        default=[],
+        deprecated="Read trace[]. Alias for one release only.",
+        description="Deprecated view of `trace[]` without the final `done` event.",
+    )
