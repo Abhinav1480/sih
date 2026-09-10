@@ -176,6 +176,164 @@ MARINE_VOCAB = {
     }
 }
 
+
+# --- Band-keyed advisory ----------------------------------------------------
+#
+# The advisory a user reads is derived from the risk band the deterministic
+# engine produced, here, once, for every language including English. It used to
+# be a two-state safe/unsafe ladder over four bands, so a MODERATE (CAUTION)
+# verdict rendered as "conditions are favourable, go fishing" in every
+# vernacular while English correctly said "stay in sheltered water".
+#
+# Every band maps to its own text in every language. Nothing collapses.
+
+# The engine's band -> the already-translated band label in MARINE_VOCAB.
+# MARINE_VOCAB spells moderate "mod_risk", so a f"{band.lower()}_risk" lookup
+# missed it and leaked the English enum into vernacular sentences.
+BAND_LABEL_KEY = {
+    "LOW": "low_risk",
+    "MODERATE": "mod_risk",
+    "HIGH": "high_risk",
+    "SEVERE": "severe_risk",
+}
+
+# Appended to every advisory so the computed values reach the reader in their
+# own language instead of being dropped on the vernacular path.
+VALUES_CLAUSE = {
+    "en": "Waves {wave} m · wind {wind} kt · {horizon}.",
+    "te": "అలలు {wave} మీ · గాలి {wind} నాట్ · {horizon}.",
+    "hi": "लहरें {wave} मी · हवा {wind} नॉट · {horizon}।",
+    "ta": "அலைகள் {wave} மீ · காற்று {wind} நாட் · {horizon}.",
+    "kn": "ಅಲೆಗಳು {wave} ಮೀ · ಗಾಳಿ {wind} ನಾಟ್ · {horizon}.",
+    "ml": "തിരമാല {wave} മീ · കാറ്റ് {wind} നോട്ട് · {horizon}.",
+    "mr": "लाटा {wave} मी · वारा {wind} नॉट · {horizon}.",
+    "bn": "ঢেউ {wave} মি · বাতাস {wind} নট · {horizon}।",
+    "gu": "મોજાં {wave} મી · પવન {wind} નોટ · {horizon}.",
+    "or": "ଢେଉ {wave} ମି · ପବନ {wind} ନଟ୍ · {horizon}।",
+}
+
+# Four distinct advisories per language. LOW and HIGH reuse the wording the
+# team already had (rec_safe / rec_unfavorable); MODERATE and SEVERE are the
+# two that never existed and whose absence caused the inversion.
+BAND_ADVISORY = {
+    "en": {
+        "LOW": "GO: conditions are favorable for fishing craft and coastal navigation. "
+               "Maintain standard coastal safety protocols, monitor local marine broadcasts or NavIC advisories, and respect boundary geofences.",
+        "MODERATE": "CAUTION: conditions are marginal. Small artisanal craft should stay within sheltered coastal waters, "
+                    "carry communication equipment, and turn back if the sea state worsens.",
+        "HIGH": "NO-GO: high wave energy and squally winds present hazardous sea conditions for small artisanal vessels. "
+                "Fishermen are advised to postpone offshore departure or remain within sheltered harbor waters.",
+        "SEVERE": "NO-GO: severe sea state. Do not depart under any circumstances. "
+                  "Vessels already at sea should return to the nearest harbour immediately.",
+    },
+    "te": {
+        "LOW": "వాతావరణం మరియు సముద్ర పరిస్థితులు ప్రస్తుతం అనుకూలంగా ఉన్నాయి. సాధారణ భద్రతా జాగ్రత్తలు పాటిస్తూ చేపల వేటకు వెళ్ళవచ్చు.",
+        "MODERATE": "పరిస్థితులు అంతంతమాత్రంగా ఉన్నాయి. చిన్న పడవలు తీరానికి దగ్గరగా ఉండాలి, రేడియో లేదా ఫోన్ తీసుకెళ్లాలి, సముద్రం మరింత అల్లకల్లోలంగా మారితే వెంటనే తిరిగి రావాలి.",
+        "HIGH": "అధిక అలల ఎత్తు మరియు తీవ్రమైన గాలుల కారణంగా ఈ సమయంలో చేపల వేటకు వెళ్లడం సురక్షితం కాదు. తీరంలోనే ఉండడం మంచిది.",
+        "SEVERE": "సముద్రంలోకి వెళ్లవద్దు. సముద్రంలో ఉన్న పడవలు వెంటనే దగ్గరి రేవుకు తిరిగి రావాలి.",
+    },
+    "hi": {
+        "LOW": "वर्तमान में मौसम और समुद्र की स्थिति अनुकूल है। सामान्य सावधानियों के साथ मत्स्य पालन जारी रखा जा सकता है।",
+        "MODERATE": "स्थितियाँ अनुकूल नहीं हैं। छोटी नावें तट के पास ही रहें, रेडियो या फ़ोन साथ रखें, और समुद्र बिगड़ने पर तुरंत लौट आएँ।",
+        "HIGH": "ऊँची लहरों और तेज़ हवाओं के कारण इस समय समुद्र में जाना सुरक्षित नहीं है। तट पर ही रहें।",
+        "SEVERE": "समुद्र में न जाएँ। समुद्र में मौजूद नावें तुरंत निकटतम बंदरगाह लौटें।",
+    },
+    "ta": {
+        "LOW": "தற்போதைய கடல் மற்றும் வானிலை நிலைமைகள் சாதகமாக உள்ளன. பாதுகாப்பு விதிகளுடன் மீன்பிடிக்க செல்லலாம்.",
+        "MODERATE": "நிலைமைகள் சாதகமற்றவை. சிறு படகுகள் கரைக்கு அருகில் இருக்க வேண்டும், வானொலி அல்லது தொலைபேசி எடுத்துச் செல்ல வேண்டும், கடல் மோசமானால் உடனே திரும்ப வேண்டும்.",
+        "HIGH": "உயர்ந்த அலைகள் மற்றும் பலத்த காற்று காரணமாக இப்போது கடலுக்குச் செல்வது பாதுகாப்பானது அல்ல. கரையிலேயே இருங்கள்.",
+        "SEVERE": "கடலுக்குச் செல்ல வேண்டாம். கடலில் உள்ள படகுகள் உடனடியாக அருகிலுள்ள துறைமுகத்திற்குத் திரும்ப வேண்டும்.",
+    },
+    "kn": {
+        "LOW": "ಪ್ರಸ್ತುತ ಹವಾಮಾನ ಮತ್ತು ಸಮುದ್ರ ಪರಿಸ್ಥಿತಿಗಳು ಅನುಕೂಲಕರವಾಗಿವೆ.",
+        "MODERATE": "ಪರಿಸ್ಥಿತಿಗಳು ಅನುಕೂಲಕರವಾಗಿಲ್ಲ. ಸಣ್ಣ ದೋಣಿಗಳು ದಡದ ಸಮೀಪವೇ ಇರಬೇಕು, ರೇಡಿಯೋ ಅಥವಾ ಫೋನ್ ಒಯ್ಯಬೇಕು, ಸಮುದ್ರ ಹದಗೆಟ್ಟರೆ ಕೂಡಲೇ ಹಿಂತಿರುಗಬೇಕು.",
+        "HIGH": "ಎತ್ತರದ ಅಲೆಗಳು ಮತ್ತು ಬಿರುಗಾಳಿಯಿಂದಾಗಿ ಈಗ ಸಮುದ್ರಕ್ಕೆ ಹೋಗುವುದು ಸುರಕ್ಷಿತವಲ್ಲ. ದಡದಲ್ಲಿಯೇ ಇರಿ.",
+        "SEVERE": "ಸಮುದ್ರಕ್ಕೆ ಹೋಗಬೇಡಿ. ಸಮುದ್ರದಲ್ಲಿರುವ ದೋಣಿಗಳು ಕೂಡಲೇ ಹತ್ತಿರದ ಬಂದರಿಗೆ ಮರಳಬೇಕು.",
+    },
+    "ml": {
+        "LOW": "കടൽ കാലാവസ്ഥ അനുകൂലമാണ്. മത്സ്യബന്ധനത്തിന് പോകാവുന്നതാണ്.",
+        "MODERATE": "സാഹചര്യങ്ങൾ അനുകൂലമല്ല. ചെറുവള്ളങ്ങൾ തീരത്തിനടുത്ത് നിൽക്കണം, റേഡിയോ അല്ലെങ്കിൽ ഫോൺ കൊണ്ടുപോകണം, കടൽ മോശമായാൽ ഉടൻ മടങ്ങണം.",
+        "HIGH": "ഉയർന്ന തിരമാലയും ശക്തമായ കാറ്റും കാരണം ഇപ്പോൾ കടലിൽ പോകുന്നത് സുരക്ഷിതമല്ല. തീരത്ത് തന്നെ തുടരുക.",
+        "SEVERE": "കടലിൽ പോകരുത്. കടലിലുള്ള വള്ളങ്ങൾ ഉടൻ അടുത്ത തുറമുഖത്തേക്ക് മടങ്ങണം.",
+    },
+    "mr": {
+        "LOW": "सध्या हवामान आणि सागरी परिस्थिती मासेमारीसाठी अनुकूल आहे.",
+        "MODERATE": "परिस्थिती अनुकूल नाही. लहान नौकांनी किनाऱ्याजवळच राहावे, रेडिओ किंवा फोन सोबत ठेवावा, आणि समुद्र बिघडल्यास लगेच परत यावे.",
+        "HIGH": "उंच लाटा आणि जोरदार वाऱ्यामुळे सध्या समुद्रात जाणे सुरक्षित नाही. किनाऱ्यावरच रहा.",
+        "SEVERE": "समुद्रात जाऊ नका. समुद्रातील नौकांनी तात्काळ जवळच्या बंदरात परतावे.",
+    },
+    "bn": {
+        "LOW": "বর্তমান আবহাওয়া ও সমুদ্রের পরিস্থিতি মাছ ধরার জন্য অনুকূল।",
+        "MODERATE": "পরিস্থিতি অনুকূল নয়। ছোট নৌকা তীরের কাছে থাকুক, রেডিও বা ফোন সঙ্গে রাখুন, এবং সমুদ্র খারাপ হলে সঙ্গে সঙ্গে ফিরে আসুন।",
+        "HIGH": "উঁচু ঢেউ ও ঝোড়ো বাতাসের কারণে এখন সমুদ্রে যাওয়া নিরাপদ নয়। তীরেই থাকুন।",
+        "SEVERE": "সমুদ্রে যাবেন না। সমুদ্রে থাকা নৌকা অবিলম্বে নিকটতম বন্দরে ফিরে আসুক।",
+    },
+    "gu": {
+        "LOW": "હાલમાં હવામાન અને દરિયાની સ્થિતિ માછીમારી માટે અનુકૂળ છે.",
+        "MODERATE": "પરિસ્થિતિ અનુકૂળ નથી. નાની હોડીઓ કિનારા નજીક રહે, રેડિયો કે ફોન સાથે રાખો, અને દરિયો બગડે તો તરત પાછા ફરો.",
+        "HIGH": "ઊંચા મોજાં અને તેજ પવનના કારણે અત્યારે દરિયામાં જવું સલામત નથી. કિનારે જ રહો.",
+        "SEVERE": "દરિયામાં ન જાઓ. દરિયામાં રહેલી હોડીઓ તરત નજીકના બંદરે પાછી ફરે.",
+    },
+    "or": {
+        "LOW": "ସାମ୍ପ୍ରତିକ ପାଣିପାଗ ଓ ସମୁଦ୍ର ସ୍ଥିତି ମାଛ ଧରିବା ପାଇଁ ଅନୁକୂଳ ଅଟେ।",
+        "MODERATE": "ପରିସ୍ଥିତି ଅନୁକୂଳ ନୁହେଁ। ଛୋଟ ଡଙ୍ଗା କୂଳ ପାଖରେ ରୁହନ୍ତୁ, ରେଡିଓ କିମ୍ବା ଫୋନ୍ ସାଙ୍ଗରେ ରଖନ୍ତୁ, ଏବଂ ସମୁଦ୍ର ଖରାପ ହେଲେ ତୁରନ୍ତ ଫେରି ଆସନ୍ତୁ।",
+        "HIGH": "ଉଚ୍ଚ ଢେଉ ଓ ପ୍ରବଳ ପବନ ଯୋଗୁଁ ବର୍ତ୍ତମାନ ସମୁଦ୍ରକୁ ଯିବା ନିରାପଦ ନୁହେଁ। କୂଳରେ ହିଁ ରୁହନ୍ତୁ।",
+        "SEVERE": "ସମୁଦ୍ରକୁ ଯାଆନ୍ତୁ ନାହିଁ। ସମୁଦ୍ରରେ ଥିବା ଡଙ୍ଗା ତୁରନ୍ତ ନିକଟସ୍ଥ ବନ୍ଦରକୁ ଫେରି ଆସନ୍ତୁ।",
+    },
+}
+
+# Said in the reader's own language when we hold no advisory for their language.
+# Never silently downgrade to a milder band: say the text is English and show it.
+UNTRANSLATED_NOTICE = {
+    "te": "(ఈ సలహా మీ భాషలో అందుబాటులో లేదు — ఆంగ్లంలో)",
+    "hi": "(यह सलाह आपकी भाषा में उपलब्ध नहीं है — अंग्रेज़ी में)",
+    "ta": "(இந்த அறிவுரை உங்கள் மொழியில் இல்லை — ஆங்கிலத்தில்)",
+    "kn": "(ಈ ಸಲಹೆ ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ — ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ)",
+    "ml": "(ഈ ഉപദേശം നിങ്ങളുടെ ഭാഷയിൽ ലഭ്യമല്ല — ഇംഗ്ലീഷിൽ)",
+    "mr": "(हा सल्ला तुमच्या भाषेत उपलब्ध नाही — इंग्रजीत)",
+    "bn": "(এই পরামর্শ আপনার ভাষায় উপলব্ধ নয় — ইংরেজিতে)",
+    "gu": "(આ સલાહ તમારી ભાષામાં ઉપલબ્ધ નથી — અંગ્રેજીમાં)",
+    "or": "(ଏହି ପରାମର୍ଶ ଆପଣଙ୍କ ଭାଷାରେ ଉପଲବ୍ଧ ନାହିଁ — ଇଂରାଜୀରେ)",
+}
+
+
+def band_label(lang: str, band: str) -> str:
+    """The engine's risk band, in the reader's language. Falls back to the band itself."""
+    vocab = MARINE_VOCAB.get(lang)
+    if not vocab:
+        return band
+    return vocab.get(BAND_LABEL_KEY.get(band, ""), band)
+
+
+def advisory_for_band(lang: str, band: str, wave, wind, horizon: str = "") -> str:
+    """
+    The advisory for one risk band, in one language, with the computed values in it.
+
+    This is the only place an advisory is chosen. `band` is the deterministic
+    engine's category, the same one the envelope's verdict is derived from, so
+    the advisory a user reads can never disagree with the verdict shown above it.
+    """
+    band = (band or "").upper()
+    wave_s = _num(wave, lang)
+    wind_s = _num(wind, lang)
+
+    table = BAND_ADVISORY.get(lang)
+    text = table.get(band) if table else None
+
+    if text is None:
+        # No text for this language/band. Say so and show English, never a
+        # milder band's advisory.
+        english = BAND_ADVISORY["en"].get(band, BAND_ADVISORY["en"]["SEVERE"])
+        notice = UNTRANSLATED_NOTICE.get(lang)
+        text = f"{notice} {english}" if notice else english
+        clause = VALUES_CLAUSE["en"]
+    else:
+        clause = VALUES_CLAUSE.get(lang, VALUES_CLAUSE["en"])
+
+    values = clause.format(wave=wave_s, wind=wind_s, horizon=horizon or "")
+    return f"{text} {values}".strip()
+
+
 def detect_language(query_text: str) -> str:
     """
     Detects language from text script or explicit instruction (e.g. 'in telugu', 'explain in hindi').
@@ -251,8 +409,15 @@ def localize_summary_and_recommendation(
         return english_summary, english_recommendation
 
     vocab = MARINE_VOCAB[lang]
-    is_safe = risk_category in ("LOW", "MODERATE")
-    rec_text = vocab["rec_safe"] if is_safe else vocab["rec_unfavorable"]
+    # One advisory per band, from the same band the envelope's verdict uses.
+    # This was a two-state safe/unsafe ladder, so MODERATE read as "favourable".
+    rec_text = advisory_for_band(
+        lang,
+        risk_category,
+        ocean.significant_wave_height_m if ocean else None,
+        weather.wind_speed_knots if weather else None,
+        temporal_label,
+    )
 
     intent_val = getattr(intent, "value", str(intent)) if intent else ""
     query_lower = query_text.lower() if query_text else ""
@@ -466,7 +631,9 @@ def localize_summary_and_recommendation(
     # 6. DEFAULT MARINE SAFETY & GENERAL CONDITIONS
     wh_s = _num(ocean.significant_wave_height_m if ocean else None, lang)
     ws_s = _num(weather.wind_speed_knots if weather else None, lang)
-    risk_label = vocab.get(f"{risk_category.lower()}_risk", risk_category)
+    # MARINE_VOCAB spells moderate "mod_risk", so the old f"{band}_risk" lookup
+    # missed MODERATE and printed the raw English enum in every vernacular.
+    risk_label = band_label(lang, risk_category)
 
     if lang == "te":
         summary = (

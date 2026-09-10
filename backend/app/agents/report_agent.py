@@ -15,7 +15,7 @@ from app.models.schemas import (
 )
 from app.geospatial.protected_areas import INDIAN_MARINE_PROTECTED_AREAS
 from app.providers.provenance import classify_tier, reliability_note
-from app.utils.multilingual import localize_summary_and_recommendation
+from app.utils.multilingual import advisory_for_band, localize_summary_and_recommendation
 
 class ReportAgent(BaseSpecialistAgent):
     def __init__(self):
@@ -775,30 +775,14 @@ class ReportAgent(BaseSpecialistAgent):
         if is_mpa and mpa_info:
             summary += f" Target coordinates lie inside the {mpa_info['name']} conservation sanctuary."
 
-        # The wording follows the engine's band. It never says "favorable"
-        # against a CAUTION verdict.
+        # The wording follows the engine's band, through the same resolver every
+        # other language uses, so English and vernacular cannot diverge.
+        rec = advisory_for_band("en", risk_cat, wh, ws, temporal.label)
+
         if is_mpa and mpa_info:
-            pass
-        elif risk_cat == "LOW":
             rec = (
-                f"GO: conditions are favorable for fishing craft and coastal navigation during {temporal.label}. "
-                f"Maintain standard coastal safety protocols, monitor local marine broadcasts or NavIC advisories, and respect boundary geofences."
-            )
-        elif risk_cat == "MODERATE":
-            rec = (
-                f"CAUTION: conditions are marginal during {temporal.label} (waves {wh_s}, wind {ws_s}). "
-                f"Small artisanal craft should stay within sheltered coastal waters, carry communication equipment, "
-                f"and turn back if the sea state worsens. Monitor local marine broadcasts or NavIC advisories."
-            )
-        if is_mpa:
-            rec = (
-                f"UNFAVORABLE / RESTRICTED: Target lies within {mpa_info['name']} where mechanized trawling is strictly prohibited by MoEFCC regulations. "
-                "Shift fishing operations outside sanctuary boundaries."
-            )
-        elif risk_cat not in ("LOW", "MODERATE"):
-            rec = (
-                f"NO-GO: high wave energy ({wh_s}) and squally winds ({ws_s}) present hazardous sea conditions for small artisanal vessels. "
-                "Fishermen are advised to postpone offshore departure or remain within sheltered harbor waters."
+                f"{rec} Additionally, target lies within {mpa_info['name']} where mechanized trawling "
+                "is strictly prohibited by MoEFCC regulations."
             )
 
         return summary, rec
