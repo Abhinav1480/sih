@@ -10,6 +10,7 @@ from app.models.schemas import (
     DataQuality,
     DataFreshness,
 )
+from app.providers.provenance import is_synthetic
 from app.risk.thresholds import (
     WAVE_THRESHOLDS,
     WIND_THRESHOLDS,
@@ -235,8 +236,8 @@ def calculate_marine_risk(
     # Data quality: what kind of inputs the score was computed from. Synthetic
     # inputs are named as such; a fallback model is never called authoritative.
     is_demo = (
-        (ocean is not None and ocean.status == DataFreshness.DEMO)
-        or (weather is not None and weather.status == DataFreshness.DEMO)
+        (ocean is not None and is_synthetic(ocean.source, ocean.status))
+        or (weather is not None and is_synthetic(weather.source, weather.status))
         or (ocean is None and weather is None)
     )
     coverage = f"{weights_counted}/{TOTAL_WEIGHT} of risk weighting observed"

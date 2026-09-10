@@ -363,7 +363,7 @@ class ReportAgent(BaseSpecialistAgent):
 
         layers.append(MapLayerData(
             layer_id="layer_wave_risk",
-            name="INCOIS Wave Hazard Envelope",
+            name="Wave Hazard Envelope (model forecast at the query point)",
             layer_type="point",
             features=wave_features,
             visible_by_default=True,
@@ -759,32 +759,45 @@ class ReportAgent(BaseSpecialistAgent):
             return summary, rec
 
         # Default Marine Safety
-        risk_score = risk.overall_score if risk else 20
-        risk_cat = risk.category.value if risk else "LOW"
-        wh = ocean.significant_wave_height_m if ocean else 1.2
-        ws = weather.wind_speed_knots if weather else 12.0
+        risk_score = risk.overall_score if risk else None
+        risk_cat = risk.category.value if risk else "UNKNOWN"
+        wh = ocean.significant_wave_height_m if ocean else None
+        ws = weather.wind_speed_knots if weather else None
+        wh_s = f"{wh:.1f}m" if wh is not None else "unavailable"
+        ws_s = f"{ws:.1f} knots" if ws is not None else "unavailable"
 
         summary = (
-            f"Marine conditions near {loc.name} for {temporal.label} present an overall {risk_cat} RISK (Score: {risk_score}/100). "
-            f"Significant wave height is {wh:.1f}m ({ocean.sea_state if ocean else 'Moderate'}) with sustained surface winds of {ws:.1f} knots."
+            f"Marine conditions near {loc.name} for {temporal.label} present an overall {risk_cat} RISK"
+            + (f" (Score: {risk_score}/100). " if risk_score is not None else " (score unavailable). ")
+            + f"Significant wave height is {wh_s} ({ocean.sea_state if ocean else 'sea state unavailable'}) with sustained surface winds of {ws_s}."
         )
 
         if is_mpa and mpa_info:
             summary += f" Target coordinates lie inside the {mpa_info['name']} conservation sanctuary."
 
-        if risk_cat in ("LOW", "MODERATE") and not is_mpa:
+        # The wording follows the engine's band. It never says "favorable"
+        # against a CAUTION verdict.
+        if is_mpa and mpa_info:
+            pass
+        elif risk_cat == "LOW":
             rec = (
-                f"Conditions are favorable for fishing craft and coastal navigation during {temporal.label}. "
+                f"GO: conditions are favorable for fishing craft and coastal navigation during {temporal.label}. "
                 f"Maintain standard coastal safety protocols, monitor local marine broadcasts or NavIC advisories, and respect boundary geofences."
             )
-        elif is_mpa:
+        elif risk_cat == "MODERATE":
+            rec = (
+                f"CAUTION: conditions are marginal during {temporal.label} (waves {wh_s}, wind {ws_s}). "
+                f"Small artisanal craft should stay within sheltered coastal waters, carry communication equipment, "
+                f"and turn back if the sea state worsens. Monitor local marine broadcasts or NavIC advisories."
+            )
+        if is_mpa:
             rec = (
                 f"UNFAVORABLE / RESTRICTED: Target lies within {mpa_info['name']} where mechanized trawling is strictly prohibited by MoEFCC regulations. "
                 "Shift fishing operations outside sanctuary boundaries."
             )
-        else:
+        elif risk_cat not in ("LOW", "MODERATE"):
             rec = (
-                f"UNFAVORABLE: High wave energy ({wh:.1f}m) and squally winds ({ws:.1f} kt) present hazardous sea conditions for small artisanal vessels. "
+                f"NO-GO: high wave energy ({wh_s}) and squally winds ({ws_s}) present hazardous sea conditions for small artisanal vessels. "
                 "Fishermen are advised to postpone offshore departure or remain within sheltered harbor waters."
             )
 
