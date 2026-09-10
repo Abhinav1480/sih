@@ -44,6 +44,19 @@ class Settings(BaseSettings):
     # External APIs
     OPEN_METEO_BASE_URL: str = os.getenv("OPEN_METEO_BASE_URL", "https://marine-api.open-meteo.com/v1/marine")
     OPEN_METEO_WEATHER_URL: str = "https://api.open-meteo.com/v1/forecast"
+    # --- ISRO / NRSC sources (tier ISRO) ---
+    # Bhuvan WMS needs no credentials. bhuvan-vec1 is the host that answers;
+    # bhuvan-vec2 times out and bhuvan-ras1 returns 403. Configurable because a
+    # venue network may reach a different mirror.
+    BHUVAN_WMS_URL: str = os.getenv("BHUVAN_WMS_URL", "https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms")
+    # MOSDAC and Bhoonidhi are authentication-gated product-download services.
+    # Without a token they are skipped and the chain falls back honestly.
+    MOSDAC_API_TOKEN: str = os.getenv("MOSDAC_API_TOKEN", "")
+    BHOONIDHI_API_TOKEN: str = os.getenv("BHOONIDHI_API_TOKEN", "")
+    # Granules are fetched out of band and served from here, which is what lets
+    # ISRO products work at a venue with no connectivity.
+    ISRO_GRANULE_CACHE_DIR: str = os.getenv("ISRO_GRANULE_CACHE_DIR", "./data/granules")
+
     INCOIS_API_BASE: str = os.getenv("INCOIS_API_BASE", "https://incois.gov.in/portal")
     INCOIS_API_TOKEN: str = os.getenv("INCOIS_API_TOKEN", "")
     IMD_API_BASE: str = os.getenv("IMD_API_BASE", "https://mausam.imd.gov.in/api")

@@ -43,6 +43,7 @@ from app.models.schemas import (
     RiskCategory,
 )
 from app.providers.provenance import classify_tier, is_synthetic
+from app.providers.registry import registry
 
 # Risk band -> operational call. Deterministic: the language model never
 # authors a verdict, it only phrases the narrative around one.
@@ -273,13 +274,14 @@ def _geofence_cards(analysis: OrcaAnalysisResponse) -> List[GeofenceWarningCard]
 
 
 def _build_layers(analysis: OrcaAnalysisResponse) -> List[LayerDescriptor]:
-    """Carry the agents' map layers across as inline GeoJSON descriptors.
+    """The agents' derived geometries, plus the real ISRO WMS layers.
 
-    Every layer here is `kind="geojson"` and FALLBACK tier: these are ORCA's
-    own derived geometries, not an agency product. BE-02 adds `kind="wms"`
-    descriptors for the real ISRO Bhuvan layers.
+    ORCA's own geometries are `kind="geojson"` and tier FALLBACK: they are
+    computed here, not published by an agency. The Bhuvan layers appended
+    afterwards are `kind="wms"` and tier ISRO, rendered by the client directly
+    against NRSC, so the tiles the user sees come from ISRO rather than from us.
     """
-    return [
+    layers = [
         LayerDescriptor(
             id=layer.layer_id,
             name=layer.name,
@@ -294,6 +296,8 @@ def _build_layers(analysis: OrcaAnalysisResponse) -> List[LayerDescriptor]:
         )
         for layer in analysis.map_layers
     ]
+    layers.extend(registry.get_isro_layer_descriptors())
+    return layers
 
 
 def _geometry_type(layer_type: str) -> Optional[str]:
