@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     
     # Operational Mode: "DEMO" or "LIVE"
     ORCA_MODE: str = os.getenv("ORCA_MODE", "DEMO").upper()
+
+    # DEMO only: freeze "now" to an ISO timestamp so that "tomorrow morning"
+    # resolves to the same morning on every run and the same cached granules
+    # are selected. Empty means use the wall clock. Read by app/utils/clock.py,
+    # which arrived referencing this setting before it existed -- any call to
+    # clock.now() raised AttributeError until it was added.
+    ORCA_DEMO_NOW: str = os.getenv("ORCA_DEMO_NOW", "")
+
     
     # Server settings
     HOST: str = os.getenv("HOST", "127.0.0.1")
