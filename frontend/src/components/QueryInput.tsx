@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowUp, Loader2, Search } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowUp, Loader2, CornerDownRight } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
 import { VoiceInput } from "@/components/Fisherman/VoiceInput";
 
@@ -12,22 +12,21 @@ interface QueryInputProps {
   onFollowUp: (followUp: string) => void;
   /** Contextual follow-up suggestions (e.g. from the current result type) */
   suggestions?: string[];
-  /** Hide the suggestion row entirely (used on the landing screen) */
+  /** Hide the suggestion row entirely */
   hideSuggestions?: boolean;
-  /** Larger, centered treatment for the landing screen */
+  /** Kept for compatibility; the console has no landing treatment. */
   landing?: boolean;
   /** FE-07: show a voice-input mic that populates this input (Fisherman Mode). */
   enableVoice?: boolean;
   /** Language code used for speech recognition. */
   voiceLang?: string;
+  /**
+   * Clarification prompt: when ORCA answers `needs_clarification`, the
+   * question is shown inline here and the user's next message answers it
+   * in the same conversation.
+   */
+  prompt?: string;
 }
-
-const DEFAULT_SUGGESTIONS = [
-  "What about tomorrow evening?",
-  "Why is this ranked first?",
-  "Show the alternative route",
-  "Explain this in Telugu",
-];
 
 export const QueryInput: React.FC<QueryInputProps> = ({
   onSubmit,
@@ -35,12 +34,18 @@ export const QueryInput: React.FC<QueryInputProps> = ({
   onFollowUp,
   suggestions,
   hideSuggestions = false,
-  landing = false,
   enableVoice = false,
   voiceLang = "en",
+  prompt,
 }) => {
   const [text, setText] = useState("");
-  const followUps = suggestions && suggestions.length > 0 ? suggestions : DEFAULT_SUGGESTIONS;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const followUps = suggestions ?? [];
+
+  // A clarification prompt pulls focus so the answer can be typed immediately.
+  useEffect(() => {
+    if (prompt) inputRef.current?.focus();
+  }, [prompt]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,68 +55,62 @@ export const QueryInput: React.FC<QueryInputProps> = ({
   };
 
   return (
-    <div className="w-full space-y-2.5">
-      {/* Contextual follow-up suggestions */}
-      {!hideSuggestions && (
+    <div className="w-full space-y-2">
+      {prompt && (
+        <div
+          id="orca-clarification-prompt"
+          className="flex items-start gap-2 px-3 py-2 rounded-md border border-caution/40 bg-caution/10 text-[12.5px] text-text"
+        >
+          <CornerDownRight className="w-3.5 h-3.5 mt-0.5 text-caution flex-shrink-0" />
+          <span>
+            <span className="text-caution font-medium">ORCA asks: </span>
+            {prompt}
+          </span>
+        </div>
+      )}
+
+      {!hideSuggestions && followUps.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-          {followUps.map((sug, idx) => (
-            <Pill
-              key={idx}
-              size="sm"
-              onClick={() => onFollowUp(sug)}
-              disabled={isLoading}
-              className="flex-shrink-0"
-            >
+          {followUps.map((sug) => (
+            <Pill key={sug} size="sm" onClick={() => onFollowUp(sug)} disabled={isLoading} className="flex-shrink-0">
               {sug}
             </Pill>
           ))}
         </div>
       )}
 
-      {/* Main input (with optional voice mic in Fisherman Mode) */}
       <div className={enableVoice ? "flex items-start gap-2" : ""}>
         {enableVoice && (
           <div className="flex flex-col items-center gap-0.5 pt-0.5">
-            <VoiceInput
-              lang={voiceLang}
-              onTranscript={(txt) => setText(txt)}
-              disabled={isLoading}
-            />
+            <VoiceInput lang={voiceLang} onTranscript={(txt) => setText(txt)} disabled={isLoading} />
           </div>
         )}
         <form
-        onSubmit={handleSubmit}
-        className={`relative flex items-center rounded-2xl border bg-orca-panel/80 transition focus-within:border-orca-cyan/50 focus-within:bg-orca-panel ${
-          enableVoice ? "flex-1" : ""
-        } ${landing ? "border-orca-border shadow-card" : "border-orca-border"}`}
-      >
-        <div className="absolute left-4 pointer-events-none text-orca-muted">
-          <Search className="w-4 h-4" />
-        </div>
-        <input
-          id="marine-query-input"
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ask ORCA about the marine environment..."
-          disabled={isLoading}
-          className={`w-full bg-transparent text-white rounded-2xl pl-11 pr-14 focus:outline-none placeholder:text-orca-dim ${
-            landing ? "text-[15px] py-4" : "text-sm py-3.5"
-          }`}
-        />
-        <button
-          id="marine-query-submit-btn"
-          type="submit"
-          disabled={isLoading || !text.trim()}
-          className="absolute right-2 w-9 h-9 rounded-xl bg-orca-cyan text-orca-darkest flex items-center justify-center transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-orca-cyan/90"
-          aria-label="Submit query"
+          onSubmit={handleSubmit}
+          className={`relative flex items-center rounded-md border bg-panel/80 focus-within:border-accent/60 focus-within:bg-panel transition-colors ${
+            enableVoice ? "flex-1" : ""
+          } ${prompt ? "border-caution/40" : "border-border-base"}`}
         >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-          )}
-        </button>
+          <span className="num absolute left-3 pointer-events-none text-accent text-[13px] select-none">&gt;</span>
+          <input
+            ref={inputRef}
+            id="marine-query-input"
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={prompt ? "Answer ORCA here..." : "Ask about sea state, fishing zones, routes, alerts..."}
+            disabled={isLoading}
+            className="w-full bg-transparent text-text text-sm py-3 pl-8 pr-12 focus:outline-none placeholder:text-muted/70"
+          />
+          <button
+            id="marine-query-submit-btn"
+            type="submit"
+            disabled={isLoading || !text.trim()}
+            className="absolute right-1.5 w-8 h-8 rounded-md bg-accent text-base flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-accent/90"
+            aria-label="Submit query"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4 stroke-[2.5]" />}
+          </button>
         </form>
       </div>
     </div>

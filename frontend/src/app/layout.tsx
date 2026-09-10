@@ -1,19 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ORCA — Marine Ecosystem Reasoning with Collaborative Agents",
-  description: "Advanced Marine Intelligence & Multidisciplinary Collaborative Agent Platform for SIH 2026 PS 26176 (MoES / INCOIS / IMD).",
+  title: "ORCA — Marine Operations Console",
+  description:
+    "Marine EcOsystem Reasoning with Collaborative Agents. Decision support for Indian coastal waters — SIH 2026 PS 26176 (MoES / INCOIS / IMD).",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#04141d",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-orca-darkest text-orca-text antialiased min-h-screen flex flex-col selection:bg-orca-cyan selection:text-orca-darkest">
+      <body className="bg-base text-text antialiased h-screen overflow-hidden selection:bg-accent selection:text-base">
         {children}
       </body>
     </html>

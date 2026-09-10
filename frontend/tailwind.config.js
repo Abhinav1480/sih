@@ -1,4 +1,19 @@
 /** @type {import('tailwindcss').Config} */
+// ORCA console palette — the only ten colours. Elevation is translucency +
+// 1px hairline borders; boxShadow is emptied so no shadow-* utility renders.
+const palette = {
+  base: "#04141d",
+  panel: "#0a2432",
+  raised: "#12384a",
+  accent: "#38e8d0",
+  calm: "#7dd3a0", // GO / LOW
+  caution: "#ffb443", // CAUTION / MODERATE
+  hazard: "#ff7043", // HIGH
+  severe: "#ff5d5d", // NO_GO / SEVERE
+  text: "#e8f4f8",
+  muted: "#7a94a3",
+};
+
 module.exports = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -13,62 +28,62 @@ module.exports = {
       xl: "1280px",
       "2xl": "1440px",
     },
+    boxShadow: { none: "none" },
     extend: {
       colors: {
-        // Authoritative Semantic Tokens
-        bg: {
-          base: "var(--bg-base, #040914)",
-          elevated: "var(--bg-elevated, #071226)",
-        },
+        ...palette,
+        bg: { base: palette.base, elevated: palette.panel },
         surface: {
-          base: "var(--surface-base, #0b1834)",
-          elevated: "var(--surface-elevated, #0f2042)",
-          hover: "var(--surface-hover, #142954)",
-          subtle: "var(--surface-subtle, #081329)",
+          base: palette.panel,
+          elevated: palette.raised,
+          hover: palette.raised,
+          subtle: palette.base,
         },
         border: {
-          base: "var(--border-base, #1b335e)",
-          subtle: "var(--border-subtle, #122342)",
-          strong: "var(--border-strong, #26457e)",
-          accent: "var(--border-accent, rgba(0, 240, 208, 0.28))",
+          base: "rgba(232, 244, 248, 0.10)",
+          subtle: "rgba(232, 244, 248, 0.06)",
+          strong: "rgba(232, 244, 248, 0.18)",
+          accent: "rgba(56, 232, 208, 0.35)",
         },
         text: {
-          primary: "var(--text-primary, #f8fafc)",
-          secondary: "var(--text-secondary, #94a3b8)",
-          muted: "var(--text-muted, #64748b)",
-          disabled: "var(--text-disabled, #475569)",
+          DEFAULT: palette.text,
+          primary: palette.text,
+          secondary: palette.muted,
+          muted: palette.muted,
+          disabled: "rgba(122, 148, 163, 0.6)",
         },
         accent: {
-          base: "var(--accent-base, #00f0d0)",
-          strong: "var(--accent-strong, #00b4d8)",
-          soft: "var(--accent-soft, rgba(0, 240, 208, 0.12))",
+          DEFAULT: palette.accent,
+          base: palette.accent,
+          strong: palette.accent,
+          soft: "rgba(56, 232, 208, 0.12)",
         },
-        // Semantic Alerts
-        nominal: "#10b981",
-        advisory: "#f59e0b",
-        hazard: "#ef4444",
-        operational: "#38bdf8",
+        // Semantic aliases used by older components
+        nominal: palette.calm,
+        advisory: palette.caution,
+        operational: palette.accent,
 
-        // Backward compatibility for existing orca namespace
+        // Backward compatibility for the orca namespace
         orca: {
-          darkest: "#040914",
-          dark: "#071226",
-          panel: "#0b1834",
-          card: "#0f2042",
-          cardHover: "#142954",
-          border: "#1b335e",
-          borderLight: "#26457e",
-          cyan: "#00f0d0",
-          cyanMuted: "#00f0d026",
-          teal: "#00b4d8",
-          blue: "#0284c7",
-          green: "#10b981",
-          emerald: "#10b981",
-          amber: "#f59e0b",
-          red: "#ef4444",
-          text: "#f8fafc",
-          muted: "#94a3b8",
-          dim: "#64748b",
+          darkest: palette.base,
+          dark: palette.panel,
+          panel: palette.panel,
+          card: palette.raised,
+          cardHover: palette.raised,
+          border: "rgba(232, 244, 248, 0.10)",
+          borderLight: "rgba(232, 244, 248, 0.18)",
+          cyan: palette.accent,
+          cyanMuted: "rgba(56, 232, 208, 0.15)",
+          teal: palette.accent,
+          blue: palette.accent,
+          green: palette.calm,
+          emerald: palette.calm,
+          amber: palette.caution,
+          orange: palette.hazard,
+          red: palette.severe,
+          text: palette.text,
+          muted: palette.muted,
+          dim: palette.muted,
         },
       },
       fontFamily: {
@@ -102,11 +117,6 @@ module.exports = {
       },
       transitionTimingFunction: {
         standard: "cubic-bezier(0.2, 0, 0, 1)",
-      },
-      boxShadow: {
-        hairline: "0 0 0 1px rgba(27, 51, 94, 0.8)",
-        elevation1: "0 4px 16px -2px rgba(2, 6, 23, 0.5)",
-        elevation2: "0 8px 30px -4px rgba(2, 6, 23, 0.7)",
       },
     },
   },

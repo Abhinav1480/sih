@@ -6,38 +6,50 @@
 @tailwind utilities;
 
 :root {
-  --background: #040914;
-  --foreground: #f8fafc;
+  --background: #04141d;
+  --foreground: #e8f4f8;
 
-  /* ORCA Semantic Token CSS Custom Properties */
-  --bg-base: #040914;
-  --bg-elevated: #071226;
-  --surface-base: #0b1834;
-  --surface-elevated: #0f2042;
-  --surface-hover: #142954;
-  --surface-subtle: #081329;
-  --border-base: #1b335e;
-  --border-subtle: #122342;
-  --border-strong: #26457e;
-  --border-accent: rgba(0, 240, 208, 0.28);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-disabled: #475569;
-  --accent-base: #00f0d0;
-  --accent-strong: #00b4d8;
-  --accent-soft: rgba(0, 240, 208, 0.12);
+  /* ORCA console palette — the only ten colours */
+  --base: #04141d;
+  --panel: #0a2432;
+  --raised: #12384a;
+  --accent: #38e8d0;
+  --calm: #7dd3a0;
+  --caution: #ffb443;
+  --hazard: #ff7043;
+  --severe: #ff5d5d;
+  --text: #e8f4f8;
+  --muted: #7a94a3;
 
-  --risk-low: #10b981;
-  --risk-moderate: #f59e0b;
-  --risk-high: #f97316;
-  --risk-severe: #ef4444;
+  /* Semantic aliases (kept for components written against the older names) */
+  --bg-base: var(--base);
+  --bg-elevated: var(--panel);
+  --surface-base: var(--panel);
+  --surface-elevated: var(--raised);
+  --surface-hover: var(--raised);
+  --surface-subtle: var(--base);
+  --border-base: rgba(232, 244, 248, 0.10);
+  --border-subtle: rgba(232, 244, 248, 0.06);
+  --border-strong: rgba(232, 244, 248, 0.18);
+  --border-accent: rgba(56, 232, 208, 0.35);
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: var(--muted);
+  --text-disabled: rgba(122, 148, 163, 0.6);
+  --accent-base: var(--accent);
+  --accent-strong: var(--accent);
+  --accent-soft: rgba(56, 232, 208, 0.12);
 
-  --data-live: #10b981;
-  --data-forecast: #00b4d8;
-  --data-cached: #a855f7;
-  --data-historical: #64748b;
-  --data-demo: #eab308;
+  --risk-low: var(--calm);
+  --risk-moderate: var(--caution);
+  --risk-high: var(--hazard);
+  --risk-severe: var(--severe);
+
+  --data-live: var(--calm);
+  --data-forecast: var(--accent);
+  --data-cached: var(--muted);
+  --data-historical: var(--muted);
+  --data-demo: var(--caution);
 }
 
 body {
@@ -52,6 +64,22 @@ body {
 
 h1, h2, h3, h4, .font-display {
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/* Every number, coordinate and timestamp goes through .num — instrument readout. */
+.num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Hairline surfaces — elevation via translucency + 1px border, no shadows */
+.hairline {
+  border: 1px solid var(--border-base);
+}
+.console-panel {
+  background: rgba(10, 36, 50, 0.72);
+  border: 1px solid var(--border-base);
 }
 
 /* ORCA Authoritative Typography Scale Classes */
@@ -103,6 +131,7 @@ h1, h2, h3, h4, .font-display {
 
 .orca-mono-value {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
   line-height: 1.125rem;
   font-weight: 500;
@@ -110,6 +139,7 @@ h1, h2, h3, h4, .font-display {
 
 .orca-mono-meta {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 0.6875rem;
   line-height: 0.875rem;
   font-weight: 400;
@@ -128,7 +158,7 @@ h1, h2, h3, h4, .font-display {
   }
 }
 
-/* Custom ocean scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -137,11 +167,11 @@ h1, h2, h3, h4, .font-display {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1b335e;
+  background: #12384a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #26457e;
+  background: #7a94a3;
 }
 
 /* Hide scrollbar for horizontal suggestion rows */
@@ -153,18 +183,18 @@ h1, h2, h3, h4, .font-display {
   scrollbar-width: none;
 }
 
-/* Leaflet Map overrides for dark marine command theme */
+/* Leaflet overrides — console theme, hairlines, no shadows */
 .leaflet-container {
-  background: #040914 !important;
+  background: #04141d !important;
   font-family: 'Inter', system-ui, sans-serif !important;
 }
 
 .leaflet-popup-content-wrapper {
-  background: #0b1834 !important;
-  color: #f8fafc !important;
-  border: 1px solid #1b335e !important;
-  border-radius: 12px !important;
-  box-shadow: 0 16px 36px -4px rgba(2, 6, 23, 0.75) !important;
+  background: #0a2432 !important;
+  color: #e8f4f8 !important;
+  border: 1px solid rgba(232, 244, 248, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
   padding: 0 !important;
 }
 
@@ -174,81 +204,55 @@ h1, h2, h3, h4, .font-display {
 }
 
 .leaflet-popup-tip {
-  background: #0b1834 !important;
-  border: 1px solid #1b335e !important;
+  background: #0a2432 !important;
+  border: 1px solid rgba(232, 244, 248, 0.12) !important;
+  box-shadow: none !important;
 }
 
 .leaflet-control-zoom {
-  border: 1px solid #1b335e !important;
+  border: 1px solid rgba(232, 244, 248, 0.12) !important;
   border-radius: 8px !important;
   overflow: hidden;
-  box-shadow: 0 8px 20px -4px rgba(2, 6, 23, 0.7) !important;
+  box-shadow: none !important;
 }
 
 .leaflet-control-zoom a {
-  background: #0b1834 !important;
-  color: #94a3b8 !important;
-  border-bottom: 1px solid #1b335e !important;
-  transition: all 0.15s ease;
+  background: #0a2432 !important;
+  color: #7a94a3 !important;
+  border-bottom: 1px solid rgba(232, 244, 248, 0.12) !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background: #142954 !important;
-  color: #00f0d0 !important;
+  background: #12384a !important;
+  color: #38e8d0 !important;
 }
 
-/* Professional maritime dashboard utilities */
+.leaflet-bar,
+.leaflet-control {
+  box-shadow: none !important;
+}
+
+/* Console surfaces */
 .maritime-card {
-  background-color: rgba(11, 24, 52, 0.5);
-  border: 1px solid rgba(27, 51, 94, 0.7);
-  border-radius: 0.875rem;
+  background-color: rgba(10, 36, 50, 0.6);
+  border: 1px solid rgba(232, 244, 248, 0.10);
+  border-radius: 0.5rem;
 }
 
 .maritime-subcard {
-  background-color: #071226;
-  border: 1px solid #1b335e;
-  border-radius: 0.625rem;
+  background-color: rgba(18, 56, 74, 0.45);
+  border: 1px solid rgba(232, 244, 248, 0.08);
+  border-radius: 0.375rem;
 }
 
 .glass-panel {
-  background: rgba(11, 24, 52, 0.85);
+  background: rgba(10, 36, 50, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(27, 51, 94, 0.85);
-}
-
-/* ──────────────────────────────────────────────────────────────
-   ONE-TIME CENTER WORKSPACE INTRO ANIMATIONS
-   Used only on the first query submit (page load → first execute).
-   Sidebar and right panel are NOT involved.
-   ────────────────────────────────────────────────────────────── */
-
-/* Map expands in: starts invisible and slightly scaled-down, ends at full size */
-@keyframes orca-map-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Search bar slides from center position down to its natural bottom position */
-@keyframes orca-search-settle {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  border: 1px solid rgba(232, 244, 248, 0.10);
 }
 
 /* ──────────────────────────────────────────────────────────────
    FE-03: ORCA AGENT TRACE TIMELINE ANIMATIONS
-   Subtle mission-control animations
    ────────────────────────────────────────────────────────────── */
 
 @keyframes spin-slow {
@@ -279,9 +283,17 @@ h1, h2, h3, h4, .font-display {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Data-arrival motion: the only animation the shell applies to results. */
+@keyframes orca-data-arrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.orca-data-arrive {
+  animation: orca-data-arrive 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* ──────────────────────────────────────────────────────────────
    FE-04: EVIDENCE & PROVENANCE DRAWER
-   Subtle enter animations for the backdrop and slide-over/bottom-sheet.
    ────────────────────────────────────────────────────────────── */
 @keyframes orca-evidence-fade {
   from { opacity: 0; }

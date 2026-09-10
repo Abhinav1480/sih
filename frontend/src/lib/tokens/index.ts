@@ -1,117 +1,80 @@
 /**
- * ORCA Design System — Authoritative Design Tokens
- * SIH 2026 PS 26176 Marine Intelligence Platform
+ * ORCA Design Tokens — marine operations console (ship-bridge instrumentation).
  *
- * Theme Archetype: Maritime Operations Console + Mission Control + Marine GIS
- * Design Qualities: Clean, Technical, Calm, Premium, High Information-Density
+ * Exactly ten colours. Elevation is expressed with translucency and 1px
+ * hairline borders, never drop shadows. Numbers, coordinates and timestamps
+ * use the `.num` utility (monospace, tabular-nums); interface text stays sans.
+ * Motion is reserved for data arrival.
  */
 
+export const palette = {
+  base: "#04141d",
+  panel: "#0a2432",
+  raised: "#12384a",
+  accent: "#38e8d0",
+  calm: "#7dd3a0", // GO / LOW
+  caution: "#ffb443", // CAUTION / MODERATE
+  hazard: "#ff7043", // HIGH
+  severe: "#ff5d5d", // NO_GO / SEVERE
+  text: "#e8f4f8",
+  muted: "#7a94a3",
+} as const;
+
+const alpha = (hex: string, a: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
 export const colors = {
-  // Backgrounds
-  bg: {
-    base: "#040914",      // Deepest abyssal navy
-    elevated: "#071226",  // Elevated console backdrop
-  },
-
-  // Surfaces & Containment
+  bg: { base: palette.base, elevated: palette.panel },
   surface: {
-    base: "#0b1834",      // Standard operational panel surface
-    elevated: "#0f2042",  // Interactive or raised panel surface
-    hover: "#142954",     // Surface hover state
-    subtle: "#081329",    // Recessed or inset container
+    base: palette.panel,
+    elevated: palette.raised,
+    hover: palette.raised,
+    subtle: palette.base,
   },
-
-  // Hairline Borders & Dividers
   border: {
-    base: "#1b335e",      // Standard hairline structural divider
-    subtle: "#122342",    // Whisper-subtle section separator
-    strong: "#26457e",    // Active or emphasized border
-    accent: "rgba(0, 240, 208, 0.28)", // Maritime cyan accent border
+    base: alpha(palette.text, 0.1),
+    subtle: alpha(palette.text, 0.06),
+    strong: alpha(palette.text, 0.18),
+    accent: alpha(palette.accent, 0.35),
   },
-
-  // Hierarchy Typography Colors
   text: {
-    primary: "#f8fafc",   // Pure legible contrast
-    secondary: "#94a3b8", // Descriptive telemetry & metadata
-    muted: "#64748b",     // Inactive hints & subtle labels
-    disabled: "#475569",  // Disabled state text
+    primary: palette.text,
+    secondary: palette.muted,
+    muted: palette.muted,
+    disabled: alpha(palette.muted, 0.6),
   },
-
-  // ORCA Maritime Brand Accents
   accent: {
-    base: "#00f0d0",      // Marine bioluminescent cyan
-    strong: "#00b4d8",    // Ocean deep teal
-    soft: "rgba(0, 240, 208, 0.12)", // Translucent cyan tint
+    base: palette.accent,
+    strong: palette.accent,
+    soft: alpha(palette.accent, 0.12),
   },
-
-  // Standard Semantic Feedback
   semantic: {
-    success: "#10b981",   // Nominal green
-    warning: "#f59e0b",   // Advisory amber
-    danger: "#ef4444",    // Hazard red
-    info: "#38bdf8",      // Operational sky blue
+    success: palette.calm,
+    warning: palette.caution,
+    danger: palette.severe,
+    info: palette.accent,
   },
-
-  // Deterministic Marine Risk Ramp (Paired with labels/icons, never color alone)
+  // Deterministic risk ramp — always paired with a label, never colour alone.
   risk: {
-    low: {
-      color: "#10b981",
-      bg: "rgba(16, 185, 129, 0.12)",
-      border: "rgba(16, 185, 129, 0.30)",
-      label: "LOW",
-    },
-    moderate: {
-      color: "#f59e0b",
-      bg: "rgba(245, 158, 11, 0.12)",
-      border: "rgba(245, 158, 11, 0.30)",
-      label: "MODERATE",
-    },
-    high: {
-      color: "#f97316",
-      bg: "rgba(249, 115, 22, 0.12)",
-      border: "rgba(249, 115, 22, 0.30)",
-      label: "HIGH",
-    },
-    severe: {
-      color: "#ef4444",
-      bg: "rgba(239, 68, 68, 0.12)",
-      border: "rgba(239, 68, 68, 0.30)",
-      label: "SEVERE",
-    },
+    low: { color: palette.calm, bg: alpha(palette.calm, 0.12), border: alpha(palette.calm, 0.3), label: "LOW" },
+    moderate: { color: palette.caution, bg: alpha(palette.caution, 0.12), border: alpha(palette.caution, 0.3), label: "MODERATE" },
+    high: { color: palette.hazard, bg: alpha(palette.hazard, 0.12), border: alpha(palette.hazard, 0.3), label: "HIGH" },
+    severe: { color: palette.severe, bg: alpha(palette.severe, 0.12), border: alpha(palette.severe, 0.3), label: "SEVERE" },
   },
-
-  // Authoritative Data Freshness States
+  verdict: {
+    GO: palette.calm,
+    CAUTION: palette.caution,
+    NO_GO: palette.severe,
+    NOT_APPLICABLE: palette.muted,
+  },
   dataState: {
-    live: {
-      color: "#10b981",
-      bg: "rgba(16, 185, 129, 0.14)",
-      border: "rgba(16, 185, 129, 0.32)",
-      label: "LIVE",
-    },
-    forecast: {
-      color: "#00b4d8",
-      bg: "rgba(0, 180, 216, 0.14)",
-      border: "rgba(0, 180, 216, 0.32)",
-      label: "FORECAST",
-    },
-    cached: {
-      color: "#a855f7",
-      bg: "rgba(168, 85, 247, 0.14)",
-      border: "rgba(168, 85, 247, 0.32)",
-      label: "CACHED",
-    },
-    historical: {
-      color: "#64748b",
-      bg: "rgba(100, 116, 139, 0.14)",
-      border: "rgba(100, 116, 139, 0.32)",
-      label: "HISTORICAL",
-    },
-    demo: {
-      color: "#eab308",
-      bg: "rgba(234, 179, 8, 0.14)",
-      border: "rgba(234, 179, 8, 0.32)",
-      label: "DEMO",
-    },
+    live: { color: palette.calm, bg: alpha(palette.calm, 0.14), border: alpha(palette.calm, 0.32), label: "LIVE" },
+    forecast: { color: palette.accent, bg: alpha(palette.accent, 0.14), border: alpha(palette.accent, 0.32), label: "FORECAST" },
+    cached: { color: palette.muted, bg: alpha(palette.muted, 0.14), border: alpha(palette.muted, 0.32), label: "CACHED" },
+    historical: { color: palette.muted, bg: alpha(palette.muted, 0.14), border: alpha(palette.muted, 0.32), label: "HISTORICAL" },
+    demo: { color: palette.caution, bg: alpha(palette.caution, 0.14), border: alpha(palette.caution, 0.32), label: "DEMO" },
   },
 } as const;
 
@@ -143,52 +106,22 @@ export const typography = {
     mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
   },
   styles: {
-    display: {
-      fontSize: "1.75rem",    // 28px
-      lineHeight: "2.125rem", // 34px
-      fontWeight: "700",
-      letterSpacing: "-0.02em",
-    },
-    heading: {
-      fontSize: "1.25rem",    // 20px
-      lineHeight: "1.625rem", // 26px
-      fontWeight: "600",
-      letterSpacing: "-0.01em",
-    },
-    subheading: {
-      fontSize: "1rem",       // 16px
-      lineHeight: "1.375rem", // 22px
-      fontWeight: "600",
-      letterSpacing: "normal",
-    },
-    body: {
-      fontSize: "0.875rem",   // 14px
-      lineHeight: "1.25rem",  // 20px
-      fontWeight: "400",
-      letterSpacing: "normal",
-    },
-    small: {
-      fontSize: "0.75rem",    // 12px
-      lineHeight: "1rem",     // 16px
-      fontWeight: "400",
-      letterSpacing: "0.01em",
-    },
-    caption: {
-      fontSize: "0.6875rem",  // 11px
-      lineHeight: "0.875rem", // 14px
-      fontWeight: "500",
-      letterSpacing: "0.02em",
-    },
+    display: { fontSize: "1.75rem", lineHeight: "2.125rem", fontWeight: "700", letterSpacing: "-0.02em" },
+    heading: { fontSize: "1.25rem", lineHeight: "1.625rem", fontWeight: "600", letterSpacing: "-0.01em" },
+    subheading: { fontSize: "1rem", lineHeight: "1.375rem", fontWeight: "600", letterSpacing: "normal" },
+    body: { fontSize: "0.875rem", lineHeight: "1.25rem", fontWeight: "400", letterSpacing: "normal" },
+    small: { fontSize: "0.75rem", lineHeight: "1rem", fontWeight: "400", letterSpacing: "0.01em" },
+    caption: { fontSize: "0.6875rem", lineHeight: "0.875rem", fontWeight: "500", letterSpacing: "0.02em" },
     monoValue: {
-      fontSize: "0.8125rem",  // 13px
-      lineHeight: "1.125rem", // 18px
+      fontSize: "0.8125rem",
+      lineHeight: "1.125rem",
       fontWeight: "500",
       fontFamily: "JetBrains Mono, ui-monospace, monospace",
       letterSpacing: "normal",
     },
     monoMeta: {
-      fontSize: "0.6875rem",  // 11px
-      lineHeight: "0.875rem", // 14px
+      fontSize: "0.6875rem",
+      lineHeight: "0.875rem",
       fontWeight: "400",
       fontFamily: "JetBrains Mono, ui-monospace, monospace",
       letterSpacing: "0.02em",
@@ -197,11 +130,7 @@ export const typography = {
 } as const;
 
 export const motion = {
-  duration: {
-    fast: "120ms",
-    normal: "200ms",
-    slow: "350ms",
-  },
+  duration: { fast: "120ms", normal: "200ms", slow: "350ms" },
   easing: {
     standard: "cubic-bezier(0.2, 0, 0, 1)",
     in: "cubic-bezier(0.3, 0, 1, 1)",
@@ -222,16 +151,17 @@ export const zIndex = {
 } as const;
 
 export const breakpoints = {
-  sm: "390px",   // Mobile coastal handheld
-  md: "768px",   // Console split view
-  lg: "1024px",  // Tablet landscape / compact terminal
-  xl: "1280px",  // Standard marine workstation
-  "2xl": "1440px", // Full mission control console
+  sm: "390px",
+  md: "768px",
+  lg: "1024px",
+  xl: "1280px",
+  "2xl": "1440px",
 } as const;
 
+// Elevation = translucency + hairline. No shadows.
 export const elevation = {
-  level0: "bg-[#040914]",
-  level1: "bg-[#0b1834] border border-[#1b335e]",
-  level2: "bg-[#0f2042] border border-[#1b335e]",
-  level3: "bg-[#0f2042] border border-[#26457e]",
+  level0: "bg-base",
+  level1: "bg-panel/70 border border-border-base",
+  level2: "bg-raised/60 border border-border-base",
+  level3: "bg-raised/80 border border-border-strong",
 } as const;

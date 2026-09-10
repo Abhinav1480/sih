@@ -68,6 +68,7 @@ export type TraceItemStatus =
   | "RUNNING"
   | "COMPLETED"
   | "REPLANNED"
+  | "SKIPPED"
   | "FAILED";
 
 export interface TraceItem {
@@ -446,7 +447,178 @@ export interface SpatialWhatIfAnalysisData {
   physical_hypothesis?: string;
 }
 
-export interface OrcaAnalysisResponse {
+// ── CONTRACT 1.3.0 ENVELOPE ─────────────────────────────────────────────────
+// Build new UI against these fields. The legacy aliases on OrcaAnalysisResponse
+// (executive_summary, visualization_plan, agent_activity, risk_assessment,
+// map_layers, fishing_zones, location, temporal, recommendation) survive for
+// one release only.
+
+export type Verdict = "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE";
+export type RiskBand = RiskCategory;
+export type ProviderTier = "ISRO" | "NATIONAL" | "FALLBACK";
+
+export interface EnvelopeAnswer {
+  headline: string;
+  verdict: Verdict;
+  narrative: string;
+  confidence: number;
+}
+
+export interface EnvelopeRisk {
+  score: number;
+  band: RiskBand;
+  factors: RiskFactor[];
+  triggered_rules: string[];
+  missing_inputs: string[];
+  confidence: number;
+  data_quality: string;
+}
+
+export type CardType =
+  | "risk_summary"
+  | "advisory_text"
+  | "pfz_ranking"
+  | "route_plan"
+  | "comparison_table"
+  | "timeseries_chart"
+  | "geofence_warning";
+
+export interface EnvelopeCardBase {
+  id: string;
+  type: CardType;
+  title: string;
+  evidence_ids?: string[];
+  [key: string]: any;
+}
+
+export interface RiskSummaryCard extends EnvelopeCardBase {
+  type: "risk_summary";
+  score: number;
+  band: RiskBand;
+  verdict: Verdict;
+  factors: RiskFactor[];
+  triggered_rules: string[];
+}
+
+export interface AdvisoryTextCard extends EnvelopeCardBase {
+  type: "advisory_text";
+  body?: string;
+  text?: string;
+}
+
+export interface PfzRankingCard extends EnvelopeCardBase {
+  type: "pfz_ranking";
+  zones: PotentialFishingZone[];
+}
+
+export interface RoutePlanCard extends EnvelopeCardBase {
+  type: "route_plan";
+  route?: VesselRouteAnalysis;
+  candidate_routes?: RouteCandidate[];
+}
+
+export interface ComparisonTableCard extends EnvelopeCardBase {
+  type: "comparison_table";
+  columns?: string[];
+  rows?: Record<string, any>[];
+  metrics?: ComparisonMetric[];
+}
+
+export interface TimeseriesChartCard extends EnvelopeCardBase {
+  type: "timeseries_chart";
+  points: TimeSeriesPoint[];
+  summary?: string;
+}
+
+export interface GeofenceWarningCard extends EnvelopeCardBase {
+  type: "geofence_warning";
+  zones?: string[];
+  detail?: string;
+}
+
+export type EnvelopeCard =
+  | RiskSummaryCard
+  | AdvisoryTextCard
+  | PfzRankingCard
+  | RoutePlanCard
+  | ComparisonTableCard
+  | TimeseriesChartCard
+  | GeofenceWarningCard;
+
+export interface EnvelopeLayer {
+  id: string;
+  name: string;
+  kind: "geojson" | "wms";
+  geometry_type?: string;
+  features: MapLayerFeature[];
+  url?: string | null;
+  wms_params?: Record<string, any> | null;
+  visible_by_default: boolean;
+  color: string;
+  legend_title: string;
+  legend_unit?: string;
+  attribution?: string | null;
+  provider_tier?: ProviderTier;
+}
+
+export interface EnvelopeEvidenceRecord extends EvidenceRecord {
+  provider_tier?: ProviderTier;
+}
+
+export interface EnvelopeAlert {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  description: string;
+  issued_at: string;
+  valid_until: string;
+  recommended_action?: string;
+  evidence_ids?: string[];
+  source?: string;
+  provider_tier?: ProviderTier;
+}
+
+export interface EnvelopeTraceStep {
+  seq: number;
+  stage: string;
+  agent: string;
+  action: string;
+  tool?: string;
+  duration_ms: number;
+  detail?: string;
+  status: "COMPLETED" | "SKIPPED";
+  timestamp: string;
+}
+
+export interface EnvelopeMeta {
+  mode: string;
+  query_text: string;
+  contract_version: string;
+  generated_at: string;
+  location: LocationContext;
+  temporal: TemporalContext;
+  limitations: string[];
+  degraded: boolean;
+  notes: string[];
+}
+
+export interface OrcaEnvelope {
+  request_id: string;
+  session_id: string;
+  intent: QueryIntent;
+  language: string;
+  answer: EnvelopeAnswer;
+  risk: EnvelopeRisk | null;
+  cards: EnvelopeCard[];
+  layers: EnvelopeLayer[];
+  evidence: EnvelopeEvidenceRecord[];
+  alerts: EnvelopeAlert[];
+  trace: EnvelopeTraceStep[];
+  meta: EnvelopeMeta;
+}
+
+export interface OrcaAnalysisResponse extends Partial<OrcaEnvelope> {
   query_id: string;
   conversation_id: string;
   query_text: string;
