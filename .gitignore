@@ -65,3 +65,16 @@ memory/
 Thumbs.db
 .DS_Store
 .env
+
+# Capacitor Android project: paused track, and it carries gradle build output
+# (.gradle/, app/build/, build/). Regenerate with `npx cap add android`.
+frontend/android/
+
+# Bundled offline basemap: 876 generated PNGs, reproducible in one command.
+# The generator and the README are committed; the tiles are not.
+frontend/public/tiles/**/*.png
+
+# Local scratch: audit drafts and endpoint dumps, not product.
+/AUDIT_REPORT.md
+/ORCA_AUDIT_PROMPT.md
+backend/envelope_dump.json
