@@ -34,7 +34,8 @@ const WEB_LOCAL_URL =
 function defaultConfig(): BackendConfig {
   const native = isNative();
   return {
-    mode: native ? "local" : process.env.NEXT_PUBLIC_DEPLOYED_API_URL ? "deployed" : "local",
+    // The phone talks to the hosted backend; the WebView is https and blocks a plain-http LAN URL anyway.
+    mode: native ? "deployed" : process.env.NEXT_PUBLIC_DEPLOYED_API_URL ? "deployed" : "local",
     localUrl: native ? DEFAULT_LOCAL_URL : WEB_LOCAL_URL,
     deployedUrl: DEFAULT_DEPLOYED_URL,
   };

@@ -33,6 +33,7 @@ export const KEYS = {
   BACKEND_DEPLOYED_URL: "orca.backendDeployedUrl",
   UI_MODE: "orca.uiMode",
   LANG: "orca.lang",
+  TRIPS: "orca.trips",
 } as const;
 
 export interface CachedResponse {
@@ -52,6 +53,15 @@ export const isStale = (savedAt: string) => Date.now() - new Date(savedAt).getTi
 // ── Track D: trip card, vessel profile, age formatting ─────────────────────
 export const saveTripCard = (card: TripCard) => setJSON(KEYS.TRIP_CARD, card);
 export const loadTripCard = () => getJSON<TripCard>(KEYS.TRIP_CARD);
+
+/** Every trip card ever saved on this phone, newest first. Capped so Preferences stays small. */
+export const MAX_TRIPS = 30;
+export const loadTrips = async () => (await getJSON<TripCard[]>(KEYS.TRIPS)) ?? [];
+export async function saveTrip(card: TripCard): Promise<TripCard[]> {
+  const next = [card, ...(await loadTrips())].slice(0, MAX_TRIPS);
+  await setJSON(KEYS.TRIPS, next);
+  return next;
+}
 
 export interface VesselProfile {
   name?: string;

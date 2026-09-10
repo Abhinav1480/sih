@@ -9,7 +9,9 @@ const VOICES_WAIT_MS = 3000;
 
 // The plugin touches `window` at import time, which breaks the Next static
 // export prerender; load it lazily on first use (client only).
-const plugin = () => import("@capacitor-community/text-to-speech").then((m) => m.TextToSpeech);
+// Boxed: resolving a promise with the plugin proxy itself makes the runtime probe `.then`
+// on it, which the proxy reports as "TextToSpeech.then() is not implemented".
+const plugin = () => import("@capacitor-community/text-to-speech").then((m) => ({ tts: m.TextToSpeech }));
 
 // ---- supported-language cache (module-wide, enumerated once) --------------
 let supportedCache: string[] | null = null;
@@ -24,7 +26,7 @@ async function enumerateSupported(): Promise<string[]> {
     let langs: string[] = [];
     if (isNative()) {
       try {
-        langs = (await (await plugin()).getSupportedLanguages()).languages ?? [];
+        langs = (await (await plugin()).tts.getSupportedLanguages()).languages ?? [];
       } catch (e) {
         console.error("[voice] getSupportedLanguages failed", e);
       }
@@ -99,7 +101,7 @@ export function useSpeechOutput(lang: string): UseTextToSpeech {
   const hasVoice = languageHasVoice(supported, tag);
 
   const stop = useCallback(async () => {
-    if (isNative()) await (await plugin()).stop().catch(() => {});
+    if (isNative()) await (await plugin()).tts.stop().catch(() => {});
     else if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
     utter.current = null;
     setSpeaking(false);
@@ -113,7 +115,7 @@ export function useSpeechOutput(lang: string): UseTextToSpeech {
       setSpeaking(true);
       try {
         if (isNative()) {
-          await (await plugin()).speak({ text, lang: tag, rate: 0.9, pitch: 1.0, category: "ambient" });
+          await (await plugin()).tts.speak({ text, lang: tag, rate: 0.9, pitch: 1.0, category: "ambient" });
           setSpeaking(false);
           return { ok: true, lang: tag };
         }

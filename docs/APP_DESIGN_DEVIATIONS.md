@@ -1,0 +1,36 @@
+# App build — deviations from the Claude Design file
+
+The reference is `ORCA Simple v3.dc.html` in the Claude Design project. It is
+a reference, not a pixel spec: deviations are allowed where they genuinely
+improve things or where following it exactly causes a problem, and **every one
+is listed here** so the design file can be updated to match.
+
+Two things are not negotiable and are not deviated from anywhere:
+
+- The honesty rule and its gates (`docs/HONESTY_RULE.md`).
+- Verdict wording maps from `answer.verdict` and `risk.band` by keyed lookup
+  (`src/lib/design/verdict.ts`). An unmapped verdict shows the raw verdict,
+  never the nearest milder sentence.
+
+| # | Where | What the design has | What the app does | Why |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Fonts | Google Fonts `<link>` for Outfit, JetBrains Mono, Noto Sans Telugu/Tamil/Devanagari | Self-hosted at build time via `next/font/google` | The app must work in airplane mode (§9, §12). A `<link>` to fonts.googleapis.com fails offline and the whole UI falls back to system fonts, breaking the mono-numbers rule on exactly the demo that matters. Same faces, same weights, bundled. |
+| 2 | Verdict wording | `S.<lang>.go` and `S.<lang>.caution` only | `NO_GO` and `NOT_APPLICABLE` render the raw verdict string, styled by `risk.band` | The design supplies no wording for the red end. Inventing Telugu or Tamil safety wording here would be exactly the fabrication two phases removed; showing the raw verdict in the band's colour is honest and unambiguous. **The design file needs `noGo` / `notApplicable` strings in all four languages.** |
+| 3 | Band ramp | `ramp: SAFE / CAUTION / ROUGH / DO NOT GO` is English-only, in the data script, not in `S` | Used as the English fallback word beside the colour; localised only where `S` has wording | Same reason as #2. **The ramp words should move into `S` per language.** |
+| 4 | Status bar | A mock clock and battery row (`N.clock`, `N.batt`) inside the frame | Not rendered | The real status bar sits above the WebView on the phone. Drawing a second one under it duplicates the clock and battery. The design frame needed it for a static mockup; a running app does not. |
+| 5 | Numerals | `DIG` maps for `te` and `hi` only | Same; `ta`, `ml`, `kn`, `or`, `bn` render Western digits | The design supplies no other maps, and Tamil/Malayalam/Kannada usage mixes Western digits freely. Not invented. |
+| 6 | Emergency contacts | `CONTACTS` carries a family number `+91 98480 11223` | Rendered from the vessel profile the user saved, never from the design's sample | The sample number is a placeholder that would be dialled by a real tap. Contacts come from the saved profile plus the published helplines in `lib/offline/tripCard.ts`; a profile with no family contact shows the slot empty. |
+| 7 | Border warning | Screen 12 is titled "BORDER WARNING" and reads "close to the sea border" | Titled and worded as a **protected-area** warning, with the zone named | The backend has only marine protected area polygons -- no IMBL, no EEZ (P2-2, `docs/LIMITATIONS.md`). Calling an MPA boundary a "sea border" would tell a fisherman he is near international waters when he is near a sanctuary. **The design's `geoTitle`/`geoBody`/`toBoundary` strings need MPA wording, in four languages.** |
+| 8 | Checking (03) | Pending rows carry sample subtitles: "You are inside Indian waters", "What is safe for a 9.2 m fibre boat" | Pending rows show the title only; once the answer lands, the real `trace[]` replaces them (SKIPPED in muted grey) | The subtitles are claims nothing has verified yet -- a fisherman reads "You are inside Indian waters" while the check is still running. **`CHECKS` should carry titles only, or the design should show them as questions, not statements.** |
+| 9 | Map (07) | Five fixed layer names in `LAYERS` (Fishing spots, Protected areas, Coral and reefs, Sea border, Depth) | Layer toggles are the answer's own `layers[]`, named as the API sends them; WMS layers are listed but greyed with a note that they need the internet | The contract sends whatever layers the answer has (eight in the captures, including ISRO Bhuvan WMS). Mapping them onto the design's five would hide some and mislabel others. **The design's layer list should be illustrative, not fixed.** |
+| 10 | My boat (09) | Six vessel stats including "Safe wave 2.0 m" | Length and crew from the saved profile; no "Safe wave" | A safe-wave figure is a threshold, and thresholds belong to the risk engine (§honesty). The app shows what the fisherman typed and lets the backend judge. Speed, range and fuel are not collected yet. |
+| 11 | My trips (15) | Columns "hours out" and "catch noted" | Date, verdict word (keyed lookup), wave and wind from the saved answer; tap to expand the question, window and rules | The app records saved answers, not trip logs; hours out and catch are not captured anywhere. **Either the design drops those columns or a trip-log feature is scoped.** |
+| 12 | Answer (04) | Third stat tile "Come back by 11:00" | Tile labelled "Valid until" showing `meta.temporal.end_time` in the hour the window label uses | The contract carries no return time. Labelling the window end "Come back by" invents an instruction. (The spoken template from Track B still says "return before", unchanged in this phase.) |
+| 13 | Answer (04) | No cached / stale state | Cached answers render the existing `StaleWarning` (age + the question the answer was for) above the hero, plus a persistent `meta.degraded` banner and a one-line "unsupported card" note when a card type is unknown | States the design is silent on; the honesty gate `cached-shows-question` requires the question to be disclosed. |
+| 14 | Listening (02) | Starts listening immediately | A first hold shows a plain-language explanation and an "Allow microphone" button; the OS permission dialog appears only after that tap | Android needs a runtime permission and the brief asks for a plain-language prompt before it. Also every mic failure (denied, unavailable, no speech) returns to Home with a dismissible note offering Type. |
+| 15 | Spot card (08) | "Show the way" button | Draws the straight line from the phone to the spot labelled with the API's own `distance_km` and `bearing_deg`; disabled without a GPS fix | The contract's route is the `route_plan` card; a straight line is a picture of two API numbers, not a route. |
+| 16 | Language (10) | `LANGS[].voice` flags (Odia, Bengali = no voice) | The row shows "speaks and shows" only when both the design flag and the device's `getSupportedLanguages()` agree | On the test phone every listed language including or-IN and bn-IN has a voice; the design's flag is treated as the floor, the device as the truth. |
+| 17 | Tab bar | 4 tabs, no safe-area | Tab bar and header respect `env(safe-area-inset-*)`; the status bar is drawn over the header colour | Android 15 edge-to-edge puts the status bar over the WebView. |
+| 18 | Extra strings | -- | ~60 strings the design lacks (empty/error/offline/permission states, labels like "Valid until", "Distance", "Depth") live in `src/lib/i18n/appExtra.ts` in en/te/ta/hi | Every visible string must come from a locale file. **These are candidates to fold into the design's `S` table.** |
+
+Rows are appended as the build proceeds.

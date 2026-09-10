@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Fonts are self-hosted via next/font in app/layout.tsx so the app works offline. */
 @import "leaflet/dist/leaflet.css";
 
 @tailwind base;
@@ -316,3 +316,26 @@ h1, h2, h3, h4, .font-display {
     to { opacity: 1; transform: translateX(0); }
   }
 }
+
+
+/* ---------------------------------------------------------------------------
+   ORCA app (the phone). Light theme from the Claude Design file. The dark
+   console tokens above remain for /console on the laptop.
+   --------------------------------------------------------------------------- */
+body.orca-app {
+  margin: 0;
+  background: #f2f6f7;
+  color: #12303a;
+  font-family: var(--font-sans), var(--font-te), var(--font-ta), var(--font-hi), system-ui, sans-serif;
+  height: 100dvh;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+body.orca-app .num,
+body.orca-app .mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+@keyframes orca-wv { 0%, 100% { transform: scaleY(.22); } 50% { transform: scaleY(1); } }
+@keyframes orca-soft { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes orca-up { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

@@ -29,7 +29,8 @@ export async function initNativeShell(): Promise<void> {
   initialised = true;
   try {
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: "#04141d" });
+    // The design's header bar colour, so the status bar reads as part of it.
+    await StatusBar.setBackgroundColor({ color: "#0a4a59" });
     await StatusBar.setOverlaysWebView({ overlay: false });
   } catch {
     /* status bar plugin unavailable on this build */
