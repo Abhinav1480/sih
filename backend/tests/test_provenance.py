@@ -51,6 +51,15 @@ def test_evidence_provider_is_always_one_the_observation_actually_set(query):
     permitted = set()
     if analysis.ocean_conditions:
         permitted.add(analysis.ocean_conditions.source)
+        # An observation may legitimately be assembled from more than one
+        # instrument: wave height from a SARAL pass, sea surface temperature
+        # from an INSAT-3DR scene. Those per-field sources are set by the
+        # provider on the observation, exactly like `source`, so they are
+        # permitted -- and each one must be a real string, not a placeholder.
+        for field, fp in (analysis.ocean_conditions.field_provenance or {}).items():
+            assert fp.source.strip(), f"{field} carries an empty provenance source"
+            assert fp.granule, f"{field} claims a granule-backed source with no granule"
+            permitted.add(fp.source)
     if analysis.weather_conditions:
         permitted.add(analysis.weather_conditions.source)
 

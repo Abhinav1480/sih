@@ -60,8 +60,8 @@ Stated here so the matrix and the contract cannot overclaim.
 | :--- | :--- | :--- | :--- |
 | **Tide** | 3 | Per-port harmonic constituents (Survey of India / INCOIS). The prediction maths is standard and offline; the constituent table is the missing part. | Reported unavailable, by name, in `meta.limitations` and the trace. Not approximated. |
 | **Lightning / cyclone** | 4 | MOSDAC INSAT-3D products, token-gated. | Reported unavailable, by name. The wind-derived alert level is **not** presented as a lightning feed. |
-| **Chlorophyll-a** | 1, 5, 7 | Bhoonidhi Oceansat-3 OCM, token-gated. | PFZ ranking runs on synthetic chlorophyll in `DEMO`, labelled `FALLBACK`. |
-| **Satellite SWH** | 2, 6, 8 | Bhoonidhi SARAL-AltiKa, token-gated. | Open-Meteo model SWH in `LIVE`, labelled `FALLBACK`. |
+| **Chlorophyll-a** | 1, 5, 7 | Cloud-free Oceansat-3 OCM granules over the box. The reader is wired; the committed granules are cloud-masked at Kakinada on the recent dates. | PFZ ranking runs on synthetic chlorophyll, labelled `FALLBACK`. |
+| **Surface wind** | 2, 3, 6, 8 | **Re-ordering the correct OSCAT-3 revolutions.** The nine `E06SCT_L3_WW12` granules ordered contain **zero valid retrievals anywhere in the Indian Ocean** — 0 of 416,000 cells in 40°S–25°N, 20–120°E, against 13.9% coverage globally. Each file is one ~100-minute revolution and these cross the Pacific and the Americas. The reader is implemented and verified against a box where these orbits do have data; no clip or box change helps. | Wind stays on the labelled synthetic model, `FALLBACK`, and `ISROGranuleProvider.get_weather_conditions` refuses outright with this reason rather than answering from something adjacent. |
 
 ---
 
@@ -80,6 +80,23 @@ produces a `not_configured` skip, not an error and not a substitute value.
 ---
 
 ## 4b. Clipped ISRO fixtures in this repository
+
+**These are wired in.** `app/providers/isro_fixtures.py` registers
+`ISROGranuleProvider` at the ISRO tier of the ocean chain, so a query is
+answered from a real granule before any fallback is tried. Every value is
+`CACHED` — a file on disk is not a live retrieval — and carries the granule it
+came from, its real acquisition time, how far the nearest data actually was
+and how many days old it is. Wave height additionally records the quality
+filter it passed.
+
+Each field is attributed to the instrument that measured it, not to the
+observation as a whole: wave height to the SARAL/AltiKa pass, sea surface
+temperature to the INSAT-3DR scene, in different files acquired at different
+times. See `FieldProvenance` in `app/models/schemas.py`.
+
+The granules cover 1–9 September 2026 and each product has its own validity.
+Past that the provider declines and the trace says why; set `ORCA_DEMO_NOW`
+(see `.env.example`) to anchor the demo clock inside the coverage.
 
 `backend/fixtures/isro/kakinada/` holds real MOSDAC granules clipped to the
 demo box by `backend/scripts/subset_granules.py`. The raw granules (400 files,

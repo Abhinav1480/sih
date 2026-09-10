@@ -107,6 +107,20 @@ class CorrelationEngine:
         scored_items = []
         metrics_summary: List[ComparisonMetric] = []
 
+        # A variable one side does not carry is a gap, not a change of zero.
+        # An ISRO-tier observation legitimately has no swell -- an altimeter
+        # measures total significant wave height and does not decompose it --
+        # so comparing it against a synthetic swell would manufacture a delta
+        # out of the difference between two providers rather than two places.
+        skipped_for_missing = [
+            item["name"] for item in raw_candidates
+            if item["val_a"] is None or item["val_b"] is None
+        ]
+        raw_candidates = [
+            item for item in raw_candidates
+            if item["val_a"] is not None and item["val_b"] is not None
+        ]
+
         for item in raw_candidates:
             va = item["val_a"]
             vb = item["val_b"]

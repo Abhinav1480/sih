@@ -104,11 +104,77 @@ class AgentStepRecord(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class SatelliteReading(BaseModel):
+    """One variable sampled from a real, clipped ISRO granule on disk.
+
+    Everything here is read out of the granule or measured against it. The
+    representativeness fields are not decoration: a nadir altimeter's nearest
+    pass can be hundreds of kilometres from the query point and days from the
+    requested time, and a value like that must arrive carrying how far and how
+    old it is, never as though it were measured on the spot.
+    """
+
+    variable: str
+    value: float
+    unit: str
+    source: str
+    status: DataFreshness = DataFreshness.CACHED
+    timestamp: datetime
+
+    # Which file this came out of, and what produced it.
+    granule: str
+    satellite: str
+    sensor: str
+    processing_level: str
+
+    # Per-variable attribution from the granule's own metadata. A SARAL IGDR
+    # carries ECMWF model wind and Meteo-France wave period beside the
+    # altimeter's own swh; `variable_institution` is what stops one of those
+    # being published as an ISRO measurement.
+    variable_source: str = ""
+    variable_institution: str = ""
+
+    # How representative the value is of the point and time asked about.
+    pixels_used: int = 0
+    nearest_pixel_km: float = 0.0
+    days_from_request: float = 0.0
+    quality_filter: Optional[str] = None
+    note: str = ""
+
+
+class FieldProvenance(BaseModel):
+    """Who produced ONE field of an observation, when a single source did not.
+
+    An observation usually comes from one provider and `source` on the
+    observation says so. A granule-backed one does not: wave height comes from a
+    SARAL altimeter pass and sea surface temperature from an INSAT-3DR scene, in
+    different files acquired at different times and different distances away.
+    Stamping the observation's source on both would attribute the SST to SARAL,
+    which never measured it -- the mislabelling the whole provenance path exists
+    to stop. Where this is populated it wins over the observation's own source.
+    """
+
+    source: str
+    status: DataFreshness
+    observed_at: Optional[datetime] = None
+    granule: Optional[str] = None
+    distance_km: Optional[float] = None
+    days_from_request: Optional[float] = None
+    institution: str = ""
+    note: str = ""
+
+
 class OceanObservation(BaseModel):
     significant_wave_height_m: float
-    swell_height_m: float
-    swell_period_sec: float
-    swell_direction_deg: float
+    # Optional for the same reason as SST below: a provider that does not carry
+    # swell must return nothing rather than a plausible constant. A satellite
+    # altimeter measures significant wave height and does not decompose it into
+    # swell, so an ISRO-tier observation legitimately has no swell at all. The
+    # risk engine renormalises over the factors it did observe and reports the
+    # absence in `missing_inputs`.
+    swell_height_m: Optional[float] = None
+    swell_period_sec: Optional[float] = None
+    swell_direction_deg: Optional[float] = None
     # Optional because a provider that does not carry these variables must
     # return nothing rather than a plausible-looking constant. A missing
     # value is renderable ("--"); an invented one is not detectable.
@@ -119,6 +185,9 @@ class OceanObservation(BaseModel):
     status: DataFreshness = DataFreshness.DEMO
     source: str = "Demo Provider"
     timestamp: datetime
+    # Per-field attribution, keyed by field name. Empty for a single-source
+    # provider; populated where different granules produced different fields.
+    field_provenance: Dict[str, FieldProvenance] = Field(default_factory=dict)
 
 
 class WeatherObservation(BaseModel):

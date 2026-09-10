@@ -68,7 +68,8 @@ class OceanAgent(BaseSpecialistAgent):
             tool="get_ocean_conditions",
             duration_ms=duration_ms,
             details=(
-                f"SWH: {obs.significant_wave_height_m}m, Swell: {obs.swell_height_m}m, "
+                f"SWH: {obs.significant_wave_height_m}m, Swell: "
+                f"{str(obs.swell_height_m) + 'm' if obs.swell_height_m is not None else 'not carried'}, "
                 f"SST: {sst if sst is not None else 'unavailable'}"
                 f"{' C' if sst is not None else ''} "
                 f"[{result.tier.value}] {obs.source}"

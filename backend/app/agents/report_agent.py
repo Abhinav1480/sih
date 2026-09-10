@@ -534,22 +534,37 @@ class ReportAgent(BaseSpecialistAgent):
             unit: str,
             live_note: str,
             at: Any = None,
+            field: Optional[str] = None,
         ) -> EvidenceRecord:
             where = at or loc
+            # Where the observation carries per-field attribution, cite THIS
+            # field's producer rather than the observation's. Sea surface
+            # temperature comes from an INSAT-3DR scene and wave height from a
+            # SARAL pass, in different files acquired at different times;
+            # crediting the SST to SARAL would name a satellite that never
+            # measured it.
+            fp = (getattr(observation, "field_provenance", None) or {}).get(field) if field else None
+            source = fp.source if fp else observation.source
+            status = fp.status if fp else observation.status
+            note = fp.note if (fp and fp.note) else live_note
+            observed_at = (
+                fp.observed_at.strftime("%Y-%m-%d %H:%M UTC")
+                if (fp and fp.observed_at) else obs_time_str
+            )
             return EvidenceRecord(
                 id=str(uuid.uuid4())[:8],
-                provider=observation.source,
-                provider_tier=classify_tier(observation.source, observation.status),
+                provider=source,
+                provider_tier=classify_tier(source, status),
                 dataset=dataset,
                 variable=variable,
                 value=value,
                 unit=unit,
                 location=where.name,
                 coordinates=f"{where.latitude:.3f}\u00b0N, {where.longitude:.3f}\u00b0E",
-                observation_or_forecast_time=obs_time_str,
+                observation_or_forecast_time=observed_at,
                 retrieval_time=now_str,
-                status=observation.status,
-                reliability_notes=reliability_note(observation.status, live_note, observation.source),
+                status=status,
+                reliability_notes=reliability_note(status, note, source),
             )
 
         if spatial_what_if:
@@ -577,15 +592,21 @@ class ReportAgent(BaseSpecialistAgent):
                 value=f"{ocean.significant_wave_height_m}",
                 unit="m",
                 live_note="Model significant wave height at the requested position.",
+                field="significant_wave_height_m",
             ))
-            records.append(record(
-                ocean,
-                dataset="Ocean Surface Wave Spectrum",
-                variable="Swell Wave Height & Period",
-                value=f"{ocean.swell_height_m} m / {ocean.swell_period_sec} s",
-                unit="m / s",
-                live_note="Directional swell component of the wave spectrum.",
-            ))
+            # Same rule as SST below: only cite a variable the provider
+            # returned. A satellite altimeter carries no swell decomposition,
+            # so an ISRO-tier observation has none and must produce no record
+            # rather than one reading "None m / None s".
+            if ocean.swell_height_m is not None and ocean.swell_period_sec is not None:
+                records.append(record(
+                    ocean,
+                    dataset="Ocean Surface Wave Spectrum",
+                    variable="Swell Wave Height & Period",
+                    value=f"{ocean.swell_height_m} m / {ocean.swell_period_sec} s",
+                    unit="m / s",
+                    live_note="Directional swell component of the wave spectrum.",
+                ))
             # Only cite a variable the provider actually returned. An absent
             # value produces no evidence record rather than a fabricated one.
             if ocean.sea_surface_temp_c is not None:
@@ -596,6 +617,7 @@ class ReportAgent(BaseSpecialistAgent):
                     value=f"{ocean.sea_surface_temp_c}",
                     unit="\u00b0C",
                     live_note="Sea surface temperature at the requested position.",
+                    field="sea_surface_temp_c",
                 ))
             if ocean.ocean_current_speed_m_s is not None:
                 records.append(record(

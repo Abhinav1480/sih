@@ -17,6 +17,7 @@ from app.providers.bhuvan import BhuvanWMSProvider
 from app.providers.chain import TieredChain
 from app.providers.demo_provider import HighFidelityDemoProvider
 from app.providers.gaps import UnconfiguredHazardProvider, UnconfiguredTideProvider
+from app.providers.isro_fixtures import ISROGranuleProvider
 from app.providers.isro_products import (
     BhoonidhiProvider,
     INCOISCachedProvider,
@@ -28,6 +29,10 @@ from app.providers.open_meteo import OpenMeteoProvider
 class ProviderRegistry:
     def __init__(self):
         # ISRO tier
+        # Real clipped granules committed in this repository. Registered like
+        # any other provider and sorted into place by tier, so it is attempted
+        # before the token-gated services rather than being a special path.
+        self.isro_granules = ISROGranuleProvider()
         self.bhuvan = BhuvanWMSProvider()
         self.mosdac = MOSDACProvider()
         self.bhoonidhi = BhoonidhiProvider()
@@ -55,7 +60,7 @@ class ProviderRegistry:
     def _build_chains(self) -> None:
         self.ocean_chain = TieredChain(
             "ocean",
-            [self.bhoonidhi, self.mosdac, self.incois] + self._tail(),
+            [self.isro_granules, self.bhoonidhi, self.mosdac, self.incois] + self._tail(),
         )
         self.weather_chain = TieredChain(
             "weather",
@@ -98,7 +103,7 @@ class ProviderRegistry:
     def describe(self) -> List[dict]:
         """Every registered provider and its declared tier, for the docs endpoint."""
         providers = [
-            self.bhuvan, self.bhoonidhi, self.mosdac,
+            self.isro_granules, self.bhuvan, self.bhoonidhi, self.mosdac,
             self.incois, self.open_meteo, self.demo,
         ]
         return [
