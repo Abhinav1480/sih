@@ -4,10 +4,12 @@ import React from "react";
 import { DeterministicRiskResult } from "@/lib/types";
 import { RiskGauge } from "./RiskGauge";
 import { RiskFactorList } from "./RiskFactorList";
-import { Shield, Sparkles } from "lucide-react";
+import { Shield } from "lucide-react";
+import { NUM } from "@/components/ui/tone";
 
 export interface RiskIntelligenceModuleProps {
-  risk?: DeterministicRiskResult | null;
+  /** Legacy `risk_assessment` OR contract 1.3.0 `risk` block — both shapes read. */
+  risk?: (DeterministicRiskResult & Record<string, any>) | Record<string, any> | null;
   verdict?: "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE" | string;
   label?: string;
   isLoading?: boolean;
@@ -22,84 +24,51 @@ export const RiskIntelligenceModule: React.FC<RiskIntelligenceModuleProps> = ({
   verdict,
   label = "MARINE RISK",
   isLoading = false,
-  locationName,
-  temporalLabel,
-  defaultExpanded = false,
   className = "",
 }) => {
-  // Loading State: Honest "Analyzing..." without fake placeholder scores
+  const frame = `rounded-xl bg-[#0a2432] border border-[#12384a] ${className}`;
+
   if (isLoading) {
     return (
-      <section
-        aria-label="Risk Assessment Loading"
-        className={`p-4 rounded-xl bg-orca-dark/50 border border-orca-border/70 space-y-3 ${className}`}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-orca-cyan" />
-            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-orca-muted">
-              {label}
-            </span>
-          </div>
-          <span className="px-2 py-0.5 rounded-full bg-orca-cyan/10 border border-orca-cyan/30 text-orca-cyan text-[10px] font-mono flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-orca-cyan animate-ping" />
-            Evaluating factors...
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2.5 pt-1 text-slate-300 text-xs font-mono">
-          <Sparkles className="w-3.5 h-3.5 text-orca-cyan animate-spin-slow" />
-          <span>Synthesizing hydrodynamic wave, wind, and boundary threshold rules...</span>
-        </div>
+      <section aria-label="Risk Assessment Loading" className={`${frame} p-4 flex items-center gap-2 text-[11px] ${NUM} text-[#7a94a3]`}>
+        <Shield className="w-4 h-4 text-[#38e8d0]" />
+        <span>{label}</span>
+        <span className="ml-auto flex items-center gap-1.5 text-[#38e8d0]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#38e8d0] animate-ping" /> evaluating factors
+        </span>
       </section>
     );
   }
 
-  // Safe Missing State: Honest statement without fabricating risk level
   if (!risk) {
     return (
-      <section
-        aria-label="Risk Assessment Unavailable"
-        className={`p-3.5 rounded-xl bg-white/[0.02] border border-orca-border/50 text-xs text-orca-muted flex items-center justify-between gap-3 ${className}`}
-      >
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-orca-dim" />
-          <span className="font-mono text-[11px] uppercase tracking-wider text-orca-muted">
-            {label}
-          </span>
-        </div>
-        <span className="text-[11px] font-mono text-orca-dim">Risk assessment unavailable</span>
+      <section aria-label="Risk Assessment Unavailable" className={`${frame} p-3.5 flex items-center justify-between gap-3 text-[11px] ${NUM} text-[#7a94a3]`}>
+        <span className="flex items-center gap-2"><Shield className="w-4 h-4" />{label}</span>
+        <span>risk assessment unavailable</span>
       </section>
     );
   }
 
-  const score = typeof risk.score === "number" ? risk.score : risk.overall_score ?? 0;
-  const band = risk.band || risk.category || "LOW";
-  const factors = risk.factors || risk.contributing_factors || [];
+  const r = risk as Record<string, any>;
+  const score: number = typeof r.score === "number" ? r.score : r.overall_score ?? 0;
+  const band: string = r.band || r.category || "";
+  const factors = r.factors || r.contributing_factors || [];
+  const confidence: number | undefined =
+    typeof r.confidence === "number" ? r.confidence : r.confidence_percentage;
+  const dataQuality: string | undefined = r.data_quality || r.data_quality_label || r.data_quality_notes;
 
   return (
-    <section
-      aria-label={`${label} Module`}
-      className={`p-4 rounded-xl bg-orca-dark/60 border border-orca-border/80 space-y-4 shadow-sm ${className}`}
-    >
-      {/* 1. Primary Risk Gauge with Band, Score, Track, and Verdict */}
-      <RiskGauge
-        score={score}
-        band={band}
-        verdict={verdict}
-        label={label}
-        showTrack={true}
-      />
-
-      {/* 2. Factor Decomposition List with Contribution Bars & Rules */}
+    <section aria-label={`${label} Module`} className={`${frame} p-4 space-y-4`}>
+      <RiskGauge score={score} band={band} verdict={verdict} label={label} />
       <RiskFactorList
         factors={factors}
         overallScore={score}
-        triggeredRules={risk.triggered_rules}
-        missingInputs={risk.missing_inputs}
-        dataQualityLabel={risk.data_quality_label || risk.data_quality}
-        defaultExpanded={defaultExpanded}
-        showTotalCheck={true}
+        band={band}
+        triggeredRules={r.triggered_rules}
+        missingInputs={r.missing_inputs}
+        dataQualityLabel={dataQuality}
+        confidence={confidence}
+        showTotalCheck
       />
     </section>
   );

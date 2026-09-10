@@ -39,7 +39,7 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
       {/* Header Banner */}
       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5 font-mono">
+          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5 font-mono tabular-nums">
             <GitCompare className="w-3.5 h-3.5 text-cyan-400" />
             <span>Route Corridor Comparative Analysis</span>
           </div>
@@ -50,7 +50,7 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
 
         <div className="flex items-center gap-2">
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 font-mono ${
+            className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 font-mono tabular-nums ${
               selectedId === "alternative"
                 ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                 : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
@@ -74,12 +74,12 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 font-mono">
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 font-mono tabular-nums">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Recommended Safe Corridor</span>
               </span>
               {selectedId === "recommended" && (
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono tabular-nums">
                   Selected
                 </span>
               )}
@@ -89,15 +89,15 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
 
             <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-300 mb-2">
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Distance</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Distance</span>
                 <b className="text-white">{recCandidate.distance_km} km</b>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Transit</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Transit</span>
                 <b className="text-white">{recCandidate.estimated_transit_hours} hrs</b>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Marine Risk</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Marine Risk</span>
                 <span className="text-emerald-400 font-bold">{recCandidate.marine_risk}</span>
               </div>
             </div>
@@ -118,12 +118,12 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-mono">
+              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-mono tabular-nums">
                 <AlertTriangle className="w-4 h-4" />
                 <span>Alternative / Direct Corridor</span>
               </span>
               {selectedId === "alternative" && (
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono tabular-nums">
                   Selected
                 </span>
               )}
@@ -133,15 +133,15 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
 
             <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-300 mb-2">
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Distance</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Distance</span>
                 <b className="text-white">{altCandidate.distance_km} km</b>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Transit</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Transit</span>
                 <b className="text-white">{altCandidate.estimated_transit_hours} hrs</b>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block font-mono">Marine Risk</span>
+                <span className="text-slate-400 text-[10px] block font-mono tabular-nums">Marine Risk</span>
                 <span
                   className={
                     altCandidate.marine_risk === "HIGH" ? "text-rose-400 font-bold" : "text-amber-400 font-bold"
@@ -162,14 +162,14 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
       {/* Side-by-Side Comparison Metrics Table */}
       {compData && compData.metrics && compData.metrics.length > 0 && (
         <div className="space-y-2">
-          <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between font-mono">
+          <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between font-mono tabular-nums">
             <span>Passage Parameters Comparison</span>
             <span className="text-cyan-400 font-normal">Side-by-side evaluation</span>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-white/[0.06] bg-orca-darkest/70">
             <table className="w-full text-xs text-left">
-              <thead className="text-[10px] uppercase tracking-wider text-slate-400 bg-orca-darkest/90 border-b border-white/[0.06] font-mono">
+              <thead className="text-[10px] uppercase tracking-wider text-slate-400 bg-orca-darkest/90 border-b border-white/[0.06] font-mono tabular-nums">
                 <tr>
                   <th className="py-2.5 px-3">Metric</th>
                   <th className="py-2.5 px-3 text-emerald-300">Recommended Route</th>
@@ -192,7 +192,7 @@ export const RouteComparisonCard: React.FC<RouteComparisonCardProps> = ({
                     <td className="py-2 px-3 text-slate-200">{m.recommended_value}</td>
                     <td className="py-2 px-3 text-slate-200">{m.alternative_value}</td>
                     <td className="py-2 px-3 text-right">
-                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-orca-panel border border-white/[0.08] text-cyan-400 font-mono">
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-orca-panel border border-white/[0.08] text-cyan-400 font-mono tabular-nums">
                         {m.advantage} ({m.difference})
                       </span>
                     </td>

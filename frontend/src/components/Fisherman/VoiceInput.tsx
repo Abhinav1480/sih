@@ -1,200 +1,87 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { t } from "@/lib/i18n";
-
-type VoiceState =
-  | "idle"
-  | "listening"
-  | "processing"
-  | "unavailable"
-  | "denied"
-  | "error";
+import { useSpeechInput } from "@/lib/voice/useSpeechInput";
 
 interface VoiceInputProps {
-  lang: string;
-  /** Called with the transcribed text — the parent populates its query input. */
+  /** ORCA language code from the app's language selector (en | te | hi | ta | ...). */
+  lang?: string;
+  /** Final transcript — the parent feeds it into the same pipeline as typed text. */
   onTranscript: (text: string) => void;
   disabled?: boolean;
   className?: string;
+  /** xl = fisherman home press-to-speak; md = console input row. */
+  size?: "md" | "xl";
 }
 
-/** Map ORCA language codes to BCP-47 tags for speech recognition. */
-const BCP47: Record<string, string> = {
-  en: "en-IN",
-  te: "te-IN",
-  hi: "hi-IN",
-  ta: "ta-IN",
-  ml: "ml-IN",
-  kn: "kn-IN",
-  bn: "bn-IN",
-  mr: "mr-IN",
-};
-
-const LISTEN_TIMEOUT_MS = 10000;
-
 export const VoiceInput: React.FC<VoiceInputProps> = ({
-  lang,
+  lang = "en",
   onTranscript,
   disabled = false,
   className = "",
+  size = "md",
 }) => {
-  const [state, setState] = useState<VoiceState>("idle");
-  const recognitionRef = useRef<any>(null);
-  const timeoutRef = useRef<number | null>(null);
+  const { state, level, partial, message, start } = useSpeechInput({ lang, onFinal: onTranscript });
 
-  // Detect availability once on mount (client only).
-  useEffect(() => {
-    const SR =
-      typeof window !== "undefined"
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : undefined;
-    if (!SR) setState("unavailable");
-  }, []);
+  const listening = state === "listening";
+  const processing = state === "processing";
+  const unavailable = state === "unavailable";
+  const problem = unavailable || state === "denied" || state === "nomatch" || state === "error";
 
-  const clearTimer = () => {
-    if (timeoutRef.current !== null) {
-      window.clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
+  const dim = size === "xl" ? "w-20 h-20" : "w-11 h-11";
+  const icon = size === "xl" ? "w-9 h-9" : "w-5 h-5";
+  const label = listening ? t("voice.stopListening", lang) : t("voice.speak", lang);
 
-  const stop = () => {
-    clearTimer();
-    try {
-      recognitionRef.current?.stop();
-    } catch {
-      /* no-op */
-    }
-  };
-
-  useEffect(() => () => stop(), []); // cleanup on unmount
-
-  const start = () => {
-    if (disabled) return;
-    const SR =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      setState("unavailable");
-      return;
-    }
-
-    // Toggle off if already listening.
-    if (state === "listening") {
-      stop();
-      setState("idle");
-      return;
-    }
-
-    let recognition: any;
-    try {
-      recognition = new SR();
-    } catch {
-      setState("error");
-      return;
-    }
-    recognition.lang = BCP47[lang] || "en-IN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-
-    recognition.onresult = (event: any) => {
-      clearTimer();
-      const transcript = event?.results?.[0]?.[0]?.transcript ?? "";
-      setState("processing");
-      if (transcript) onTranscript(transcript);
-      setState("idle");
-    };
-
-    recognition.onerror = (event: any) => {
-      clearTimer();
-      const err = event?.error;
-      if (err === "not-allowed" || err === "service-not-allowed") {
-        setState("denied");
-      } else if (err === "no-speech" || err === "aborted") {
-        setState("idle");
-      } else {
-        setState("error");
-      }
-    };
-
-    recognition.onend = () => {
-      clearTimer();
-      // If we ended while still "listening" (no result fired), return to idle.
-      setState((s) => (s === "listening" ? "idle" : s));
-    };
-
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-      setState("listening");
-      // Never hang indefinitely.
-      timeoutRef.current = window.setTimeout(() => {
-        stop();
-        setState((s) => (s === "listening" ? "idle" : s));
-      }, LISTEN_TIMEOUT_MS);
-    } catch {
-      setState("error");
-    }
-  };
-
-  const isUnavailable = state === "unavailable";
-  const isListening = state === "listening";
-  const isProcessing = state === "processing";
-
-  // Status / error message (aria-live so screen readers hear state changes).
-  const message =
-    state === "unavailable"
-      ? t("voice.input.unavailable", lang)
-      : state === "denied"
-      ? t("voice.input.denied", lang)
-      : state === "error"
-      ? t("voice.input.error", lang)
-      : state === "listening"
-      ? t("voice.listening", lang)
-      : state === "processing"
-      ? t("voice.processing", lang)
-      : "";
-
-  const buttonLabel = isListening
-    ? t("voice.stopListening", lang)
-    : t("voice.speak", lang);
+  const status = listening
+    ? partial || t("voice.listening", lang)
+    : processing
+    ? t("voice.processing", lang)
+    : message;
 
   return (
-    <>
+    <div className={`flex flex-col items-center gap-1 ${className}`}>
       <button
         type="button"
-        onClick={start}
-        disabled={disabled || isUnavailable}
-        aria-label={buttonLabel}
-        aria-pressed={isListening}
-        title={isUnavailable ? t("voice.input.unavailable", lang) : buttonLabel}
-        className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orca-cyan/60 disabled:opacity-40 disabled:cursor-not-allowed ${
-          isListening
-            ? "bg-rose-500/20 text-rose-300 border border-rose-500/50 animate-pulse"
-            : "bg-orca-panel border border-orca-border text-orca-muted hover:text-orca-cyan hover:border-orca-cyan/40"
-        } ${className}`}
-      >
-        {isProcessing ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : isUnavailable ? (
-          <MicOff className="w-5 h-5" />
-        ) : (
-          <Mic className="w-5 h-5" />
-        )}
-      </button>
-      {/* Live region for state + errors (also visible text). */}
-      <span
-        aria-live="polite"
-        className={`text-[10.5px] ${
-          state === "denied" || state === "error" || state === "unavailable"
-            ? "text-amber-300"
-            : "text-orca-dim"
+        onClick={() => void start()}
+        disabled={disabled || unavailable}
+        aria-label={label}
+        aria-pressed={listening}
+        title={unavailable ? message : label}
+        className={`relative ${dim} rounded-full flex items-center justify-center flex-shrink-0 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed ${
+          listening
+            ? "bg-severe/20 text-severe border border-severe/50"
+            : "bg-panel border border-border-base text-muted hover:text-accent hover:border-accent/40"
         }`}
       >
-        {message}
+        {/* Live audio level: the ring grows with the mic RMS while listening. */}
+        {listening && (
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-severe/30"
+            style={{ transform: `scale(${1 + level * 0.8})`, transition: "transform 60ms linear" }}
+          />
+        )}
+        <span className="relative">
+          {processing ? (
+            <Loader2 className={`${icon} animate-spin`} />
+          ) : unavailable ? (
+            <MicOff className={icon} />
+          ) : (
+            <Mic className={icon} />
+          )}
+        </span>
+      </button>
+      {/* Live region: interim transcript while speaking, otherwise state / what went wrong. */}
+      <span
+        aria-live="polite"
+        className={`text-center leading-snug ${size === "xl" ? "text-[13px] max-w-[260px]" : "text-[10.5px] max-w-[160px]"} ${
+          problem ? "text-caution" : listening && partial ? "text-text" : "text-muted"
+        }`}
+      >
+        {status}
       </span>
-    </>
+    </div>
   );
 };

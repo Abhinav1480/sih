@@ -15,7 +15,7 @@ export const HistoricalTrendCard: React.FC<HistoricalTrendCardProps> = ({ data }
     <div className="maritime-card p-5 space-y-4">
       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold font-mono">
+          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold font-mono tabular-nums">
             Historical Marine Analysis & Anomaly Detection
           </div>
           <div className="font-display font-bold text-lg text-white mt-0.5">
@@ -39,7 +39,7 @@ export const HistoricalTrendCard: React.FC<HistoricalTrendCardProps> = ({ data }
       {/* Change Indicators */}
       {data.change_reasons && data.change_reasons.length > 0 && (
         <div className="space-y-1.5">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono">
+          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono tabular-nums">
             Detected Physical Changes
           </div>
           {data.change_reasons.map((reason, idx) => (
@@ -56,7 +56,7 @@ export const HistoricalTrendCard: React.FC<HistoricalTrendCardProps> = ({ data }
 
       {/* Time-Series Progression Points */}
       <div className="space-y-2">
-        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono">
+        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono tabular-nums">
           Temporal Horizon Progression
         </div>
         <div className="grid grid-cols-5 gap-2 text-center">
@@ -65,13 +65,13 @@ export const HistoricalTrendCard: React.FC<HistoricalTrendCardProps> = ({ data }
               key={idx}
               className="p-2.5 rounded-xl bg-orca-darkest/80 border border-white/[0.06] hover:border-cyan-500/40 transition-colors flex flex-col justify-between"
             >
-              <span className="text-[10px] text-slate-400 font-mono">{pt.timestamp}</span>
+              <span className="text-[10px] text-slate-400 font-mono tabular-nums">{pt.timestamp}</span>
               <div className="my-1">
-                <span className="font-display text-sm font-bold text-white">
+                <span className="font-mono tabular-nums text-sm font-bold text-white">
                   {pt.wave_height_m}m
                 </span>
               </div>
-              <span className="text-[10px] text-cyan-400 font-mono font-medium">{pt.wind_knots} kt</span>
+              <span className="text-[10px] text-cyan-400 font-mono tabular-nums font-medium">{pt.wind_knots} kt</span>
             </div>
           ))}
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, FileText, Globe, Check, ChevronDown } from "lucide-react";
+import { Bell, FileText, Globe, Check, ChevronDown, Anchor, LayoutDashboard, Settings } from "lucide-react";
+import { BackendModeChip } from "@/components/Settings";
 
 interface HeaderProps {
   mode: string;
@@ -11,6 +12,9 @@ interface HeaderProps {
   selectedLanguage: string;
   onSelectLanguage: (lang: string) => void;
   hasAnalysis: boolean;
+  uiMode: "fisherman" | "console";
+  onToggleUiMode: () => void;
+  onOpenSettings: () => void;
 }
 
 const LANGUAGES = [
@@ -37,6 +41,9 @@ export const Header: React.FC<HeaderProps> = ({
   selectedLanguage,
   onSelectLanguage,
   hasAnalysis,
+  uiMode,
+  onToggleUiMode,
+  onOpenSettings,
 }) => {
   const [isLangOpen, setIsLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -64,6 +71,25 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* UI mode toggle: fisherman (phone) / console (map dominant) */}
+        <button
+          type="button"
+          id="orca-ui-mode-btn"
+          onClick={onToggleUiMode}
+          aria-pressed={uiMode === "fisherman"}
+          className={`${chip} ${uiMode === "fisherman" ? "border-accent/50 text-accent hover:text-accent" : ""}`}
+          title={uiMode === "fisherman" ? "Switch to console" : "Switch to fisherman mode"}
+        >
+          {uiMode === "fisherman" ? <Anchor className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
+          <span className="hidden md:inline">{uiMode === "fisherman" ? "Fisherman" : "Console"}</span>
+        </button>
+
+        {/* Backend mode chip opens settings */}
+        <BackendModeChip lang={selectedLanguage} onClick={onOpenSettings} />
+        <button type="button" onClick={onOpenSettings} className={chip} title="Backend settings" aria-label="Backend settings">
+          <Settings className="w-3.5 h-3.5" />
+        </button>
+
         {/* Data mode readout */}
         <div className={`${chip} hover:text-muted hover:border-border-base cursor-default`} title="Data mode">
           <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-calm" : "bg-caution"}`} />

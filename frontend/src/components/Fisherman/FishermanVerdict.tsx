@@ -7,116 +7,79 @@ import { t } from "@/lib/i18n";
 export type VerdictValue = "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE";
 
 interface FishermanVerdictProps {
-  /** Raw backend verdict value. Rendered EXACTLY — never derived in-frontend. */
+  /** Raw backend verdict value. Rendered EXACTLY — never derived from prose. */
   verdict?: string | null;
-  /** Backend-provided explanation (e.g. recommendation). Not invented here. */
+  /** Backend-provided explanation. Not invented here. */
   explanation?: string;
   lang: string;
   className?: string;
+  band?: string;
+  score?: number;
 }
 
 /** Normalise a backend verdict string without inventing a value. */
-function normalizeVerdict(raw?: string | null): VerdictValue | null {
+export function normalizeVerdict(raw?: string | null): VerdictValue | null {
   if (!raw) return null;
   const v = raw.toUpperCase().replace(/[\s-]+/g, "_");
-  if (v === "GO" || v === "CAUTION" || v === "NO_GO" || v === "NOT_APPLICABLE") {
-    return v as VerdictValue;
-  }
-  return null;
+  return v === "GO" || v === "CAUTION" || v === "NO_GO" || v === "NOT_APPLICABLE" ? (v as VerdictValue) : null;
 }
 
-const CONFIG: Record<
-  VerdictValue,
-  { icon: React.ElementType; wrap: string; icon_c: string; text_c: string }
-> = {
-  GO: {
-    icon: CheckCircle2,
-    wrap: "bg-emerald-500/10 border-emerald-500/40",
-    icon_c: "text-emerald-400",
-    text_c: "text-emerald-300",
-  },
-  CAUTION: {
-    icon: AlertTriangle,
-    wrap: "bg-amber-500/10 border-amber-500/40",
-    icon_c: "text-amber-400",
-    text_c: "text-amber-300",
-  },
-  NO_GO: {
-    icon: Ban,
-    wrap: "bg-rose-500/10 border-rose-500/45",
-    icon_c: "text-rose-400",
-    text_c: "text-rose-300",
-  },
-  NOT_APPLICABLE: {
-    icon: MinusCircle,
-    wrap: "bg-white/[0.03] border-orca-border",
-    icon_c: "text-orca-muted",
-    text_c: "text-slate-300",
-  },
+/** Deterministic band -> verdict fallback when answer.verdict is absent. Never from narrative. */
+export function verdictFromBand(band?: string | null): VerdictValue | null {
+  switch ((band || "").toUpperCase()) {
+    case "LOW":
+      return "GO";
+    case "MODERATE":
+      return "CAUTION";
+    case "HIGH":
+    case "SEVERE":
+      return "NO_GO";
+    default:
+      return null;
+  }
+}
+
+export const VERDICT_STYLE: Record<VerdictValue, { icon: React.ElementType; text: string; wrap: string }> = {
+  GO: { icon: CheckCircle2, text: "text-calm", wrap: "border-calm/50 bg-calm/10" },
+  CAUTION: { icon: AlertTriangle, text: "text-caution", wrap: "border-caution/50 bg-caution/10" },
+  NO_GO: { icon: Ban, text: "text-severe", wrap: "border-severe/50 bg-severe/10" },
+  NOT_APPLICABLE: { icon: MinusCircle, text: "text-muted", wrap: "border-border-base bg-panel" },
 };
+
+export const UNKNOWN_STYLE = { icon: HelpCircle, text: "text-muted", wrap: "border-border-base bg-panel" };
 
 export const FishermanVerdict: React.FC<FishermanVerdictProps> = ({
   verdict,
   explanation,
   lang,
   className = "",
+  band,
+  score,
 }) => {
   const value = normalizeVerdict(verdict);
-
-  // Honest fallback: the backend returned no go/no-go decision. We DO NOT
-  // fabricate one — the real safety signal is shown by the Risk module below.
-  if (!value) {
-    return (
-      <section
-        aria-label={t("verdict.section", lang)}
-        className={`rounded-2xl border bg-white/[0.02] border-orca-border p-4 flex items-center gap-3.5 ${className}`}
-      >
-        <div className="w-11 h-11 rounded-xl bg-white/[0.03] border border-orca-border flex items-center justify-center flex-shrink-0">
-          <HelpCircle className="w-6 h-6 text-orca-muted" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-orca-dim">
-            {t("verdict.section", lang)}
-          </div>
-          <div className="font-display font-bold text-[18px] text-slate-300 leading-tight">
-            {t("verdict.unavailable", lang)}
-          </div>
-          <p className="text-[12px] text-orca-muted mt-0.5 leading-snug">
-            {explanation || t("verdict.unavailable.desc", lang)}
-          </p>
-        </div>
-      </section>
-    );
-  }
-
-  const cfg = CONFIG[value];
+  const cfg = value ? VERDICT_STYLE[value] : UNKNOWN_STYLE;
   const Icon = cfg.icon;
-  const label = t(`verdict.${value}`, lang);
+  const label = value ? t(`fisherman.verdict.${value}`, lang) : t("fisherman.verdict.unavailable", lang);
   const desc =
     explanation ||
-    (value === "NOT_APPLICABLE" ? t("verdict.na.desc", lang) : "");
+    (!value ? t("verdict.unavailable.desc", lang) : value === "NOT_APPLICABLE" ? t("verdict.na.desc", lang) : "");
 
   return (
     <section
       aria-label={`${t("verdict.section", lang)}: ${label}`}
-      className={`rounded-2xl border p-4 flex items-center gap-3.5 ${cfg.wrap} ${className}`}
+      className={`rounded-lg border p-4 flex items-center gap-4 ${cfg.wrap} ${className}`}
     >
-      <div
-        className={`w-14 h-14 rounded-xl bg-black/20 border border-white/10 flex items-center justify-center flex-shrink-0 ${cfg.icon_c}`}
-      >
-        <Icon className="w-8 h-8 stroke-[2]" />
-      </div>
+      <Icon className={`w-14 h-14 shrink-0 stroke-[2] ${cfg.text}`} />
       <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-orca-dim">
-          {t("verdict.section", lang)}
-        </div>
-        {/* label = text (never color alone) */}
-        <div className={`font-display font-extrabold text-[30px] leading-none tracking-tight ${cfg.text_c}`}>
-          {label}
-        </div>
-        {desc && (
-          <p className="text-[13px] text-slate-300 mt-1 leading-snug">{desc}</p>
+        <div className={`font-display font-black text-[40px] leading-none tracking-tight ${cfg.text}`}>{label}</div>
+        {(band || score !== undefined) && (
+          <div className="num text-[14px] text-muted mt-1">
+            {band && t(`fisherman.band.${band.toUpperCase()}`, lang)}
+            {band && score !== undefined && " · "}
+            {score !== undefined && `${score}/100`}
+          </div>
         )}
+        {desc && <p className="text-[14px] text-text mt-1 leading-snug">{desc}</p>}
       </div>
     </section>
   );

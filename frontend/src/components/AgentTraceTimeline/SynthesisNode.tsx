@@ -45,7 +45,7 @@ export const SynthesisNode: React.FC<SynthesisNodeProps> = ({ item, isLast = fal
               </span>
               <span
                 className={`text-[11px] truncate block ${
-                  isCompleted ? "text-emerald-300 font-medium" : "text-orca-cyan font-mono text-[10.5px]"
+                  isCompleted ? "text-emerald-300 font-medium" : "text-orca-cyan font-mono tabular-nums text-[10.5px]"
                 }`}
               >
                 {isCompleted ? "FINAL RESPONSE READY" : "Generating final marine intelligence..."}

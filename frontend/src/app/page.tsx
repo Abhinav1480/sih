@@ -13,8 +13,16 @@ import { AgentTraceTimeline } from "@/components/AgentTraceTimeline";
 import { EvidenceProvider } from "@/components/Evidence/evidenceContext";
 import { EvidencePanel } from "@/components/Evidence/EvidencePanel";
 import { EvidenceRegistry } from "@/components/Evidence/EvidenceRegistry";
-import { FishermanPanel } from "@/components/Fisherman";
+import { FishermanPanel, FishermanHome } from "@/components/Fisherman";
 import { t } from "@/lib/i18n";
+import { initNativeShell, isNative, registerBackHandler } from "@/lib/native";
+import { getCachedMarker } from "@/lib/api";
+import { loadBackendConfig } from "@/lib/backend";
+import { useGeofence } from "@/lib/geofence";
+import { GeofenceBanner, TrackPlayer } from "@/components/Geofence";
+import { ConnectivityBanner, StaleWarning, TripCard, SaveTripCardButton } from "@/components/Offline";
+import { loadLastResponse, loadTripCard, getJSON, setJSON, KEYS, type TripCard as TripCardData } from "@/lib/offline";
+import { BackendSettings } from "@/components/Settings";
 import { AlertsModal } from "@/components/AlertsModal";
 import { ReportModal } from "@/components/ReportModal";
 import {
@@ -32,7 +40,7 @@ import {
   Coordinates,
 } from "@/lib/types";
 import { streamOrcaAnalysis, accumulateTraceItems } from "@/lib/stream";
-import { AlertTriangle, Anchor, MessageSquare, Map as MapIcon, RotateCcw } from "lucide-react";
+import { AlertTriangle, Anchor, MessageSquare, Map as MapIcon, RotateCcw, Play, ClipboardList, X } from "lucide-react";
 
 // The eight canonical PS 26176 questions. Shown until the first result arrives.
 const CANONICAL_QUERIES = [
@@ -74,6 +82,13 @@ export default function Home() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [userRole, setUserRole] = useState("Commercial Fisherman");
   const [fishermanMode, setFishermanMode] = useState(false);
+  // Native shell state: backend settings sheet, geofence, trip card, cache markers.
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [demoPos, setDemoPos] = useState<{ lat: number; lon: number } | null>(null);
+  const [showTrackPlayer, setShowTrackPlayer] = useState(false);
+  const [tripCard, setTripCard] = useState<TripCardData | null>(null);
+  const [isTripCardOpen, setIsTripCardOpen] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -95,9 +110,64 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchActiveAlerts().then(setAlerts).catch(() => {});
-    fetchConversations().then(setConversations).catch(() => {});
+    // Backend mode must be known before the first fetch.
+    loadBackendConfig().then(() => {
+      fetchActiveAlerts().then(setAlerts).catch(() => {});
+      fetchConversations().then(setConversations).catch(() => {});
+    });
+    initNativeShell();
+    getJSON<string>(KEYS.UI_MODE).then((m) => {
+      if (m === "fisherman" || m === "console") setFishermanMode(m === "fisherman");
+      else if (isNative() || window.innerWidth < 768) setFishermanMode(true);
+    });
+    getJSON<string>(KEYS.LANG).then((l) => l && setSelectedLanguage(l));
+    loadTripCard().then((c) => c && setTripCard(c));
+    // Never open empty offline: restore the last synced result, clearly marked as cached.
+    loadLastResponse().then((c) => {
+      if (!c) return;
+      setLastSyncAt(c.savedAt);
+      if (isNative()) {
+        const r = c.response;
+        (r as any).__cached = { savedAt: c.savedAt, source: "last" };
+        setCurrentAnalysis(r);
+        lastQueryRef.current = r.meta?.query_text || r.query_text || "";
+      }
+    });
   }, []);
+
+  const setUiMode = (fisherman: boolean) => {
+    setFishermanMode(fisherman);
+    setJSON(KEYS.UI_MODE, fisherman ? "fisherman" : "console");
+  };
+  const selectLanguage = (l: string) => {
+    setSelectedLanguage(l);
+    setJSON(KEYS.LANG, l);
+  };
+
+  // ── Geofence: real GPS by default, the bundled demo track when the player is driving.
+  const geofence = useGeofence({
+    enabled: true,
+    source: demoPos ? "demo" : "gps",
+    demoPosition: demoPos,
+  });
+  useEffect(() => {
+    const p = geofence.position;
+    if (p && !demoPos) userLocationRef.current = { latitude: p.lat, longitude: p.lon };
+  }, [geofence.position, demoPos]);
+
+  // ── Hardware back: close sheets first, then leave the result, else minimise (native.ts).
+  useEffect(() => {
+    return registerBackHandler(() => {
+      if (isSettingsOpen) return (setIsSettingsOpen(false), true);
+      if (isTripCardOpen) return (setIsTripCardOpen(false), true);
+      if (isAlertsOpen) return (setIsAlertsOpen(false), true);
+      if (isReportOpen) return (setIsReportOpen(false), true);
+      if (!isDesktop && mobileTab === "map") return (setMobileTab("chat"), true);
+      if (currentAnalysis) return (handleNewAnalysis(), true);
+      return false;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSettingsOpen, isTripCardOpen, isAlertsOpen, isReportOpen, isDesktop, mobileTab, currentAnalysis]);
 
   // Browser geolocation only when already granted; otherwise Kakinada default.
   useEffect(() => {
@@ -182,8 +252,10 @@ export default function Home() {
       );
       await streamPromise.catch(() => {});
       setCurrentAnalysis(response);
+      const cached = getCachedMarker(response);
+      if (!cached) setLastSyncAt(new Date().toISOString());
       // session_id comes back as conversation_id (see api.ts) — send it on follow-ups.
-      setActiveConversationId(response.session_id || response.conversation_id);
+      if (!cached) setActiveConversationId(response.session_id || response.conversation_id);
       fetchConversations().then(setConversations).catch(() => {});
     } catch (err: any) {
       abortCtrl.abort();
@@ -242,6 +314,42 @@ export default function Home() {
   const mode = meta?.mode || currentAnalysis?.mode || "DEMO";
   const showResult = !!currentAnalysis && !isLoading && !isClarification;
   const showEmpty = !currentAnalysis && !isLoading && !errorMessage;
+  const cachedMarker = currentAnalysis ? getCachedMarker(currentAnalysis) : null;
+
+  // Elements shared by both UI modes: connectivity, geofence, cache age.
+  const geofenceBlock = (
+    <GeofenceBanner status={geofence.status} position={geofence.position} lang={selectedLanguage} />
+  );
+  const trackPlayerBlock = (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          id="orca-demo-track-btn"
+          onClick={() => {
+            setShowTrackPlayer((v) => !v);
+            if (showTrackPlayer) setDemoPos(null);
+          }}
+          className={`inline-flex items-center gap-1.5 h-14 px-4 rounded-md border text-[13px] font-medium ${
+            showTrackPlayer ? "bg-accent/15 border-accent/40 text-accent" : "border-border-base text-muted"
+          }`}
+        >
+          <Play className="w-4 h-4" /> {t("geofence.demo", selectedLanguage)}
+        </button>
+        {tripCard && (
+          <button
+            type="button"
+            id="orca-trip-card-btn"
+            onClick={() => setIsTripCardOpen(true)}
+            className="inline-flex items-center gap-1.5 h-14 px-4 rounded-md border border-border-base text-[13px] font-medium text-text"
+          >
+            <ClipboardList className="w-4 h-4" /> {t("offline.tripCard.open", selectedLanguage)}
+          </button>
+        )}
+      </div>
+      {showTrackPlayer && <TrackPlayer onPosition={setDemoPos} lang={selectedLanguage} />}
+    </div>
+  );
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-base text-text">
@@ -264,9 +372,13 @@ export default function Home() {
           onOpenAlerts={() => setIsAlertsOpen(true)}
           onExportReport={handleExportReport}
           selectedLanguage={selectedLanguage}
-          onSelectLanguage={setSelectedLanguage}
+          onSelectLanguage={selectLanguage}
           hasAnalysis={!!currentAnalysis}
+          uiMode={fishermanMode ? "fisherman" : "console"}
+          onToggleUiMode={() => setUiMode(!fishermanMode)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
+        <ConnectivityBanner lang={selectedLanguage} lastSyncAt={lastSyncAt} />
 
         <EvidenceProvider
           records={currentAnalysis?.evidence}
@@ -314,7 +426,7 @@ export default function Home() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setFishermanMode((v) => !v)}
+                      onClick={() => setUiMode(!fishermanMode)}
                       aria-pressed={fishermanMode}
                       className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium flex-shrink-0 ${
                         fishermanMode ? "bg-accent/15 border-accent/40 text-accent" : "border-border-base text-muted hover:text-text"
@@ -347,6 +459,72 @@ export default function Home() {
 
                 {/* Scrollable body */}
                 <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-4 py-3 space-y-3">
+                  {fishermanMode && !isClarification ? (
+                    <FishermanHome
+                      analysis={showResult ? currentAnalysis : null}
+                      isLoading={isLoading}
+                      lang={selectedLanguage}
+                      onSubmitQuery={handleQuerySubmit}
+                      cachedAt={cachedMarker?.savedAt ?? null}
+                      extra={
+                        <div className="space-y-3">
+                          {errorMessage && (
+                            <div className="p-3.5 rounded-md bg-severe/10 border border-severe/40 text-[13px] text-text">
+                              <div className="text-severe font-semibold text-[10px] uppercase tracking-wider mb-0.5">Request failed</div>
+                              {errorMessage}
+                              <button
+                                type="button"
+                                onClick={() => handleQuerySubmit(lastQueryRef.current)}
+                                className="mt-2 inline-flex items-center gap-1.5 h-14 px-4 rounded-md border border-severe/40 text-severe text-[13px] font-medium"
+                              >
+                                <RotateCcw className="w-4 h-4" /> Retry
+                              </button>
+                            </div>
+                          )}
+                          {trackPlayerBlock}
+                          {showResult && currentAnalysis && (
+                            <>
+                              <SaveTripCardButton
+                                analysis={currentAnalysis}
+                                lang={selectedLanguage}
+                                onSaved={(c) => setTripCard(c)}
+                              />
+                              <FishermanPanel
+                                analysis={currentAnalysis}
+                                lang={selectedLanguage}
+                                alerts={alerts}
+                                onSelectLocation={(locName) =>
+                                  handleQuerySubmit(`${meta?.query_text || currentAnalysis.query_text} near ${locName}`)
+                                }
+                              />
+                              <AgentActivityFeed
+                                steps={currentAnalysis.agent_activity}
+                                traceItems={activeTraceItems.length > 0 ? activeTraceItems : undefined}
+                                defaultCollapsed={true}
+                              />
+                            </>
+                          )}
+                          {!isDesktop && (
+                            <button
+                              type="button"
+                              onClick={() => selectMobileTab("map")}
+                              className="w-full h-14 rounded-md border border-border-base bg-panel/60 text-[14px] font-medium text-text inline-flex items-center justify-center gap-2"
+                            >
+                              <MapIcon className="w-4 h-4" /> {t("fisherman.showMap", selectedLanguage)}
+                            </button>
+                          )}
+                        </div>
+                      }
+                    >
+                      {cachedMarker && <StaleWarning savedAt={cachedMarker.savedAt} lang={selectedLanguage} />}
+                      {geofenceBlock}
+                    </FishermanHome>
+                  ) : (
+                  <>
+                  {cachedMarker && currentAnalysis && !isLoading && (
+                    <StaleWarning savedAt={cachedMarker.savedAt} lang={selectedLanguage} />
+                  )}
+                  {geofenceBlock}
                   {errorMessage && (
                     <div
                       id="orca-error"
@@ -418,35 +596,29 @@ export default function Home() {
 
                   {showResult && (
                     <div className="orca-data-arrive space-y-3">
-                      {fishermanMode ? (
-                        <FishermanPanel
-                          analysis={currentAnalysis}
-                          lang={selectedLanguage}
-                          alerts={alerts}
-                          onSelectLocation={(locName) =>
-                            handleQuerySubmit(`${meta?.query_text || currentAnalysis.query_text} near ${locName}`)
-                          }
-                        />
-                      ) : (
-                        <ResultContainer
-                          analysis={currentAnalysis}
-                          onSelectLocation={(locName) =>
-                            handleQuerySubmit(`${meta?.query_text || currentAnalysis.query_text} near ${locName}`)
-                          }
-                        />
-                      )}
+                      <ResultContainer
+                        analysis={currentAnalysis}
+                        onSelectLocation={(locName) =>
+                          handleQuerySubmit(`${meta?.query_text || currentAnalysis.query_text} near ${locName}`)
+                        }
+                      />
                       <AgentActivityFeed
                         steps={currentAnalysis.agent_activity}
                         traceItems={activeTraceItems.length > 0 ? activeTraceItems : undefined}
                         defaultCollapsed={true}
                       />
-                      {!fishermanMode && <EvidenceRegistry />}
-                      {!fishermanMode && <SummaryTable analysis={currentAnalysis} selectedLanguage={selectedLanguage} />}
+                      <EvidenceRegistry />
+                      <SummaryTable analysis={currentAnalysis} selectedLanguage={selectedLanguage} />
+                      <SaveTripCardButton analysis={currentAnalysis} lang={selectedLanguage} onSaved={(c) => setTripCard(c)} />
                     </div>
+                  )}
+                  {trackPlayerBlock}
+                  </>
                   )}
                 </div>
 
-                {/* Query bar — docked bottom-left */}
+                {/* Query bar — docked bottom-left (console mode; fisherman mode has its own) */}
+                {(!fishermanMode || isClarification) && (
                 <div id="orca-query-dock" className="flex-shrink-0 border-t border-border-base bg-panel/60 px-3 md:px-4 py-3">
                   <QueryInput
                     onSubmit={handleQuerySubmit}
@@ -458,6 +630,7 @@ export default function Home() {
                     prompt={clarificationQuestion}
                   />
                 </div>
+                )}
               </section>
 
               {isDesktop && (
@@ -499,7 +672,7 @@ export default function Home() {
                   mobileTab === "chat" ? "bg-accent text-base" : "text-muted"
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5" /> Console
+                <MessageSquare className="w-3.5 h-3.5" /> {fishermanMode ? t("fisherman.home", selectedLanguage) : "Console"}
               </button>
               <button
                 onClick={() => selectMobileTab("map")}
@@ -516,6 +689,30 @@ export default function Home() {
       </div>
 
       <AlertsModal isOpen={isAlertsOpen} onClose={() => setIsAlertsOpen(false)} alerts={alerts} />
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 bg-base/90 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true">
+          <div className="max-w-lg mx-auto p-4">
+            <BackendSettings lang={selectedLanguage} onClose={() => setIsSettingsOpen(false)} />
+          </div>
+        </div>
+      )}
+      {isTripCardOpen && tripCard && (
+        <div className="fixed inset-0 z-50 bg-base/95 overflow-y-auto" role="dialog" aria-modal="true">
+          <div className="max-w-lg mx-auto p-4">
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={() => setIsTripCardOpen(false)}
+                className="h-14 w-14 rounded-md border border-border-base text-text inline-flex items-center justify-center"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <TripCard card={tripCard} lang={selectedLanguage} onClose={() => setIsTripCardOpen(false)} />
+          </div>
+        </div>
+      )}
       <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} reportContent={reportMarkdown} />
     </div>
   );

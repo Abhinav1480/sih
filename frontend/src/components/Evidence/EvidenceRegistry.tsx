@@ -74,12 +74,12 @@ export const EvidenceRegistry: React.FC = () => {
         <div className="flex items-center gap-2 text-slate-200 font-medium">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Evidence &amp; Data</span>
-          <span className="text-[10px] text-orca-cyan font-mono">
+          <span className="text-[10px] text-orca-cyan font-mono tabular-nums">
             {records.length} {records.length === 1 ? "source" : "sources"}
           </span>
         </div>
         {providers.length > 0 && (
-          <div className="text-[10.5px] text-orca-dim font-mono truncate mt-0.5">
+          <div className="text-[10.5px] text-orca-dim font-mono tabular-nums truncate mt-0.5">
             {providers.slice(0, 3).join(" · ")}
             {providers.length > 3 ? ` +${providers.length - 3}` : ""}
           </div>

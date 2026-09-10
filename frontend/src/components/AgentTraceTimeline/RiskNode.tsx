@@ -64,7 +64,7 @@ export const RiskNode: React.FC<RiskNodeProps> = ({ item, isLast = false }) => {
               RISK ENGINE
             </span>
             <span
-              className={`px-2 py-0.5 rounded-full border text-[10.5px] font-mono font-semibold ${bandStyles.badge}`}
+              className={`px-2 py-0.5 rounded-full border text-[10.5px] font-mono tabular-nums font-semibold ${bandStyles.badge}`}
             >
               {band} · {score} / 100
             </span>
@@ -73,7 +73,7 @@ export const RiskNode: React.FC<RiskNodeProps> = ({ item, isLast = false }) => {
           {/* Key factors */}
           {factors.length > 0 && (
             <div className="pt-1.5 border-t border-orca-border/40">
-              <span className="text-[10px] text-orca-muted uppercase tracking-wider block mb-1 font-mono">
+              <span className="text-[10px] text-orca-muted uppercase tracking-wider block mb-1 font-mono tabular-nums">
                 Key Contributing Factors
               </span>
               <div className="flex flex-wrap gap-1.5">

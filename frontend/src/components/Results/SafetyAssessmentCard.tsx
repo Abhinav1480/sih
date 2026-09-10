@@ -1,33 +1,17 @@
 "use client";
 
 import React from "react";
-import { DeterministicRiskResult } from "@/lib/types";
 import { RiskIntelligenceModule } from "../Risk";
 
 interface SafetyAssessmentCardProps {
-  risk: DeterministicRiskResult;
+  /** Legacy `risk_assessment` or contract 1.3.0 `risk` block. */
+  risk: Record<string, any> | null | undefined;
   locationName?: string;
   temporalLabel?: string;
   verdict?: string;
 }
 
-export const SafetyAssessmentCard: React.FC<SafetyAssessmentCardProps> = ({
-  risk,
-  locationName,
-  temporalLabel,
-  verdict,
-}) => {
+export const SafetyAssessmentCard: React.FC<SafetyAssessmentCardProps> = ({ risk, verdict }) => {
   if (!risk) return null;
-
-  return (
-    <div className="space-y-2">
-      <RiskIntelligenceModule
-        risk={risk}
-        verdict={verdict}
-        label="MARINE SAFETY RISK"
-        locationName={locationName}
-        temporalLabel={temporalLabel}
-      />
-    </div>
-  );
+  return <RiskIntelligenceModule risk={risk} verdict={verdict} label="MARINE SAFETY RISK" />;
 };

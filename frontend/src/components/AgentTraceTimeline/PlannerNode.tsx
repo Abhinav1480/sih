@@ -45,7 +45,7 @@ export const PlannerNode: React.FC<PlannerNodeProps> = ({ item, isLast = false }
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-orca-muted flex-shrink-0">
-              <span className="text-[10px] font-mono">{selectedAgents.length} agents</span>
+              <span className="text-[10px] font-mono tabular-nums">{selectedAgents.length} agents</span>
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </div>
           </div>
@@ -59,7 +59,7 @@ export const PlannerNode: React.FC<PlannerNodeProps> = ({ item, isLast = false }
               </span>
             )}
             {meta.temporal_window && (
-              <span className="flex items-center gap-1 text-orca-muted font-mono text-[10.5px]">
+              <span className="flex items-center gap-1 text-orca-muted font-mono tabular-nums text-[10.5px]">
                 <Clock className="w-3 h-3" />
                 <span>{meta.temporal_window}</span>
               </span>
@@ -73,14 +73,14 @@ export const PlannerNode: React.FC<PlannerNodeProps> = ({ item, isLast = false }
             {/* Selected Specialist Agents */}
             {selectedAgents.length > 0 && (
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-orca-muted font-mono block mb-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-orca-muted font-mono tabular-nums block mb-1.5">
                   Agents Selected
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedAgents.map((ag) => (
                     <span
                       key={ag}
-                      className="px-2 py-0.5 rounded bg-white/[0.04] border border-orca-border/80 text-slate-200 text-[10.5px] font-mono"
+                      className="px-2 py-0.5 rounded bg-white/[0.04] border border-orca-border/80 text-slate-200 text-[10.5px] font-mono tabular-nums"
                     >
                       {ag}
                     </span>
@@ -92,7 +92,7 @@ export const PlannerNode: React.FC<PlannerNodeProps> = ({ item, isLast = false }
             {/* Plan Constraints */}
             {constraints.length > 0 && (
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-orca-muted font-mono block mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-orca-muted font-mono tabular-nums block mb-1">
                   Constraints Enforced
                 </span>
                 <ul className="space-y-1 pl-3 text-slate-300">
