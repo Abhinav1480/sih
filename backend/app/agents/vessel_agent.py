@@ -16,6 +16,21 @@ from app.geospatial.calculations import (
     destination_point,
 )
 from app.geospatial.protected_areas import check_point_in_mpa, check_route_crosses_mpa, get_nearest_mpa
+from app.risk.engine import calculate_marine_risk
+
+def _fmt(value, unit: str) -> str:
+    return "unavailable" if value is None else f"{value} {unit}"
+
+
+def _diff(a, b, unit: str) -> str:
+    return "unavailable" if a is None or b is None else f"{round(a - b, 1):+} {unit}"
+
+
+def _advantage(rec, alt, word: str) -> str:
+    if rec is None or alt is None or rec == alt:
+        return "Equivalent"
+    return f"Recommended ({word})" if rec < alt else "Alternative"
+
 
 class VesselAgent(BaseSpecialistAgent):
     def __init__(self):
@@ -39,11 +54,23 @@ class VesselAgent(BaseSpecialistAgent):
 
         step_dist = dist_km / (num_points - 1) if dist_km > 0 else 0.0
 
-        # Time-sensitive environmental baselines from observations
+        # Forecast conditions along the corridor. One observation covers the
+        # whole passage; a missing feed stays missing rather than becoming a
+        # plausible number. The risk engine handles the absence.
         ocean = context.get("ocean_observation")
         weather = context.get("weather_observation")
-        base_wave = ocean.significant_wave_height_m if ocean else 1.5
-        base_wind = weather.wind_speed_knots if weather else 14.0
+        base_wave = ocean.significant_wave_height_m if ocean else None
+        base_wind = weather.wind_speed_knots if weather else None
+
+        def assess(crosses: bool = False, areas: List[str] = None, inside: bool = False, inside_name: str = None):
+            """Every risk category and score in this agent comes from here."""
+            return calculate_marine_risk(
+                ocean, weather,
+                is_inside_mpa=inside, mpa_name=inside_name,
+                crosses_protected_waters=crosses, protected_areas=areas or [],
+            )
+
+        clear_water = assess()
 
         for i in range(num_points):
             cur_dist = i * step_dist
@@ -56,17 +83,18 @@ class VesselAgent(BaseSpecialistAgent):
                 if mpa_info["name"] not in mpas_hit:
                     mpas_hit.append(mpa_info["name"])
 
-            wave_sample = round(base_wave + (0.2 * (i % 2)), 2)
-            wind_sample = round(base_wind + (2.0 * (i % 3)), 1)
-            seg_risk = RiskCategory.HIGH if in_mpa else (RiskCategory.MODERATE if wave_sample > 2.0 else RiskCategory.LOW)
+            seg_risk = (
+                assess(inside=True, inside_name=mpa_info["name"]).category
+                if in_mpa and mpa_info else clear_water.category
+            )
 
             direct_waypoints.append(RouteWaypoint(
                 name=f"Waypoint {i+1} ({cur_dist:.1f} km)",
                 latitude=pt_lat,
                 longitude=pt_lon,
                 segment_risk=seg_risk,
-                wave_height_m=wave_sample,
-                wind_knots=wind_sample,
+                wave_height_m=base_wave,
+                wind_knots=base_wind,
                 inside_restricted_zone=in_mpa,
                 restriction_detail=f"Inside {mpa_info['name']}" if in_mpa else None
             ))
@@ -90,10 +118,7 @@ class VesselAgent(BaseSpecialistAgent):
 
         direct_dist = round(dist_km, 1)
         direct_transit = round(dist_km / 18.5, 1)
-        direct_risk = RiskCategory.HIGH if crosses_mpa else RiskCategory.LOW
-        direct_score = 75 if crosses_mpa else 20
-        direct_wave = round(base_wave + (0.3 if crosses_mpa else 0.1), 2)
-        direct_wind = round(base_wind + (1.5 if crosses_mpa else 1.0), 1)
+        direct_risk = assess(crosses=crosses_mpa, areas=mpas_hit) if crosses_mpa else clear_water
         direct_mpa_exp = f"Intersects {', '.join(mpas_hit)}" if crosses_mpa else "None (Cleared)"
 
         # Safe Offshore Detour Route (Detour avoiding sanctuary buffer)
@@ -111,9 +136,9 @@ class VesselAgent(BaseSpecialistAgent):
                 name=f"Offshore Waypoint {idx+1}",
                 latitude=c_lat,
                 longitude=c_lon,
-                segment_risk=RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE,
-                wave_height_m=round(max(0.8, base_wave - 0.1 + (0.15 * (idx % 2))), 2),
-                wind_knots=round(max(5.0, base_wind - 1.0 + (1.5 * (idx % 2))), 1),
+                segment_risk=clear_water.category,
+                wave_height_m=base_wave,
+                wind_knots=base_wind,
                 inside_restricted_zone=False,
                 restriction_detail=None
             ))
@@ -135,14 +160,15 @@ class VesselAgent(BaseSpecialistAgent):
                 name=f"Offshore Safe Corridor ({origin.name} to {dest.name} - Clears Sanctuary)",
                 distance_km=detour_dist,
                 estimated_transit_hours=detour_transit,
-                marine_risk=RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE,
-                risk_score=14 if base_wave < 2.2 else 35,
-                wave_exposure_m=round(base_wave, 2),
-                wind_exposure_knots=round(base_wind, 1),
+                marine_risk=clear_water.category,
+                risk_score=clear_water.overall_score,
+                risk_factors=clear_water.contributing_factors,
+                wave_exposure_m=base_wave,
+                wind_exposure_knots=base_wind,
                 protected_area_exposure="None (Cleared - 0 violations)",
                 crosses_protected_waters=False,
                 protected_areas=[],
-                trade_offs=f"+{round(detour_dist - direct_dist, 1)} km distance (+{round(detour_transit - direct_transit, 1)}h transit) in exchange for zero sanctuary violation.",
+                trade_offs=f"+{round(detour_dist - direct_dist, 1)} km distance (+{round(detour_transit - direct_transit, 1)}h transit) in exchange for zero sanctuary violation. Same forecast conditions along both corridors.",
                 is_recommended=True,
                 is_selected=not is_alt_selected,
                 waypoints=detour_waypoints,
@@ -153,14 +179,15 @@ class VesselAgent(BaseSpecialistAgent):
                 name=f"Direct Rhumb Line Corridor ({origin.name} to {dest.name} - Direct)",
                 distance_km=direct_dist,
                 estimated_transit_hours=direct_transit,
-                marine_risk=RiskCategory.HIGH,
-                risk_score=direct_score,
-                wave_exposure_m=direct_wave,
-                wind_exposure_knots=direct_wind,
+                marine_risk=direct_risk.category,
+                risk_score=direct_risk.overall_score,
+                risk_factors=direct_risk.contributing_factors,
+                wave_exposure_m=base_wave,
+                wind_exposure_knots=base_wind,
                 protected_area_exposure=direct_mpa_exp,
                 crosses_protected_waters=True,
                 protected_areas=mpas_hit,
-                trade_offs=f"Saves {round(detour_dist - direct_dist, 1)} km and ~{int((detour_transit - direct_transit)*60)} mins, but intersects {', '.join(mpas_hit)} with high legal/penalty risk.",
+                trade_offs=f"Saves {round(detour_dist - direct_dist, 1)} km and ~{int((detour_transit - direct_transit)*60)} mins, but intersects {', '.join(mpas_hit)}: {direct_risk.category.value} risk, {direct_risk.overall_score}/100.",
                 is_recommended=False,
                 is_selected=is_alt_selected,
                 waypoints=direct_waypoints,
@@ -172,20 +199,20 @@ class VesselAgent(BaseSpecialistAgent):
                 active_waypoints = direct_waypoints
                 active_dist = direct_dist
                 active_transit = direct_transit
-                overall_risk = RiskCategory.HIGH
+                overall_risk = direct_risk.category
                 rec_action = (
                     f"SELECTED ALTERNATIVE ROUTE: Direct corridor ({direct_dist} km, {direct_transit}h transit). "
-                    f"CRITICAL REGULATORY VIOLATION: Route intersects {', '.join(mpas_hit)} with high legal and enforcement penalty risk."
+                    f"REGULATORY VIOLATION: Route intersects {', '.join(mpas_hit)}. Risk {direct_risk.category.value} ({direct_risk.overall_score}/100)."
                 )
             else:
                 selected_route_id = "recommended"
                 active_waypoints = detour_waypoints
                 active_dist = detour_dist
                 active_transit = detour_transit
-                overall_risk = RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE
+                overall_risk = clear_water.category
                 rec_action = (
                     f"RECOMMENDED ROUTE: Proceed via Offshore Safe Corridor ({detour_dist} km). Bypasses {', '.join(mpas_hit)} buffer zone completely. "
-                    f"Direct route ({direct_dist} km) is flagged HIGH RISK due to sanctuary intersection."
+                    f"Direct route ({direct_dist} km) scores {direct_risk.category.value} ({direct_risk.overall_score}/100) due to sanctuary intersection."
                 )
         else:
             rec_candidate = RouteCandidate(
@@ -193,14 +220,15 @@ class VesselAgent(BaseSpecialistAgent):
                 name=f"Direct Safe Passage ({origin.name} to {dest.name})",
                 distance_km=direct_dist,
                 estimated_transit_hours=direct_transit,
-                marine_risk=RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE,
-                risk_score=18 if base_wave < 2.2 else 38,
-                wave_exposure_m=round(base_wave, 2),
-                wind_exposure_knots=round(base_wind, 1),
+                marine_risk=clear_water.category,
+                risk_score=clear_water.overall_score,
+                risk_factors=clear_water.contributing_factors,
+                wave_exposure_m=base_wave,
+                wind_exposure_knots=base_wind,
                 protected_area_exposure="None (Cleared)",
                 crosses_protected_waters=False,
                 protected_areas=[],
-                trade_offs="Direct optimal passage avoiding restricted zones.",
+                trade_offs="Direct passage; no restricted zone on the corridor.",
                 is_recommended=True,
                 is_selected=not is_alt_selected,
                 waypoints=direct_waypoints,
@@ -211,14 +239,15 @@ class VesselAgent(BaseSpecialistAgent):
                 name=f"Offshore Weather Contingency Corridor ({origin.name} to {dest.name})",
                 distance_km=detour_dist,
                 estimated_transit_hours=detour_transit,
-                marine_risk=RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE,
-                risk_score=22 if base_wave < 2.2 else 42,
-                wave_exposure_m=round(base_wave + 0.1, 2),
-                wind_exposure_knots=round(base_wind + 1.0, 1),
+                marine_risk=clear_water.category,
+                risk_score=clear_water.overall_score,
+                risk_factors=clear_water.contributing_factors,
+                wave_exposure_m=base_wave,
+                wind_exposure_knots=base_wind,
                 protected_area_exposure="None (Cleared)",
                 crosses_protected_waters=False,
                 protected_areas=[],
-                trade_offs="+9% distance for deep-water swell clearance.",
+                trade_offs="+9% distance for an offshore alternative; same forecast conditions along both corridors.",
                 is_recommended=False,
                 is_selected=is_alt_selected,
                 waypoints=detour_waypoints,
@@ -230,14 +259,14 @@ class VesselAgent(BaseSpecialistAgent):
                 active_waypoints = detour_waypoints
                 active_dist = detour_dist
                 active_transit = detour_transit
-                overall_risk = RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE
+                overall_risk = clear_water.category
                 rec_action = f"SELECTED ALTERNATIVE ROUTE: Weather contingency corridor ({detour_dist} km)."
             else:
                 selected_route_id = "recommended"
                 active_waypoints = direct_waypoints
                 active_dist = direct_dist
                 active_transit = direct_transit
-                overall_risk = RiskCategory.LOW if base_wave < 2.2 else RiskCategory.MODERATE
+                overall_risk = clear_water.category
                 rec_action = "ROUTE CLEARED: Transit corridor avoids all Marine Sanctuaries and remains within safe wave limits."
 
         # Route Comparison Data
@@ -273,18 +302,18 @@ class VesselAgent(BaseSpecialistAgent):
                 RouteComparisonMetric(
                     metric_name="Wave Exposure",
                     unit="meters",
-                    recommended_value=f"{rec_candidate.wave_exposure_m} m",
-                    alternative_value=f"{alt_candidate.wave_exposure_m} m",
-                    difference=f"{round(alt_candidate.wave_exposure_m - rec_candidate.wave_exposure_m, 1):+} m",
-                    advantage="Recommended (Calmer)" if rec_candidate.wave_exposure_m <= alt_candidate.wave_exposure_m else "Alternative"
+                    recommended_value=_fmt(rec_candidate.wave_exposure_m, "m"),
+                    alternative_value=_fmt(alt_candidate.wave_exposure_m, "m"),
+                    difference=_diff(alt_candidate.wave_exposure_m, rec_candidate.wave_exposure_m, "m"),
+                    advantage=_advantage(rec_candidate.wave_exposure_m, alt_candidate.wave_exposure_m, "Calmer")
                 ),
                 RouteComparisonMetric(
                     metric_name="Wind Exposure",
                     unit="knots",
-                    recommended_value=f"{rec_candidate.wind_exposure_knots} kt",
-                    alternative_value=f"{alt_candidate.wind_exposure_knots} kt",
-                    difference=f"{round(alt_candidate.wind_exposure_knots - rec_candidate.wind_exposure_knots, 1):+} kt",
-                    advantage="Recommended (Lighter)" if rec_candidate.wind_exposure_knots <= alt_candidate.wind_exposure_knots else "Alternative"
+                    recommended_value=_fmt(rec_candidate.wind_exposure_knots, "kt"),
+                    alternative_value=_fmt(alt_candidate.wind_exposure_knots, "kt"),
+                    difference=_diff(alt_candidate.wind_exposure_knots, rec_candidate.wind_exposure_knots, "kt"),
+                    advantage=_advantage(rec_candidate.wind_exposure_knots, alt_candidate.wind_exposure_knots, "Lighter")
                 ),
                 RouteComparisonMetric(
                     metric_name="Protected Area",

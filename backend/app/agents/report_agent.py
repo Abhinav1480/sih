@@ -709,9 +709,9 @@ class ReportAgent(BaseSpecialistAgent):
                     summary = (
                         f"Route Corridor Comparison ({alt_cand.name} vs {rec_cand.name}): "
                         f"Selected Alternative corridor spans {alt_cand.distance_km} km ({alt_cand.estimated_transit_hours}h transit at 10 kt, "
-                        f"Wave: {alt_cand.wave_exposure_m}m, Wind: {alt_cand.wind_exposure_knots} kt) with {alt_cand.marine_risk.value} risk ({alt_cand.protected_area_exposure}). "
+                        f"Wave: {alt_cand.wave_exposure_m} m, Wind: {alt_cand.wind_exposure_knots} kt) with {alt_cand.marine_risk.value} risk ({alt_cand.protected_area_exposure}). "
                         f"Recommended Safe corridor spans {rec_cand.distance_km} km ({rec_cand.estimated_transit_hours}h transit at 10 kt, "
-                        f"Wave: {rec_cand.wave_exposure_m}m, Wind: {rec_cand.wind_exposure_knots} kt) with {rec_cand.marine_risk.value} risk, safely clearing all sanctuary boundaries."
+                        f"Wave: {rec_cand.wave_exposure_m} m, Wind: {rec_cand.wind_exposure_knots} kt) with {rec_cand.marine_risk.value} risk, safely clearing all sanctuary boundaries."
                     )
                     rec = (
                         f"Trade-Off Verdict: The alternative passage is {dist_desc} ({time_desc}), but introduces {alt_cand.marine_risk.value} risk "
@@ -725,7 +725,7 @@ class ReportAgent(BaseSpecialistAgent):
                 summary = (
                     f"Vessel passage corridor (Selected Alternative Corridor: {alt_cand.name}) from {route.origin.name} to {route.destination.name} "
                     f"for {temporal.label} spans {alt_cand.distance_km:.1f} km ({alt_cand.estimated_transit_hours:.1f}h transit at 10 kt). "
-                    f"Recomputed environmental conditions: Significant wave height is {alt_cand.wave_exposure_m}m, sustained surface winds {alt_cand.wind_exposure_knots} kt. "
+                    f"Recomputed environmental conditions: Significant wave height is {alt_cand.wave_exposure_m} m, sustained surface winds {alt_cand.wind_exposure_knots} kt. "
                     f"Overall route hazard level is {alt_cand.marine_risk.value} (Exposure: {alt_cand.protected_area_exposure})."
                 )
                 rec = (

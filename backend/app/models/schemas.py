@@ -199,8 +199,9 @@ class RouteWaypoint(BaseModel):
     latitude: float
     longitude: float
     segment_risk: RiskCategory = RiskCategory.LOW
-    wave_height_m: float
-    wind_knots: float
+    # None when the observation is missing; never a stand-in number.
+    wave_height_m: Optional[float] = None
+    wind_knots: Optional[float] = None
     inside_restricted_zone: bool = False
     restriction_detail: Optional[str] = None
 
@@ -210,10 +211,13 @@ class RouteCandidate(BaseModel):
     name: str
     distance_km: float
     estimated_transit_hours: float
+    # Set by the deterministic risk engine, with the factor breakdown that
+    # produced the score. Nothing here is assigned by rule in an agent.
     marine_risk: RiskCategory = RiskCategory.LOW
-    risk_score: int = 15
-    wave_exposure_m: float = 1.5
-    wind_exposure_knots: float = 14.0
+    risk_score: int = 0
+    risk_factors: List["RiskFactor"] = []
+    wave_exposure_m: Optional[float] = None
+    wind_exposure_knots: Optional[float] = None
     protected_area_exposure: str = "None (Cleared)"
     crosses_protected_waters: bool = False
     protected_areas: List[str] = []
@@ -265,6 +269,9 @@ class RiskFactor(BaseModel):
     value: str
     points_added: int
     description: str
+
+
+RouteCandidate.model_rebuild()
 
 
 class DeterministicRiskResult(BaseModel):
