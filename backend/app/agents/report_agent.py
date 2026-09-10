@@ -71,8 +71,9 @@ class ReportAgent(BaseSpecialistAgent):
             english_recommendation=rec
         )
 
-        # 6. Explicit Limitations
-        limitations = [
+        # 6. Explicit Limitations, including any capability the chain could not
+        #    serve. A gap the user can see beats a gap they discover on the water.
+        limitations = self._capability_gaps(context) + [
             "Advisories are provided as decision support; vessel masters retain final navigational command.",
             "Satellite SST & Chlorophyll products are cloud-masked and subject to diurnal SST warming.",
             "Severe weather updates must be continuously cross-referenced against VHF coastal marine broadcasts."
@@ -94,6 +95,31 @@ class ReportAgent(BaseSpecialistAgent):
             "limitations": limitations,
             "step_log": step
         }
+
+    def _capability_gaps(self, context: Dict[str, Any]) -> List[str]:
+        """Name every capability that had no provider, in the user's terms.
+
+        Canonical queries 3 and 4 ask for tide and for lightning/cyclone alerts.
+        Neither has a working provider, so each is stated plainly rather than
+        answered from something adjacent that happens to be available.
+        """
+        gaps: List[str] = []
+
+        tide = context.get("tide_observation")
+        if tide is not None and tide.status == DataFreshness.UNAVAILABLE:
+            gaps.append(
+                f"Tide is not available for this position. {tide.unavailable_reason} "
+                f"Consult the Survey of India tide tables for the port before departure."
+            )
+
+        hazard = context.get("hazard_observation")
+        if hazard is not None and hazard.status == DataFreshness.UNAVAILABLE:
+            gaps.append(
+                f"Lightning and cyclone tracking is not available. {hazard.unavailable_reason} "
+                f"Cross-reference IMD cyclone bulletins and VHF coastal broadcasts."
+            )
+
+        return gaps
 
     def _create_visualization_plan(self, intent: QueryIntent, loc: Any, route: Any) -> VisualizationPlan:
         center_lat = loc.latitude

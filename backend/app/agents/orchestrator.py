@@ -44,6 +44,13 @@ class AgentOrchestrator:
     ) -> OrcaAnalysisResponse:
         total_start = time.time()
         steps: List[AgentStepRecord] = []
+
+        def _collect_steps(result: dict) -> None:
+            """Append an agent's main step plus any provider-attempt steps."""
+            if result.get("step_log"):
+                steps.append(result["step_log"])
+            steps.extend(result.get("extra_steps", []))
+
         conv_id = request.conversation_id or str(uuid.uuid4())
         query_id = str(uuid.uuid4())
 
@@ -67,12 +74,14 @@ class AgentOrchestrator:
         if "ocean_agent" in plan_context["required_agents"]:
             ocean_res = await self.ocean_agent.run(context)
             context["ocean_observation"] = ocean_res["ocean_observation"]
-            steps.append(ocean_res["step_log"])
+            _collect_steps(ocean_res)
+            context["tide_observation"] = ocean_res.get("tide_observation")
 
         if "weather_agent" in plan_context["required_agents"]:
             weather_res = await self.weather_agent.run(context)
             context["weather_observation"] = weather_res["weather_observation"]
-            steps.append(weather_res["step_log"])
+            _collect_steps(weather_res)
+            context["hazard_observation"] = weather_res.get("hazard_observation")
 
         # 3. Geospatial Geofencing Agent
         if "geo_agent" in plan_context["required_agents"]:
@@ -83,19 +92,19 @@ class AgentOrchestrator:
             context["nearest_mpa_distance_km"] = geo_res["nearest_mpa_distance_km"]
             context["nearest_harbor"] = geo_res["nearest_harbor"]
             context["nearest_harbor_distance_km"] = geo_res["nearest_harbor_distance_km"]
-            steps.append(geo_res["step_log"])
+            _collect_steps(geo_res)
 
         # 4. Fisheries Agent (if requested)
         if "fishery_agent" in plan_context["required_agents"]:
             fishery_res = await self.fishery_agent.run(context)
             context["fishing_zones"] = fishery_res["fishing_zones"]
-            steps.append(fishery_res["step_log"])
+            _collect_steps(fishery_res)
 
         # 5. Vessel Passage Agent (if requested)
         if "vessel_agent" in plan_context["required_agents"]:
             vessel_res = await self.vessel_agent.run(context)
             context["route_analysis"] = vessel_res["route_analysis"]
-            steps.append(vessel_res["step_log"])
+            _collect_steps(vessel_res)
 
         # 6. Regional Comparison or Historical Trend handling
         intent = plan_context["intent"]
@@ -151,11 +160,11 @@ class AgentOrchestrator:
         if "risk_agent" in plan_context["required_agents"]:
             risk_res = await self.risk_agent.run(context)
             context["risk_assessment"] = risk_res["risk_assessment"]
-            steps.append(risk_res["step_log"])
+            _collect_steps(risk_res)
 
         # 8. Report Synthesis & Adaptive Visualization Planner Agent
         report_res = await self.report_agent.run(context)
-        steps.append(report_res["step_log"])
+        _collect_steps(report_res)
 
         # Assemble Final Typed Response
         return OrcaAnalysisResponse(
