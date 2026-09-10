@@ -775,8 +775,19 @@ class ReportAgent(BaseSpecialistAgent):
         if is_mpa and mpa_info:
             summary += f" Target coordinates lie inside the {mpa_info['name']} conservation sanctuary."
 
-        # The wording follows the engine's band, through the same resolver every
-        # other language uses, so English and vernacular cannot diverge.
+        # Danger outranks regulation, always. One ordered chain:
+        #   1. the safety advisory for the engine's band, never skipped
+        #   2. the regulatory notice, appended, never replacing step 1
+        #
+        # This used to be two separate top-level `if`s, and the second one
+        # (`if is_mpa:`) overwrote whatever the band had produced. Its `elif`
+        # meant the NO-GO branch could not execute inside a protected area at
+        # all, so a fisherman in a sanctuary in severe conditions was told
+        # about trawling regulations and advised to "shift fishing operations
+        # outside sanctuary boundaries" — that is, to keep fishing.
+        #
+        # The advisory comes from the same resolver every other language uses,
+        # so English and vernacular cannot diverge.
         rec = advisory_for_band("en", risk_cat, wh, ws, temporal.label)
 
         if is_mpa and mpa_info:
