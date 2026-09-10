@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ArrowUp, Loader2, Search } from "lucide-react";
 import { Pill } from "@/components/ui/Pill";
+import { VoiceInput } from "@/components/Fisherman/VoiceInput";
 
 interface QueryInputProps {
   onSubmit: (query: string) => void;
@@ -15,6 +16,10 @@ interface QueryInputProps {
   hideSuggestions?: boolean;
   /** Larger, centered treatment for the landing screen */
   landing?: boolean;
+  /** FE-07: show a voice-input mic that populates this input (Fisherman Mode). */
+  enableVoice?: boolean;
+  /** Language code used for speech recognition. */
+  voiceLang?: string;
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -31,6 +36,8 @@ export const QueryInput: React.FC<QueryInputProps> = ({
   suggestions,
   hideSuggestions = false,
   landing = false,
+  enableVoice = false,
+  voiceLang = "en",
 }) => {
   const [text, setText] = useState("");
   const followUps = suggestions && suggestions.length > 0 ? suggestions : DEFAULT_SUGGESTIONS;
@@ -61,12 +68,22 @@ export const QueryInput: React.FC<QueryInputProps> = ({
         </div>
       )}
 
-      {/* Main input */}
-      <form
+      {/* Main input (with optional voice mic in Fisherman Mode) */}
+      <div className={enableVoice ? "flex items-start gap-2" : ""}>
+        {enableVoice && (
+          <div className="flex flex-col items-center gap-0.5 pt-0.5">
+            <VoiceInput
+              lang={voiceLang}
+              onTranscript={(txt) => setText(txt)}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+        <form
         onSubmit={handleSubmit}
         className={`relative flex items-center rounded-2xl border bg-orca-panel/80 transition focus-within:border-orca-cyan/50 focus-within:bg-orca-panel ${
-          landing ? "border-orca-border shadow-card" : "border-orca-border"
-        }`}
+          enableVoice ? "flex-1" : ""
+        } ${landing ? "border-orca-border shadow-card" : "border-orca-border"}`}
       >
         <div className="absolute left-4 pointer-events-none text-orca-muted">
           <Search className="w-4 h-4" />
@@ -95,7 +112,8 @@ export const QueryInput: React.FC<QueryInputProps> = ({
             <ArrowUp className="w-4 h-4 stroke-[2.5]" />
           )}
         </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

@@ -76,7 +76,7 @@ export const FishermanPanel: React.FC<FishermanPanelProps> = ({
       {/* Voice playback + freshness of the answer */}
       <div className="flex items-center justify-between gap-2">
         <VoiceOutput text={speakText} lang={lang} />
-        {analysis.mode && <StatusBadge status={analysis.mode} size="sm" />}
+        {analysis.mode && <StatusBadge status={analysis.mode as any} size="sm" />}
       </div>
 
       {/* 2. Active marine warnings — surfaced prominently, not hidden */}
