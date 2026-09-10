@@ -6,7 +6,13 @@ from app.models.schemas import (
     WeatherObservation,
     DataFreshness,
 )
-from app.providers.base import BaseOceanProvider, BaseWeatherProvider
+from app.models.schemas import ProviderTier
+from app.providers.base import (
+    BaseOceanProvider,
+    BaseWeatherProvider,
+    ProviderCapability,
+    TieredProvider,
+)
 
 def _at(hourly: dict, variable: str, idx: int) -> Optional[float]:
     """Value of `variable` at `idx`, or None when the series is absent or null.
@@ -21,11 +27,18 @@ def _at(hourly: dict, variable: str, idx: int) -> Optional[float]:
     return round(float(value), 2) if value is not None else None
 
 
-class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
+class OpenMeteoProvider(TieredProvider, BaseOceanProvider, BaseWeatherProvider):
+    """Open-Meteo marine and atmospheric models.
+
+    Registered as FALLBACK, and that registration is enforced: this is a
+    European open-access model, not an Indian agency product. It is a good
+    source and a poor badge, so it is labelled for what it is and is only
+    reached after every ISRO and national provider has been tried.
     """
-    Live Marine & Weather Provider using open-access Copernicus/ECMWF
-    models via Open-Meteo API.
-    """
+
+    provider_name = "Open-Meteo (Copernicus / ECMWF models)"
+    provider_tier = ProviderTier.FALLBACK
+    capabilities = {ProviderCapability.OCEAN, ProviderCapability.WEATHER}
 
     def __init__(self, timeout_sec: float = 6.0):
         self.timeout = timeout_sec

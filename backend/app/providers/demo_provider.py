@@ -7,10 +7,13 @@ from app.models.schemas import (
     PotentialFishingZone,
     DataFreshness,
 )
+from app.models.schemas import ProviderTier
 from app.providers.base import (
     BaseOceanProvider,
     BaseWeatherProvider,
     BaseFisheriesProvider,
+    ProviderCapability,
+    TieredProvider,
 )
 from app.geospatial.calculations import (
     destination_point,
@@ -19,7 +22,15 @@ from app.geospatial.calculations import (
 )
 from app.geospatial.protected_areas import check_point_in_mpa
 
-class HighFidelityDemoProvider(BaseOceanProvider, BaseWeatherProvider, BaseFisheriesProvider):
+class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherProvider, BaseFisheriesProvider):
+    provider_name = "ORCA Deterministic Demo Model"
+    provider_tier = ProviderTier.FALLBACK
+    capabilities = {
+        ProviderCapability.OCEAN,
+        ProviderCapability.WEATHER,
+        ProviderCapability.FISHERIES,
+    }
+
     """
     Deterministic synthetic marine provider calibrated against typical seasonal
     INCOIS Ocean State Forecasts and IMD Coastal bulletins.
