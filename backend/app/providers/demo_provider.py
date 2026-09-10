@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from app.models.schemas import (
     OceanObservation,
@@ -44,7 +44,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
 
     async def get_ocean_conditions(self, lat: float, lon: float, offset_hours: int = 0) -> OceanObservation:
         seed = self._get_coastal_seed(lat, lon, offset_hours)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         obs_time = now + timedelta(hours=offset_hours)
 
         # Baseline wave height between 1.1m and 3.2m based on geography & time
@@ -97,7 +97,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
 
     async def get_weather_conditions(self, lat: float, lon: float, offset_hours: int = 0) -> WeatherObservation:
         seed = self._get_coastal_seed(lat + 0.1, lon - 0.1, offset_hours)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         obs_time = now + timedelta(hours=offset_hours)
 
         # Wind speed correlated with waves
@@ -152,7 +152,7 @@ class HighFidelityDemoProvider(TieredProvider, BaseOceanProvider, BaseWeatherPro
         chlorophyll-a concentrations, depth, and MPA compliance.
         """
         zones: List[PotentialFishingZone] = []
-        target_time = target_time or datetime.utcnow()
+        target_time = target_time or datetime.now(timezone.utc)
 
         # Generate 4-6 realistic offshore candidate zones around the location
         bearings = [45, 90, 135, 180, 220]

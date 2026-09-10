@@ -1,29 +1,39 @@
 "use client";
 
 import React, { useState } from "react";
-import { Send, Sparkles, Loader2, Compass, CornerDownLeft } from "lucide-react";
+import { ArrowUp, Loader2, Search } from "lucide-react";
+import { Pill } from "@/components/ui/Pill";
 
 interface QueryInputProps {
   onSubmit: (query: string) => void;
   isLoading: boolean;
   activeQueryText?: string;
   onFollowUp: (followUp: string) => void;
+  /** Contextual follow-up suggestions (e.g. from the current result type) */
+  suggestions?: string[];
+  /** Hide the suggestion row entirely (used on the landing screen) */
+  hideSuggestions?: boolean;
+  /** Larger, centered treatment for the landing screen */
+  landing?: boolean;
 }
 
-const FOLLOW_UP_SUGGESTIONS = [
-  "What about tomorrow morning?",
-  "Show areas with higher chlorophyll nearby",
-  "Does this route cross protected waters?",
-  "Why was this location rejected?",
-  "Explain this analysis in Telugu",
+const DEFAULT_SUGGESTIONS = [
+  "What about tomorrow evening?",
+  "Why is this ranked first?",
+  "Show the alternative route",
+  "Explain this in Telugu",
 ];
 
 export const QueryInput: React.FC<QueryInputProps> = ({
   onSubmit,
   isLoading,
   onFollowUp,
+  suggestions,
+  hideSuggestions = false,
+  landing = false,
 }) => {
   const [text, setText] = useState("");
+  const followUps = suggestions && suggestions.length > 0 ? suggestions : DEFAULT_SUGGESTIONS;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,51 +43,56 @@ export const QueryInput: React.FC<QueryInputProps> = ({
   };
 
   return (
-    <div className="w-full space-y-2">
-      {/* Contextual Follow-up Suggestions */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-        <span className="text-[10px] uppercase font-bold text-orca-muted flex items-center gap-1 flex-shrink-0">
-          <Sparkles className="w-3 h-3 text-orca-cyan" /> Suggested Follow-ups:
-        </span>
-        {FOLLOW_UP_SUGGESTIONS.map((sug, idx) => (
-          <button
-            key={idx}
-            onClick={() => onFollowUp(sug)}
-            className="flex-shrink-0 bg-orca-card/60 hover:bg-orca-card border border-orca-border hover:border-orca-cyan/40 text-orca-muted hover:text-white px-2.5 py-1 rounded-full text-[11px] transition"
-          >
-            {sug}
-          </button>
-        ))}
-      </div>
+    <div className="w-full space-y-2.5">
+      {/* Contextual follow-up suggestions */}
+      {!hideSuggestions && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
+          {followUps.map((sug, idx) => (
+            <Pill
+              key={idx}
+              size="sm"
+              onClick={() => onFollowUp(sug)}
+              disabled={isLoading}
+              className="flex-shrink-0"
+            >
+              {sug}
+            </Pill>
+          ))}
+        </div>
+      )}
 
-      {/* Main Input Field */}
-      <form onSubmit={handleSubmit} className="relative flex items-center">
+      {/* Main input */}
+      <form
+        onSubmit={handleSubmit}
+        className={`relative flex items-center rounded-2xl border bg-orca-panel/80 transition focus-within:border-orca-cyan/50 focus-within:bg-orca-panel ${
+          landing ? "border-orca-border shadow-card" : "border-orca-border"
+        }`}
+      >
         <div className="absolute left-4 pointer-events-none text-orca-muted">
-          <Compass className="w-5 h-5 text-orca-cyan" />
+          <Search className="w-4 h-4" />
         </div>
         <input
+          id="marine-query-input"
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask ORCA anything: 'Is it safe near Vizag tomorrow?', 'Find fishing areas with calm waves', 'Compare Chennai & Kakinada'..."
+          placeholder="Ask ORCA about the marine environment..."
           disabled={isLoading}
-          className="w-full bg-orca-card/90 border border-orca-border focus:border-orca-cyan text-white text-sm rounded-xl pl-12 pr-28 py-3.5 focus:outline-none transition shadow-lg placeholder:text-orca-muted/60"
+          className={`w-full bg-transparent text-white rounded-2xl pl-11 pr-14 focus:outline-none placeholder:text-orca-dim ${
+            landing ? "text-[15px] py-4" : "text-sm py-3.5"
+          }`}
         />
         <button
+          id="marine-query-submit-btn"
           type="submit"
           disabled={isLoading || !text.trim()}
-          className="absolute right-2 px-4 py-2 rounded-lg bg-gradient-to-r from-orca-blue to-orca-cyan text-orca-darkest font-semibold text-xs flex items-center gap-1.5 hover:opacity-95 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-glow"
+          className="absolute right-2 w-9 h-9 rounded-xl bg-orca-cyan text-orca-darkest flex items-center justify-center transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-orca-cyan/90"
+          aria-label="Submit query"
         >
           {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Analyzing...</span>
-            </>
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <>
-              <span>Analyze</span>
-              <CornerDownLeft className="w-3.5 h-3.5" />
-            </>
+            <ArrowUp className="w-4 h-4 stroke-[2.5]" />
           )}
         </button>
       </form>

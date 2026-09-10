@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { MapView } from "@/components/MapView";
 import { QueryInput } from "@/components/QueryInput";
 import { ResultContainer } from "@/components/Results/ResultContainer";
+import { SummaryTable } from "@/components/Results/SummaryTable";
 import { AgentActivityFeed } from "@/components/AgentActivityFeed";
 import { EvidenceDrawer } from "@/components/EvidenceDrawer";
 import { AlertsModal } from "@/components/AlertsModal";
@@ -21,7 +22,7 @@ import {
   MarineAlert,
   ConversationSummary,
 } from "@/lib/types";
-import { Waves, Sparkles, Shield, Compass, Navigation, Radio, Terminal } from "lucide-react";
+import { Waves, Compass, MessageSquare, Map as MapIcon } from "lucide-react";
 
 export default function Home() {
   const [currentAnalysis, setCurrentAnalysis] = useState<OrcaAnalysisResponse | null>(null);
@@ -36,14 +37,85 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // ONE-TIME CENTER INTRO ANIMATION STATE
+  const [isInitialCenterState, setIsInitialCenterState] = useState(true);
+  const [centerRevealDone, setCenterRevealDone] = useState(false);
+  const isFirstSubmit = useRef(true);
+
+  // ── FE-02 SPLIT CANVAS STATE ──────────────────────────────────────────────
+  // Conversation (left) | persistent map (right). The two panes are ALWAYS
+  // mounted; only their sizing/visibility changes, so the single MapView
+  // instance below never unmounts across queries, loading, errors, clarifications,
+  // breakpoint changes, or the mobile tab switch.
+  const splitRef = useRef<HTMLDivElement>(null);
+  const [leftPct, setLeftPct] = useState(50); // conversation width % (desktop)
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true); // md+ side-by-side split
+  const [mobileTab, setMobileTab] = useState<"chat" | "map">("chat");
+  // Imperative reflow signal handed to MapView — bumped after layout shifts a
+  // ResizeObserver may not settle in time (drag end, tab reveal, breakpoint).
+  const [resizeSignal, setResizeSignal] = useState(0);
+
   // Load initial data
   useEffect(() => {
     fetchActiveAlerts().then(setAlerts).catch(() => {});
     fetchConversations().then(setConversations).catch(() => {});
   }, []);
 
+  // Track the md breakpoint to decide split (desktop/tablet) vs tabs (mobile).
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => {
+      setIsDesktop(mq.matches);
+      setResizeSignal((s) => s + 1); // reflow the map after a breakpoint change
+    };
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Draggable split divider (desktop only). The map reflows live via its own
+  // ResizeObserver while dragging; we bump resizeSignal on release to settle it.
+  const startDrag = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const onMove = (ev: PointerEvent) => {
+      const el = splitRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+      setLeftPct(Math.min(68, Math.max(32, pct)));
+    };
+    const onUp = () => {
+      setIsDragging(false);
+      setResizeSignal((s) => s + 1);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  // Mobile tab switch — keeps both panes mounted, only toggles visibility.
+  const selectMobileTab = (tab: "chat" | "map") => {
+    setMobileTab(tab);
+    setResizeSignal((s) => s + 1); // map may have been display:none — reflow it
+  };
+
   // Submit query handler
   const handleQuerySubmit = async (queryText: string) => {
+    if (isFirstSubmit.current) {
+      // One-time landing → split-canvas reveal. The map is already mounted
+      // underneath the landing overlay, so this only uncovers + animates it in.
+      setIsInitialCenterState(false);
+      setCenterRevealDone(true);
+      isFirstSubmit.current = false;
+      // Reflow the map once it becomes visible, and clear the reveal flag after
+      // the animation window (works even if the pane is hidden on mobile).
+      setResizeSignal((s) => s + 1);
+      setTimeout(() => setCenterRevealDone(false), 700);
+    }
+
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -88,122 +160,337 @@ export default function Home() {
     setErrorMessage(null);
   };
 
+  // Contextual follow-up suggestions based on the current result type
+  const followUpSuggestions = React.useMemo(() => {
+    const rt = currentAnalysis?.visualization_plan?.result_type || currentAnalysis?.intent;
+    if (!rt) return undefined;
+    if (rt.includes("route")) {
+      return ["What about tomorrow evening?", "Why is this route safer?", "Show the alternative route"];
+    }
+    if (rt.includes("fishing")) {
+      return ["Why is the top zone ranked first?", "What about tomorrow evening?", "Show zones with higher chlorophyll"];
+    }
+    if (rt.includes("spatial")) {
+      return ["What changes 50 km offshore instead?", "Compare with the origin conditions", "Is it safe out there?"];
+    }
+    if (rt.includes("comparison")) {
+      return ["Which is safer for fishing?", "What about tomorrow morning?"];
+    }
+    if (rt.includes("historical") || rt.includes("trend")) {
+      return ["What is the forecast for tomorrow?", "Explain the biggest change"];
+    }
+    return ["What about tomorrow evening?", "Is it safe for small vessels?", "Explain this in Telugu"];
+  }, [currentAnalysis]);
+
   return (
-    <div className="flex flex-col min-h-screen bg-orca-darkest text-white">
-      {/* Top Header */}
-      <Header
-        mode={currentAnalysis?.mode || "DEMO"}
-        activeAlertsCount={alerts.length}
+    <div className="flex h-screen w-screen overflow-hidden bg-orca-darkest text-white">
+      {/* Left Sidebar */}
+      <Sidebar
+        conversations={conversations}
+        currentConversationId={activeConversationId}
+        onSelectConversation={(id) => {
+          setActiveConversationId(id);
+        }}
+        onNewAnalysis={handleNewAnalysis}
+        onSelectPrompt={(p) => handleQuerySubmit(p)}
+        userRole={userRole}
+        onSelectRole={setUserRole}
         onOpenAlerts={() => setIsAlertsOpen(true)}
-        onExportReport={handleExportReport}
-        selectedLanguage={selectedLanguage}
-        onSelectLanguage={setSelectedLanguage}
-        hasAnalysis={!!currentAnalysis}
+        alertsCount={alerts.length}
       />
 
-      {/* Main Workspace Layout */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Sidebar */}
-        <Sidebar
-          conversations={conversations}
-          currentConversationId={activeConversationId}
-          onSelectConversation={(id) => {
-            setActiveConversationId(id);
-            // Could load conversation history
-          }}
-          onNewAnalysis={handleNewAnalysis}
-          onSelectPrompt={(p) => handleQuerySubmit(p)}
-          userRole={userRole}
-          onSelectRole={setUserRole}
+      {/* Main Workspace Column */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Top Header */}
+        <Header
+          mode={currentAnalysis?.mode || "DEMO"}
+          activeAlertsCount={alerts.length}
+          onOpenAlerts={() => setIsAlertsOpen(true)}
+          onExportReport={handleExportReport}
+          selectedLanguage={selectedLanguage}
+          onSelectLanguage={setSelectedLanguage}
+          hasAnalysis={!!currentAnalysis}
         />
 
         {/* Center / Right Intelligence Studio */}
-        <main className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-4rem)] overflow-y-auto lg:overflow-hidden p-3 md:p-4 gap-4">
-          {/* Left Column: Interactive Map & Query Box */}
-          <div className="flex-1 flex flex-col gap-3 min-h-[500px] lg:min-h-0">
-            {/* Interactive Marine Map */}
-            <div className="flex-1 min-h-[350px] w-full relative">
-              <MapView
-                layers={currentAnalysis?.map_layers || []}
-                visualizationPlan={currentAnalysis?.visualization_plan}
-                onCoordinateSelect={handleCoordinateSelect}
-              />
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Location / temporal context strip — calm and minimal, only after analysis */}
+          {!isInitialCenterState && (
+            <div className="bg-orca-dark/50 border-b border-orca-border/70 px-4 py-2 flex items-center justify-between gap-3 text-xs flex-shrink-0 z-10">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-orca-cyan flex-shrink-0" />
+                <span className="font-medium text-white truncate">
+                  {currentAnalysis
+                    ? currentAnalysis.location.name
+                    : "Indian Ocean · Coastal EEZ Waters"}
+                </span>
+                {currentAnalysis && (
+                  <span className="hidden sm:inline text-orca-dim text-[11px] font-mono truncate">
+                    {currentAnalysis.location.latitude.toFixed(2)}°N, {currentAnalysis.location.longitude.toFixed(2)}°E
+                  </span>
+                )}
+              </div>
+
+              {currentAnalysis && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="hidden md:inline text-[11px] text-orca-muted">
+                    {currentAnalysis.temporal.label}
+                  </span>
+                  {currentAnalysis.risk_assessment && (
+                    <span
+                      className={`text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full border ${
+                        currentAnalysis.risk_assessment.category === "LOW"
+                          ? "border-emerald-500/30 text-emerald-300"
+                          : currentAnalysis.risk_assessment.category === "MODERATE"
+                          ? "border-amber-500/30 text-amber-300"
+                          : "border-rose-500/30 text-rose-300"
+                      }`}
+                    >
+                      {currentAnalysis.risk_assessment.category} · {currentAnalysis.risk_assessment.overall_score}/100
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── FE-02 SPLIT CANVAS: conversation (left) | persistent map (right) ──
+              Both panes are ALWAYS mounted. Only sizing/visibility changes, so the
+              single MapView instance never unmounts across queries, loading, errors,
+              clarification, result-type changes, breakpoints, or the mobile tab. */}
+          <div className="flex-1 relative min-h-0 overflow-hidden bg-orca-darkest">
+            <div
+              ref={splitRef}
+              className={`h-full w-full flex flex-col md:flex-row ${
+                isDragging ? "select-none cursor-col-resize" : ""
+              }`}
+            >
+              {/* LEFT — Conversation / analysis (scrolls independently) */}
+              <section
+                className={`min-w-0 flex-col ${
+                  isDesktop
+                    ? "flex h-full flex-shrink-0"
+                    : mobileTab === "chat"
+                    ? "flex flex-1 min-h-0"
+                    : "hidden"
+                }`}
+                style={isDesktop ? { width: `${leftPct}%` } : undefined}
+              >
+                {/* Scrollable conversation column */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-4 py-3 space-y-3">
+                  {/* Error Notification — conversation-side only; map stays alive */}
+                  {errorMessage && (
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 flex-shrink-0" />
+                      <div>
+                        <b className="text-rose-200">Execution Error:</b> {errorMessage}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standby (after New Analysis, before next query) */}
+                  {!currentAnalysis && !isLoading && !isInitialCenterState && (
+                    <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+                      <div className="w-11 h-11 rounded-xl bg-orca-dark border border-orca-border flex items-center justify-center mb-4">
+                        <Compass className="w-5 h-5 text-orca-muted stroke-[1.75]" />
+                      </div>
+                      <h2 className="font-display font-semibold text-[15px] text-white">
+                        Ready for your next analysis
+                      </h2>
+                      <p className="text-[12.5px] text-orca-dim mt-1.5 leading-relaxed max-w-[240px]">
+                        Ask about ocean conditions, fishing zones, routes, or spatial what-if scenarios.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Loading skeleton — map remains visible/mounted alongside */}
+                  {isLoading && !currentAnalysis && (
+                    <div className="space-y-3 pt-1">
+                      <div className="h-4 w-40 rounded bg-white/[0.05] animate-pulse" />
+                      <div className="h-24 rounded-xl bg-white/[0.04] animate-pulse" />
+                      <div className="h-32 rounded-xl bg-white/[0.03] animate-pulse" />
+                    </div>
+                  )}
+
+                  {/* Dynamic Result Container */}
+                  {currentAnalysis && (
+                    <ResultContainer
+                      analysis={currentAnalysis}
+                      onSelectLocation={(locName) => {
+                        const refined = `${currentAnalysis.query_text} near ${locName}`;
+                        handleQuerySubmit(refined);
+                      }}
+                    />
+                  )}
+
+                  {/* Agent Telemetry Timeline */}
+                  {currentAnalysis && (
+                    <AgentActivityFeed steps={currentAnalysis.agent_activity} />
+                  )}
+
+                  {/* Evidence & Provenance Drawer */}
+                  {currentAnalysis && (
+                    <EvidenceDrawer evidence={currentAnalysis.evidence} />
+                  )}
+
+                  {/* Final Decision Summary Table (End of Result) */}
+                  {currentAnalysis && (
+                    <SummaryTable
+                      analysis={currentAnalysis}
+                      selectedLanguage={selectedLanguage}
+                    />
+                  )}
+                </div>
+
+                {/* Query console — pinned to the bottom of the conversation pane.
+                    Rendered post-landing (the landing overlay owns the intro input). */}
+                {!isInitialCenterState && (
+                  <div
+                    className="flex-shrink-0 border-t border-orca-border/60 bg-orca-dark/40 px-3 md:px-4 py-3"
+                    style={
+                      centerRevealDone
+                        ? { animation: "orca-search-settle 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards" }
+                        : undefined
+                    }
+                  >
+                    <QueryInput
+                      onSubmit={handleQuerySubmit}
+                      isLoading={isLoading}
+                      onFollowUp={(f) => handleQuerySubmit(f)}
+                      suggestions={followUpSuggestions}
+                    />
+                  </div>
+                )}
+              </section>
+
+              {/* DRAGGABLE DIVIDER — desktop/tablet only. Map reflows live via its
+                  ResizeObserver during the drag; no reinitialization. */}
+              {isDesktop && (
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize conversation and map"
+                  onPointerDown={startDrag}
+                  className="relative flex-shrink-0 w-2 cursor-col-resize group"
+                >
+                  <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-orca-border group-hover:bg-orca-cyan/50 transition-colors" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-[3px] opacity-40 group-hover:opacity-100 transition-opacity">
+                    <span className="w-[3px] h-[3px] rounded-full bg-orca-muted" />
+                    <span className="w-[3px] h-[3px] rounded-full bg-orca-muted" />
+                    <span className="w-[3px] h-[3px] rounded-full bg-orca-muted" />
+                  </div>
+                </div>
+              )}
+
+              {/* RIGHT — persistent marine map surface. NEVER unmounts. */}
+              <section
+                className={`min-w-0 relative ${isDragging ? "pointer-events-none" : ""} ${
+                  isDesktop
+                    ? "flex-1 h-full"
+                    : mobileTab === "map"
+                    ? "flex-1 min-h-0"
+                    : "hidden"
+                }`}
+              >
+                <div
+                  className="w-full h-full p-2 md:p-2.5"
+                  style={
+                    centerRevealDone
+                      ? { animation: "orca-map-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards" }
+                      : undefined
+                  }
+                >
+                  <MapView
+                    layers={currentAnalysis?.map_layers || []}
+                    visualizationPlan={currentAnalysis?.visualization_plan}
+                    onCoordinateSelect={handleCoordinateSelect}
+                    resizeSignal={resizeSignal}
+                  />
+                </div>
+              </section>
             </div>
 
-            {/* Bottom Query & Follow-up Input */}
-            <div className="flex-shrink-0">
-              <QueryInput
-                onSubmit={handleQuerySubmit}
-                isLoading={isLoading}
-                onFollowUp={(f) => handleQuerySubmit(f)}
-              />
-            </div>
-          </div>
-
-          {/* Right Column: Dynamic Intelligence Results, Telemetry & Evidence */}
-          <div className="w-full lg:w-[480px] xl:w-[540px] flex-shrink-0 flex flex-col gap-3 overflow-y-auto pr-1">
-            {/* Error Notification */}
-            {errorMessage && (
-              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                <b>Error:</b> {errorMessage}
+            {/* MOBILE TAB SWITCHER — floating; keeps BOTH panes mounted (map never
+                destroyed, just hidden). Hidden on md+ and during the landing intro. */}
+            {!isInitialCenterState && (
+              <div className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1 rounded-full bg-orca-panel/95 backdrop-blur border border-orca-border shadow-elevation2">
+                <button
+                  onClick={() => selectMobileTab("chat")}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition ${
+                    mobileTab === "chat" ? "bg-orca-cyan text-orca-darkest" : "text-orca-muted"
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Conversation
+                </button>
+                <button
+                  onClick={() => selectMobileTab("map")}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition ${
+                    mobileTab === "map" ? "bg-orca-cyan text-orca-darkest" : "text-orca-muted"
+                  }`}
+                >
+                  <MapIcon className="w-3.5 h-3.5" /> Map
+                </button>
               </div>
             )}
 
-            {/* Initial Empty State Hero (if no analysis executed yet) */}
-            {!currentAnalysis && !isLoading && (
-              <div className="bg-orca-card/60 border border-orca-border rounded-2xl p-6 text-center space-y-4 shadow-xl">
-                <div className="w-14 h-14 rounded-2xl bg-orca-darkest border border-orca-cyan/40 text-orca-cyan flex items-center justify-center mx-auto shadow-glow">
-                  <Waves className="w-7 h-7" />
-                </div>
-                <div>
-                  <h2 className="font-display font-bold text-lg text-white">
-                    ORCA Marine Intelligence Studio
-                  </h2>
-                  <p className="text-xs text-orca-muted mt-1 leading-relaxed max-w-sm mx-auto">
-                    Collaborative Multi-Agent Marine Decision Support for SIH 2026 PS 26176.
-                    Ask any natural language query or click anywhere on the ocean map to begin.
+            {/* ── ONE-TIME LANDING OVERLAY ──
+                Covers the split during the intro. The MapView beneath is already
+                mounted, so the first query simply uncovers + reveals it. */}
+            {isInitialCenterState && (
+              <div className="absolute inset-0 z-30 bg-orca-darkest flex flex-col items-center justify-center pb-[8vh] overflow-hidden">
+                {/* Composition content — horizontally centered */}
+                <div className="relative z-10 w-full max-w-[680px] px-5 sm:px-6">
+                  {/* Mark */}
+                  <div className="flex justify-center mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-orca-dark border border-orca-cyan/20 flex items-center justify-center">
+                      <Waves className="w-6 h-6 text-orca-cyan stroke-[1.75]" />
+                    </div>
+                  </div>
+
+                  {/* Heading */}
+                  <h1 className="text-center font-display font-bold text-[26px] sm:text-[28px] text-white tracking-tight">
+                    ORCA Intelligence
+                  </h1>
+                  <p className="text-center text-[15px] text-slate-400 leading-relaxed mt-2 mb-7">
+                    Marine intelligence for better coastal decisions.
+                  </p>
+
+                  {/* Search bar (primary focus) */}
+                  <QueryInput
+                    onSubmit={handleQuerySubmit}
+                    isLoading={isLoading}
+                    onFollowUp={(f) => handleQuerySubmit(f)}
+                    hideSuggestions
+                    landing
+                  />
+
+                  {/* Example suggestion chips */}
+                  <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 mt-5">
+                    {[
+                      "Fishing zones near Visakhapatnam tomorrow morning",
+                      "Marine conditions near Kakinada",
+                      "Lower-risk route Kakinada → Visakhapatnam",
+                      "What changes 30 km offshore from Vizag?",
+                    ].map((label) => (
+                      <button
+                        key={label}
+                        onClick={() => handleQuerySubmit(label)}
+                        className="px-3 py-1.5 rounded-full bg-orca-panel/50 border border-orca-border/70 hover:border-orca-cyan/30 hover:text-white text-[11.5px] text-slate-400 transition"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Capability line */}
+                  <p className="text-center text-[11px] text-orca-dim mt-6 tracking-wide">
+                    Ocean Conditions · Fishing · Safety · Routes · Spatial What-If
                   </p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 text-left text-xs pt-2">
-                  <div className="p-2.5 rounded-xl bg-orca-darkest/70 border border-orca-border">
-                    <Compass className="w-4 h-4 text-orca-cyan mb-1" />
-                    <div className="font-semibold text-white text-[11px]">Dynamic Reasoning</div>
-                    <div className="text-[10px] text-orca-muted">Zero canned answers; plans tasks on the fly.</div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-orca-darkest/70 border border-orca-border">
-                    <Shield className="w-4 h-4 text-emerald-400 mb-1" />
-                    <div className="font-semibold text-white text-[11px]">Deterministic Risk</div>
-                    <div className="text-[10px] text-orca-muted">Calculates verified INCOIS & IMD hazard scores.</div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-orca-darkest/70 border border-orca-border">
-                    <Navigation className="w-4 h-4 text-orca-teal mb-1" />
-                    <div className="font-semibold text-white text-[11px]">Geofence Audits</div>
-                    <div className="text-[10px] text-orca-muted">Exact PostGIS / Shapely Marine Sanctuary limits.</div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-orca-darkest/70 border border-orca-border">
-                    <Radio className="w-4 h-4 text-amber-400 mb-1" />
-                    <div className="font-semibold text-white text-[11px]">Vernacular AI</div>
-                    <div className="text-[10px] text-orca-muted">10 coastal languages with localized synthesis.</div>
-                  </div>
-                </div>
               </div>
             )}
-
-            {/* Dynamic Result Container */}
-            {currentAnalysis && <ResultContainer analysis={currentAnalysis} />}
-
-            {/* Agent Telemetry Timeline */}
-            {currentAnalysis && (
-              <AgentActivityFeed steps={currentAnalysis.agent_activity} />
-            )}
-
-            {/* Evidence & Provenance Drawer */}
-            {currentAnalysis && (
-              <EvidenceDrawer evidence={currentAnalysis.evidence} />
-            )}
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Coastal Alerts Modal */}

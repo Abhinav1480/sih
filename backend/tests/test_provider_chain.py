@@ -30,6 +30,9 @@ from app.providers.registry import registry
 
 client = TestClient(app)
 
+# Device position for queries that name no place ("my area", "my fishing location").
+KAKINADA = {"latitude": 16.9891, "longitude": 82.2475}
+
 CANONICAL_QUERIES = [
     "Where is the nearest Potential Fishing Zone today?",
     "Is it safe to venture into the sea tomorrow morning?",
@@ -238,7 +241,7 @@ def no_network(monkeypatch):
 
 @pytest.mark.parametrize("query", CANONICAL_QUERIES, ids=[q[:40] for q in CANONICAL_QUERIES])
 def test_demo_mode_answers_every_canonical_query_with_the_network_disabled(no_network, query):
-    response = client.post("/api/query", json={"query": query})
+    response = client.post("/api/query", json={"user_location": KAKINADA, "query": query})
     assert response.status_code == 200, response.text
     envelope = response.json()
     assert envelope["meta"]["mode"] == "DEMO"
@@ -247,7 +250,7 @@ def test_demo_mode_answers_every_canonical_query_with_the_network_disabled(no_ne
 
 @pytest.mark.parametrize("query", CANONICAL_QUERIES, ids=[q[:40] for q in CANONICAL_QUERIES])
 def test_every_value_in_every_response_has_a_provider_and_tier(query):
-    envelope = client.post("/api/query", json={"query": query}).json()
+    envelope = client.post("/api/query", json={"user_location": KAKINADA, "query": query}).json()
 
     assert envelope["evidence"], "no evidence"
     for record in envelope["evidence"]:
@@ -262,7 +265,7 @@ def test_every_value_in_every_response_has_a_provider_and_tier(query):
 
 
 def test_response_includes_real_isro_layers_alongside_derived_ones():
-    envelope = client.post("/api/query", json={"query": "Is it safe to venture into the sea tomorrow morning?"}).json()
+    envelope = client.post("/api/query", json={"user_location": KAKINADA, "query": "Is it safe to venture into the sea tomorrow morning?"}).json()
     isro = [l for l in envelope["layers"] if l["provider_tier"] == "ISRO"]
     assert isro, "no ISRO layers in the response"
     assert all(l["kind"] == "wms" for l in isro)
@@ -271,7 +274,7 @@ def test_response_includes_real_isro_layers_alongside_derived_ones():
 
 def test_trace_names_every_skipped_isro_provider_and_why():
     """A judge asking "why is this not ISRO?" must find the answer on screen."""
-    envelope = client.post("/api/query", json={"query": "Is it safe to venture into the sea tomorrow morning?"}).json()
+    envelope = client.post("/api/query", json={"user_location": KAKINADA, "query": "Is it safe to venture into the sea tomorrow morning?"}).json()
     skipped = [t for t in envelope["trace"] if t["status"] == "SKIPPED"]
     assert skipped, "no skipped-provider events in the trace"
 
@@ -284,16 +287,16 @@ def test_trace_names_every_skipped_isro_provider_and_why():
 
 def test_tide_and_hazard_gaps_are_stated_in_the_response():
     """Canonical queries 3 and 4 name capabilities with no provider; say so."""
-    tide = client.post("/api/query", json={"query": "What are the tide, weather and sea conditions near my fishing location?"}).json()
+    tide = client.post("/api/query", json={"user_location": KAKINADA, "query": "What are the tide, weather and sea conditions near my fishing location?"}).json()
     assert any("Tide is not available" in l for l in tide["meta"]["limitations"]), tide["meta"]["limitations"]
 
-    hazard = client.post("/api/query", json={"query": "Are there any lightning or cyclone alerts in my area?"}).json()
+    hazard = client.post("/api/query", json={"user_location": KAKINADA, "query": "Are there any lightning or cyclone alerts in my area?"}).json()
     assert any("Lightning and cyclone tracking is not available" in l for l in hazard["meta"]["limitations"])
 
 
 def test_no_gap_is_papered_over_with_an_adjacent_value():
     """The wind-derived alert level must not be presented as a lightning feed."""
-    envelope = client.post("/api/query", json={"query": "Are there any lightning or cyclone alerts in my area?"}).json()
+    envelope = client.post("/api/query", json={"user_location": KAKINADA, "query": "Are there any lightning or cyclone alerts in my area?"}).json()
     for alert in envelope["alerts"]:
         assert alert["type"] not in ("lightning", "cyclone"), (
             f"a {alert['type']} alert was emitted with no lightning/cyclone provider configured: {alert}"

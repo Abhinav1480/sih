@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from app.risk.engine import calculate_marine_risk
 from app.models.schemas import (
     OceanObservation,
@@ -20,7 +20,7 @@ def test_calm_conditions_low_risk():
         sea_state="Calm",
         status=DataFreshness.DEMO,
         source="INCOIS",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     weather = WeatherObservation(
         wind_speed_knots=8.0,
@@ -32,12 +32,14 @@ def test_calm_conditions_low_risk():
         alert_level="None",
         status=DataFreshness.DEMO,
         source="IMD",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     res = calculate_marine_risk(ocean, weather, is_inside_mpa=False)
     assert res.overall_score < 30
     assert res.category == RiskCategory.LOW
+    assert res.confidence_percentage == 95
+    assert "DEMO" in res.data_quality_label
     assert len(res.contributing_factors) > 0
 
 def test_severe_storm_conditions_high_risk():
@@ -52,7 +54,7 @@ def test_severe_storm_conditions_high_risk():
         sea_state="Very Rough",
         status=DataFreshness.DEMO,
         source="INCOIS",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     weather = WeatherObservation(
         wind_speed_knots=32.0,
@@ -65,7 +67,7 @@ def test_severe_storm_conditions_high_risk():
         storm_warning="Severe squall gale warning",
         status=DataFreshness.DEMO,
         source="IMD",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     res = calculate_marine_risk(ocean, weather, is_inside_mpa=False)
@@ -87,7 +89,7 @@ def test_mpa_violation_risk_penalty():
         sea_state="Slight",
         status=DataFreshness.DEMO,
         source="INCOIS",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     weather = WeatherObservation(
         wind_speed_knots=10.0,
@@ -99,7 +101,7 @@ def test_mpa_violation_risk_penalty():
         alert_level="None",
         status=DataFreshness.DEMO,
         source="IMD",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     res_clean = calculate_marine_risk(ocean, weather, is_inside_mpa=False)

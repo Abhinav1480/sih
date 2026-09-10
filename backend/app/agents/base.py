@@ -1,7 +1,7 @@
 import time
 from typing import Optional, List, Dict, Any
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.schemas import AgentStepRecord
 
 class BaseSpecialistAgent(ABC):
@@ -29,5 +29,5 @@ class BaseSpecialistAgent(ABC):
             status=status,
             duration_ms=duration_ms,
             details=details,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
