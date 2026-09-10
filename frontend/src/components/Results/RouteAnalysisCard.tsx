@@ -12,13 +12,13 @@ interface RouteAnalysisCardProps {
 export const RouteAnalysisCard: React.FC<RouteAnalysisCardProps> = ({ route }) => {
   if (!route) return null;
 
-  const scoreMap = {
-    LOW: 18,
-    MODERATE: 30,
-    HIGH: 65,
-    SEVERE: 85,
-  };
-  const routeScore = scoreMap[route.overall_route_risk] ?? 30;
+  // This used to be scoreMap = {LOW:18, MODERATE:30, HIGH:65, SEVERE:85} with
+  // a ?? 30 default, and the number went into RiskGauge's ARIA meter as
+  // "score 18 out of 100" -- telling a screen reader the deterministic engine
+  // scored this route, which it never did. Only a score the backend actually
+  // computed is shown.
+  const routeScore =
+    typeof (route as any).risk_score === "number" ? (route as any).risk_score : null;
 
   return (
     <div className="maritime-card p-5 space-y-4">
@@ -31,12 +31,24 @@ export const RouteAnalysisCard: React.FC<RouteAnalysisCardProps> = ({ route }) =
             {route.origin.name} → {route.destination.name}
           </div>
         </div>
-        <RiskGauge
-          band={route.overall_route_risk}
-          score={routeScore}
-          label="CORRIDOR HAZARD"
-          compact
-        />
+        {routeScore !== null ? (
+          <RiskGauge
+            band={route.overall_route_risk}
+            score={routeScore}
+            label="CORRIDOR HAZARD"
+            compact
+          />
+        ) : (
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold font-mono">
+              Corridor hazard
+            </div>
+            <div className="font-display font-bold text-sm text-slate-200 mt-0.5">
+              {route.overall_route_risk}
+            </div>
+            <div className="text-[9px] text-slate-500 italic">score unavailable</div>
+          </div>
+        )}
       </div>
 
       {/* Corridor Summary */}

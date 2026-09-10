@@ -79,6 +79,10 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
   }
 
   const alertLevel = weather?.alert_level;
+  // Whoever actually produced this alert level. Never a hardcoded agency name:
+  // ORCA has no IMD adapter, so heading this block "IMD" attributed the value
+  // to an agency that was never contacted.
+  const advisorySource = weather?.source ? "COASTAL ADVISORY" : "ADVISORY";
   const alertColor =
     alertLevel === "Orange" || alertLevel === "Red"
       ? "text-rose-400"
@@ -115,18 +119,30 @@ export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }
           );
         })}
 
-        {/* IMD advisory */}
+        {/* Coastal advisory.
+            This block used to be headed "IMD" and print (alertLevel || "Green")
+            over (storm_warning || "No active warning"), so an absent alert
+            level rendered as an affirmative green all-clear attributed to a
+            national agency ORCA has no adapter for. Missing data now reads as
+            unavailable, and the heading names whoever actually produced the
+            value. */}
         {weather && (
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-orca-dim font-semibold mb-1">
-              <AlertOctagon className={`w-3 h-3 ${alertColor}`} />
-              <span>IMD</span>
+              <AlertOctagon className={`w-3 h-3 ${alertLevel ? alertColor : "text-orca-dim"}`} />
+              <span>{advisorySource}</span>
             </div>
-            <div className={`font-display text-[18px] font-bold ${alertColor} leading-none`}>
-              {(alertLevel || "Green").toUpperCase()}
+            <div
+              className={`font-display text-[18px] font-bold leading-none ${
+                alertLevel ? alertColor : "text-orca-dim"
+              }`}
+            >
+              {alertLevel ? alertLevel.toUpperCase() : "UNAVAILABLE"}
             </div>
             <div className="text-[10.5px] text-orca-dim truncate mt-1">
-              {weather.storm_warning || "No active warning"}
+              {alertLevel
+                ? weather.storm_warning || "No warning text supplied"
+                : "No coastal alert feed connected"}
             </div>
           </div>
         )}
