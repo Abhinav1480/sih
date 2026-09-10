@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "leaflet/dist/leaflet.css";
 
 @tailwind base;
@@ -6,19 +6,126 @@
 @tailwind utilities;
 
 :root {
-  --background: #040814;
-  --foreground: #f1f5f9;
+  --background: #040914;
+  --foreground: #f8fafc;
+
+  /* ORCA Semantic Token CSS Custom Properties */
+  --bg-base: #040914;
+  --bg-elevated: #071226;
+  --surface-base: #0b1834;
+  --surface-elevated: #0f2042;
+  --surface-hover: #142954;
+  --surface-subtle: #081329;
+  --border-base: #1b335e;
+  --border-subtle: #122342;
+  --border-strong: #26457e;
+  --border-accent: rgba(0, 240, 208, 0.28);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-disabled: #475569;
+  --accent-base: #00f0d0;
+  --accent-strong: #00b4d8;
+  --accent-soft: rgba(0, 240, 208, 0.12);
+
+  --risk-low: #10b981;
+  --risk-moderate: #f59e0b;
+  --risk-high: #f97316;
+  --risk-severe: #ef4444;
+
+  --data-live: #10b981;
+  --data-forecast: #00b4d8;
+  --data-cached: #a855f7;
+  --data-historical: #64748b;
+  --data-demo: #eab308;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, .font-display {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/* ORCA Authoritative Typography Scale Classes */
+.orca-display {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.orca-heading {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.orca-subheading {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+
+.orca-body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+}
+
+.orca-small {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.orca-caption {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.orca-mono-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+}
+
+.orca-mono-meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom ocean scrollbar */
@@ -27,37 +134,114 @@ h1, h2, h3, h4, .font-display {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #081225;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e3258;
+  background: #1b335e;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f5d4;
+  background: #26457e;
 }
 
-/* Leaflet Map overrides for dark marine theme */
+/* Hide scrollbar for horizontal suggestion rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Leaflet Map overrides for dark marine command theme */
 .leaflet-container {
-  background: #060d1d !important;
-  font-family: 'Inter', sans-serif !important;
+  background: #040914 !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
 }
 
 .leaflet-popup-content-wrapper {
-  background: #0f1d3a !important;
-  color: #f1f5f9 !important;
-  border: 1px solid #1e3258 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  background: #0b1834 !important;
+  color: #f8fafc !important;
+  border: 1px solid #1b335e !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px -4px rgba(2, 6, 23, 0.75) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
 }
 
 .leaflet-popup-tip {
-  background: #0f1d3a !important;
+  background: #0b1834 !important;
+  border: 1px solid #1b335e !important;
 }
 
-/* Glassmorphism utility */
+.leaflet-control-zoom {
+  border: 1px solid #1b335e !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 20px -4px rgba(2, 6, 23, 0.7) !important;
+}
+
+.leaflet-control-zoom a {
+  background: #0b1834 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #1b335e !important;
+  transition: all 0.15s ease;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #142954 !important;
+  color: #00f0d0 !important;
+}
+
+/* Professional maritime dashboard utilities */
+.maritime-card {
+  background-color: rgba(11, 24, 52, 0.5);
+  border: 1px solid rgba(27, 51, 94, 0.7);
+  border-radius: 0.875rem;
+}
+
+.maritime-subcard {
+  background-color: #071226;
+  border: 1px solid #1b335e;
+  border-radius: 0.625rem;
+}
+
 .glass-panel {
-  background: rgba(15, 29, 58, 0.75);
+  background: rgba(11, 24, 52, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 50, 88, 0.8);
+  border: 1px solid rgba(27, 51, 94, 0.85);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ONE-TIME CENTER WORKSPACE INTRO ANIMATIONS
+   Used only on the first query submit (page load → first execute).
+   Sidebar and right panel are NOT involved.
+   ────────────────────────────────────────────────────────────── */
+
+/* Map expands in: starts invisible and slightly scaled-down, ends at full size */
+@keyframes orca-map-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Search bar slides from center position down to its natural bottom position */
+@keyframes orca-search-settle {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
