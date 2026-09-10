@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from app.config import settings
 from app.api.router import api_router
-from app.database.session import init_db
+from app.database.session import engine, init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,13 +37,39 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "HEALTHY",
+    """Liveness plus a real database probe.
+
+    `status` and `database` used to be the string literals "HEALTHY" and
+    "CONNECTED", returned without touching the database at all. Pointing
+    DATABASE_URL at a non-existent directory and skipping startup still
+    reported CONNECTED, so an uptime monitor watching this endpoint reported
+    green while the database was unreachable.
+    """
+    database = "CONNECTED"
+    database_error = None
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        database = "UNAVAILABLE"
+        database_error = f"{type(exc).__name__}: {exc}"[:200]
+
+    payload = {
+        "status": "HEALTHY" if database == "CONNECTED" else "DEGRADED",
         "service": "ORCA Marine Intelligence Engine",
         "version": settings.VERSION,
         "mode": settings.ORCA_MODE,
-        "database": "CONNECTED"
+        "database": database,
     }
+    if database_error:
+        payload["database_error"] = database_error
+
+    # A degraded service must not answer 200 to a health probe, or the probe
+    # is decorative.
+    return JSONResponse(
+        status_code=200 if database == "CONNECTED" else 503,
+        content=payload,
+    )
 
 @app.get("/")
 async def root():
