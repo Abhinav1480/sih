@@ -12,6 +12,8 @@ import { AgentTraceTimeline } from "@/components/AgentTraceTimeline";
 import { EvidenceProvider } from "@/components/Evidence/evidenceContext";
 import { EvidencePanel } from "@/components/Evidence/EvidencePanel";
 import { EvidenceRegistry } from "@/components/Evidence/EvidenceRegistry";
+import { FishermanPanel } from "@/components/Fisherman";
+import { t } from "@/lib/i18n";
 import { AlertsModal } from "@/components/AlertsModal";
 import { ReportModal } from "@/components/ReportModal";
 import {
@@ -27,7 +29,7 @@ import {
   TraceItem,
 } from "@/lib/types";
 import { streamOrcaAnalysis, accumulateTraceItems } from "@/lib/stream";
-import { Waves, Compass, MessageSquare, Map as MapIcon } from "lucide-react";
+import { Waves, Compass, MessageSquare, Map as MapIcon, Anchor } from "lucide-react";
 
 export default function Home() {
   const [currentAnalysis, setCurrentAnalysis] = useState<OrcaAnalysisResponse | null>(null);
@@ -42,6 +44,8 @@ export default function Home() {
   const [reportMarkdown, setReportMarkdown] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [userRole, setUserRole] = useState("Commercial Fisherman");
+  // FE-07: Fisherman Mode — a simplified, voice/touch-friendly mode of ORCA.
+  const [fishermanMode, setFishermanMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -292,26 +296,47 @@ export default function Home() {
                 )}
               </div>
 
-              {currentAnalysis && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="hidden md:inline text-[11px] text-orca-muted">
-                    {currentAnalysis.temporal.label}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* FE-07: Fisherman Mode toggle (existing nav strip, no clutter) */}
+                <button
+                  type="button"
+                  onClick={() => setFishermanMode((v) => !v)}
+                  aria-pressed={fishermanMode}
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[11px] font-medium transition ${
+                    fishermanMode
+                      ? "bg-orca-cyan/15 border-orca-cyan/40 text-orca-cyan"
+                      : "bg-orca-dark/60 border-orca-border text-orca-muted hover:text-white"
+                  }`}
+                >
+                  <Anchor className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">
+                    {fishermanMode
+                      ? t("fisherman.exit", selectedLanguage)
+                      : t("fisherman.enter", selectedLanguage)}
                   </span>
-                  {currentAnalysis.risk_assessment && (
-                    <span
-                      className={`text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full border ${
-                        currentAnalysis.risk_assessment.category === "LOW"
-                          ? "border-emerald-500/30 text-emerald-300"
-                          : currentAnalysis.risk_assessment.category === "MODERATE"
-                          ? "border-amber-500/30 text-amber-300"
-                          : "border-rose-500/30 text-rose-300"
-                      }`}
-                    >
-                      {currentAnalysis.risk_assessment.category} · {currentAnalysis.risk_assessment.overall_score}/100
+                </button>
+
+                {currentAnalysis && (
+                  <>
+                    <span className="hidden md:inline text-[11px] text-orca-muted">
+                      {currentAnalysis.temporal.label}
                     </span>
-                  )}
-                </div>
-              )}
+                    {currentAnalysis.risk_assessment && (
+                      <span
+                        className={`text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full border ${
+                          currentAnalysis.risk_assessment.category === "LOW"
+                            ? "border-emerald-500/30 text-emerald-300"
+                            : currentAnalysis.risk_assessment.category === "MODERATE"
+                            ? "border-amber-500/30 text-amber-300"
+                            : "border-rose-500/30 text-rose-300"
+                        }`}
+                      >
+                        {currentAnalysis.risk_assessment.category} · {currentAnalysis.risk_assessment.overall_score}/100
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -376,15 +401,28 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Dynamic Result Container */}
+                  {/* Result — Fisherman Mode shows the simplified verdict-first
+                      panel; otherwise the full dynamic result container. */}
                   {currentAnalysis && !isLoading && (
-                    <ResultContainer
-                      analysis={currentAnalysis}
-                      onSelectLocation={(locName) => {
-                        const refined = `${currentAnalysis.query_text} near ${locName}`;
-                        handleQuerySubmit(refined);
-                      }}
-                    />
+                    fishermanMode ? (
+                      <FishermanPanel
+                        analysis={currentAnalysis}
+                        lang={selectedLanguage}
+                        alerts={alerts}
+                        onSelectLocation={(locName) => {
+                          const refined = `${currentAnalysis.query_text} near ${locName}`;
+                          handleQuerySubmit(refined);
+                        }}
+                      />
+                    ) : (
+                      <ResultContainer
+                        analysis={currentAnalysis}
+                        onSelectLocation={(locName) => {
+                          const refined = `${currentAnalysis.query_text} near ${locName}`;
+                          handleQuerySubmit(refined);
+                        }}
+                      />
+                    )
                   )}
 
                   {/* Agent Reasoning Trace Timeline */}
