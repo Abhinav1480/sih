@@ -14,6 +14,7 @@ from app.models.schemas import (
     SpatialWhatIfAnalysisData,
 )
 from app.geospatial.protected_areas import INDIAN_MARINE_PROTECTED_AREAS
+from app.providers.provenance import classify_tier, reliability_note
 from app.utils.multilingual import localize_summary_and_recommendation
 
 class ReportAgent(BaseSpecialistAgent):
@@ -483,132 +484,135 @@ class ReportAgent(BaseSpecialistAgent):
         displaced_ocean: Any = None,
         displaced_weather: Any = None
     ) -> List[EvidenceRecord]:
+        """Build the provenance trail from what the providers actually returned.
+
+        Provenance propagates from the observation that produced the value. The
+        agency names here used to be written in by hand -- an Open-Meteo wave
+        height was published as "INCOIS / Open-Meteo" and a demo-mode SST as
+        "INCOIS / MODIS-Aqua" with a note claiming calibration against moored
+        buoys and Jason-3 altimetry, over a value that came from a sine wave.
+        Nothing in this method may name a data source; it may only repeat the
+        one the provider set on the observation. The single exception is a
+        value ORCA computed itself, which is labelled as a computation.
+        """
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         obs_time_str = temporal.start_time.strftime("%Y-%m-%d %H:%M UTC")
         records: List[EvidenceRecord] = []
 
-        is_ocean_demo = ocean and ocean.status == DataFreshness.DEMO
-        is_weather_demo = weather and weather.status == DataFreshness.DEMO
-
-        if spatial_what_if:
-            records.append(EvidenceRecord(
+        def record(
+            observation: Any,
+            dataset: str,
+            variable: str,
+            value: str,
+            unit: str,
+            live_note: str,
+            at: Any = None,
+        ) -> EvidenceRecord:
+            where = at or loc
+            return EvidenceRecord(
                 id=str(uuid.uuid4())[:8],
-                provider="ORCA Geodesic Navigation Engine",
-                dataset="Great Circle Geodesic Transformation",
-                variable="Spatial Displacement Vector",
-                value=f"{spatial_what_if.distance_km:.1f} km {spatial_what_if.direction.capitalize()} (Bearing: {spatial_what_if.bearing_deg:.1f}°)",
-                unit="Distance / Bearing",
-                location=f"{spatial_what_if.origin.name} → {spatial_what_if.displaced.name}",
-                coordinates=f"{spatial_what_if.displaced.latitude:.4f}°N, {spatial_what_if.displaced.longitude:.4f}°E",
+                provider=observation.source,
+                provider_tier=classify_tier(observation.source, observation.status),
+                dataset=dataset,
+                variable=variable,
+                value=value,
+                unit=unit,
+                location=where.name,
+                coordinates=f"{where.latitude:.3f}\u00b0N, {where.longitude:.3f}\u00b0E",
                 observation_or_forecast_time=obs_time_str,
                 retrieval_time=now_str,
-                status=DataFreshness.DEMO,
-                reliability_notes="Great-circle destination geodesic coordinates."
+                status=observation.status,
+                reliability_notes=reliability_note(observation.status, live_note, observation.source),
+            )
+
+        if spatial_what_if:
+            # A derived geometry, not an observation: say who computed it.
+            records.append(EvidenceRecord(
+                id=str(uuid.uuid4())[:8],
+                provider="ORCA geospatial engine (computed)",
+                dataset="Great-circle destination point",
+                variable="Spatial Displacement Vector",
+                value=f"{spatial_what_if.distance_km:.1f} km {spatial_what_if.direction.capitalize()} (Bearing: {spatial_what_if.bearing_deg:.1f}\u00b0)",
+                unit="Distance / Bearing",
+                location=f"{spatial_what_if.origin.name} \u2192 {spatial_what_if.displaced.name}",
+                coordinates=f"{spatial_what_if.displaced.latitude:.4f}\u00b0N, {spatial_what_if.displaced.longitude:.4f}\u00b0E",
+                observation_or_forecast_time=obs_time_str,
+                retrieval_time=now_str,
+                status=ocean.status if ocean else DataFreshness.DEMO,
+                reliability_notes="Computed by ORCA from the origin coordinate, distance and bearing. Not a measurement.",
             ))
 
         if ocean:
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="INCOIS / Open-Meteo" if not is_ocean_demo else "ORCA Synthetic Simulator",
-                dataset="Ocean State Forecast (OSF)",
+            records.append(record(
+                ocean,
+                dataset="Significant Wave Height",
                 variable="Significant Wave Height (SWH)",
                 value=f"{ocean.significant_wave_height_m}",
                 unit="m",
-                location=loc.name,
-                coordinates=f"{loc.latitude:.3f}°N, {loc.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=ocean.status,
-                reliability_notes="Synthetic test simulation data — demo mode." if is_ocean_demo else "Calibrated against moored ocean buoys & Jason-3 altimetry."
+                live_note="Model significant wave height at the requested position.",
             ))
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="INCOIS OSF / Satellite Altimetry" if not is_ocean_demo else "ORCA Synthetic Simulator",
+            records.append(record(
+                ocean,
                 dataset="Ocean Surface Wave Spectrum",
                 variable="Swell Wave Height & Period",
                 value=f"{ocean.swell_height_m} m / {ocean.swell_period_sec} s",
                 unit="m / s",
-                location=loc.name,
-                coordinates=f"{loc.latitude:.3f}°N, {loc.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=ocean.status,
-                reliability_notes="Synthetic test simulation data — demo mode." if is_ocean_demo else "Directional swell spectrum model."
+                live_note="Directional swell component of the wave spectrum.",
             ))
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="INCOIS / MODIS-Aqua" if not is_ocean_demo else "ORCA Synthetic Simulator",
-                dataset="Sea Surface Temperature (SST)",
+            records.append(record(
+                ocean,
+                dataset="Sea Surface Temperature",
                 variable="Sea Surface Temperature",
                 value=f"{ocean.sea_surface_temp_c}",
-                unit="°C",
-                location=loc.name,
-                coordinates=f"{loc.latitude:.3f}°N, {loc.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=ocean.status,
-                reliability_notes="Synthetic test simulation data — demo mode." if is_ocean_demo else "Multi-sensor blended infrared SST."
+                unit="\u00b0C",
+                live_note="Sea surface temperature at the requested position.",
+            ))
+            records.append(record(
+                ocean,
+                dataset="Ocean Surface Currents",
+                variable="Surface Current Speed & Direction",
+                value=f"{ocean.ocean_current_speed_m_s} m/s @ {ocean.ocean_current_direction_deg}\u00b0",
+                unit="m/s",
+                live_note="Surface current vector at the requested position.",
             ))
 
         if weather:
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="IMD / Global Atmospheric Model" if not is_weather_demo else "ORCA Synthetic Simulator",
-                dataset="Coastal Marine Weather Bulletin",
+            records.append(record(
+                weather,
+                dataset="Coastal Marine Weather",
                 variable="Sustained Wind Speed & Gusts",
                 value=f"{weather.wind_speed_knots} kt (Gusts: {weather.wind_gust_knots} kt)",
                 unit="knots",
-                location=loc.name,
-                coordinates=f"{loc.latitude:.3f}°N, {loc.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=weather.status,
-                reliability_notes="Synthetic test simulation data — demo mode." if is_weather_demo else "Numerical weather prediction 10m surface winds."
+                live_note="10 m surface winds from numerical weather prediction.",
             ))
-            if weather.alert_level != "None":
-                records.append(EvidenceRecord(
-                    id=str(uuid.uuid4())[:8],
-                    provider="IMD Cyclone Warning Division" if not is_weather_demo else "ORCA Synthetic Simulator",
-                    dataset="Coastal Hazard Warning Feed",
+            if weather.alert_level and weather.alert_level.lower() not in ("none", ""):
+                records.append(record(
+                    weather,
+                    dataset="Coastal Hazard Warning",
                     variable="Storm Warning Level",
                     value=weather.alert_level.upper(),
                     unit="Advisory Code",
-                    location=loc.name,
-                    coordinates=f"{loc.latitude:.3f}°N, {loc.longitude:.3f}°E",
-                    observation_or_forecast_time=obs_time_str,
-                    retrieval_time=now_str,
-                    status=weather.status,
-                    reliability_notes="Synthetic test alert — demo mode." if is_weather_demo else weather.storm_warning
+                    live_note=weather.storm_warning or "Active coastal warning in effect.",
                 ))
 
         if spatial_what_if and displaced_ocean and displaced_weather:
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="INCOIS / Open-Meteo" if displaced_ocean.status != DataFreshness.DEMO else "ORCA Synthetic Simulator",
-                dataset="Ocean State Forecast (OSF)",
+            records.append(record(
+                displaced_ocean,
+                dataset="Significant Wave Height",
                 variable="Significant Wave Height (Target)",
                 value=f"{displaced_ocean.significant_wave_height_m}",
                 unit="m",
-                location=spatial_what_if.displaced.name,
-                coordinates=f"{spatial_what_if.displaced.latitude:.3f}°N, {spatial_what_if.displaced.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=displaced_ocean.status,
-                reliability_notes="Displaced coordinate forecast telemetry."
+                live_note="Model significant wave height at the displaced position.",
+                at=spatial_what_if.displaced,
             ))
-            records.append(EvidenceRecord(
-                id=str(uuid.uuid4())[:8],
-                provider="IMD / Atmospheric Model" if displaced_weather.status != DataFreshness.DEMO else "ORCA Synthetic Simulator",
-                dataset="Coastal Marine Weather Bulletin",
+            records.append(record(
+                displaced_weather,
+                dataset="Coastal Marine Weather",
                 variable="Sustained Wind Speed (Target)",
                 value=f"{displaced_weather.wind_speed_knots} kt",
                 unit="knots",
-                location=spatial_what_if.displaced.name,
-                coordinates=f"{spatial_what_if.displaced.latitude:.3f}°N, {spatial_what_if.displaced.longitude:.3f}°E",
-                observation_or_forecast_time=obs_time_str,
-                retrieval_time=now_str,
-                status=displaced_weather.status,
-                reliability_notes="Displaced coordinate weather telemetry."
+                live_note="10 m surface winds at the displaced position.",
+                at=spatial_what_if.displaced,
             ))
 
         return records

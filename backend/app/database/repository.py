@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.models import ConversationDB, MessageDB, AnalysisDB
+from app.models.envelope import QueryEnvelope
 from app.models.schemas import OrcaAnalysisResponse
 
 # In-memory fast cache for active sessions, synced with persistent DB
@@ -80,75 +81,50 @@ async def save_analysis_turn(
     db: AsyncSession,
     conversation_id: str,
     query_text: str,
-    response: OrcaAnalysisResponse
+    envelope: "QueryEnvelope"
 ) -> None:
+    """Persist one turn. Stores the public envelope so replayed history and a
+    live answer are the same shape for the frontend."""
     conv = await get_or_create_conversation(db, conversation_id)
     
     # Update title from first query if default
     if conv.title == "Marine Decision Session" and query_text:
         conv.title = query_text[:60] + ("..." if len(query_text) > 60 else "")
 
-    # Retrieve existing state to preserve context across turns
+    # Preserve the structured state the orchestrator has already cached for
+    # this session (route candidates, selected route, displacement); this
+    # function only layers the per-turn summary keys on top. Everything
+    # persisted here is derived from the public envelope.
     existing_ctx = _CONVERSATION_CACHE.get(conversation_id, {})
-    existing_state = existing_ctx.get("state", {})
+    existing_state = dict(existing_ctx.get("state", {}) or {})
     if not existing_state and conv.context_state_json:
         try:
             existing_state = json.loads(conv.context_state_json)
         except Exception:
             existing_state = {}
 
-    # Build new structured state
+    location = envelope.meta.location.model_dump(mode="json")
     new_state = dict(existing_state)
-    new_state["last_intent"] = response.intent.value
-    new_state["last_risk"] = response.risk_assessment.overall_score if response.risk_assessment else None
-    new_state["last_temporal"] = response.temporal.label
-    new_state["time_window"] = response.temporal.model_dump()
-    new_state["last_result_type"] = response.visualization_plan.result_type
+    new_state["last_intent"] = envelope.intent.value
+    new_state["last_risk"] = envelope.risk.score if envelope.risk else None
+    new_state["last_temporal"] = envelope.meta.temporal.label
+    new_state["time_window"] = envelope.meta.temporal.model_dump(mode="json")
+    new_state["last_result_type"] = envelope.intent.value
     new_state["last_query_text"] = query_text
-    new_state["last_executive_summary"] = response.executive_summary
-    if "original_departure_time" not in new_state:
-        new_state["original_departure_time"] = response.temporal.label
-    new_state["current_departure_time"] = response.temporal.label
-    new_state["time_offset"] = response.temporal.offset_hours
-
-    if response.location:
-        new_state["primary_location"] = response.location.model_dump()
-
-    # If route analysis was generated or present, persist structured route context
-    if response.route_analysis:
-        ra = response.route_analysis
-        new_state["origin"] = ra.origin.model_dump()
-        new_state["destination"] = ra.destination.model_dump()
-        new_state["route_analysis"] = ra.model_dump()
-        new_state["selected_route_id"] = ra.selected_route_id
-        if "original_route_analysis" not in new_state:
-            new_state["original_route_analysis"] = ra.model_dump()
-        if ra.candidate_routes:
-            new_state["candidate_routes"] = [c.model_dump() for c in ra.candidate_routes]
-            # Track recommended vs alternatives
-            recs = [c.model_dump() for c in ra.candidate_routes if c.is_recommended]
-            alts = [c.model_dump() for c in ra.candidate_routes if not c.is_recommended]
-            if recs:
-                new_state["recommended_route"] = recs[0]
-            if alts:
-                new_state["alternative_routes"] = alts
-            sel_cand = next((c.model_dump() for c in ra.candidate_routes if c.id == ra.selected_route_id), None)
-            if sel_cand:
-                new_state["selected_route"] = sel_cand
-
-    if response.route_comparison:
-        new_state["route_comparison"] = response.route_comparison.model_dump()
-
-    if response.spatial_what_if:
-        new_state["spatial_what_if"] = response.spatial_what_if.model_dump()
+    new_state["last_executive_summary"] = envelope.answer.narrative
+    new_state["preferred_language"] = envelope.language
+    new_state.setdefault("original_departure_time", envelope.meta.temporal.label)
+    new_state["current_departure_time"] = envelope.meta.temporal.label
+    new_state["time_offset"] = envelope.meta.temporal.offset_hours
+    new_state["primary_location"] = location
 
     # Update DB fields
-    conv.last_location_json = json.dumps(response.location.model_dump())
-    conv.context_state_json = json.dumps(new_state)
+    conv.last_location_json = json.dumps(location)
+    conv.context_state_json = json.dumps(new_state, default=str)
 
     # Sync cache
     updated_ctx = {
-        "last_location": response.location.model_dump(),
+        "last_location": location,
         "state": new_state
     }
     for key in [
@@ -190,20 +166,20 @@ async def save_analysis_turn(
         id=str(uuid.uuid4()),
         conversation_id=conversation_id,
         role="assistant",
-        content=response.executive_summary
+        content=envelope.answer.narrative
     )
     db.add(assistant_msg)
 
     # Save Analysis DB record
     analysis_db = AnalysisDB(
-        id=response.query_id,
+        id=envelope.request_id,
         conversation_id=conversation_id,
         query_text=query_text,
-        intent=response.intent.value,
-        result_type=response.visualization_plan.result_type,
-        summary=response.executive_summary,
-        risk_score=response.risk_assessment.overall_score if response.risk_assessment else None,
-        response_json=response.model_dump_json()
+        intent=envelope.intent.value,
+        result_type=envelope.intent.value,
+        summary=envelope.answer.headline,
+        risk_score=envelope.risk.score if envelope.risk else None,
+        response_json=envelope.model_dump_json()
     )
     db.add(analysis_db)
 

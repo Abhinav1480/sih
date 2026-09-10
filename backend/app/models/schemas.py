@@ -19,6 +19,22 @@ class DataFreshness(str, Enum):
     DEMO = "DEMO"
     UNAVAILABLE = "UNAVAILABLE"
 
+class ProviderTier(str, Enum):
+    """Provenance tier of the source that produced a value.
+
+    ISRO      — an Indian Space Research Organisation / NRSC feed
+                (Bhuvan, MOSDAC, Bhoonidhi, Oceansat, SCATSAT, SARAL, INSAT).
+    NATIONAL  — another Indian national authority (INCOIS, IMD, MoEFCC).
+    FALLBACK  — anything else, including foreign models (Open-Meteo,
+                Copernicus) and ORCA's own deterministic demo model.
+
+    A synthetic value is never promoted above FALLBACK; its syntheticity is
+    carried separately by DataFreshness.DEMO.
+    """
+    ISRO = "ISRO"
+    NATIONAL = "NATIONAL"
+    FALLBACK = "FALLBACK"
+
 
 class DataQuality(str, Enum):
     HIGH = "HIGH"
@@ -134,6 +150,8 @@ class PotentialFishingZone(BaseModel):
     wind_speed_knots: float
     advisory_status: str = "Favorable"
     valid_until: datetime
+    source: str = "ORCA Deterministic Demo Model"
+    status: DataFreshness = DataFreshness.DEMO
 
 
 class RouteWaypoint(BaseModel):
@@ -224,6 +242,7 @@ class DeterministicRiskResult(BaseModel):
 class EvidenceRecord(BaseModel):
     id: str
     provider: str
+    provider_tier: ProviderTier = ProviderTier.FALLBACK
     dataset: str
     variable: str
     value: str

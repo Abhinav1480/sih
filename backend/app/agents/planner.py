@@ -3,11 +3,13 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone, timedelta
 from app.models.schemas import (
     QueryIntent,
+    Coordinates,
     LocationContext,
     TemporalContext,
     ConstraintModel,
 )
-from app.geospatial.boundaries import resolve_location, INDIAN_COASTAL_NODES
+from app.agents.intent import classify_intent
+from app.geospatial.boundaries import resolve_location, location_from_coordinates, INDIAN_COASTAL_NODES
 from app.geospatial.calculations import destination_point
 from app.utils.temporal import parse_temporal_context
 from app.utils.multilingual import detect_language, LANGUAGE_CODES
@@ -25,7 +27,8 @@ class OrcaPlanner:
         self,
         query_text: str,
         conversation_context: Optional[Dict[str, Any]] = None,
-        preferred_language: Optional[str] = None
+        preferred_language: Optional[str] = None,
+        user_location: Optional[Coordinates] = None,
     ) -> Dict[str, Any]:
         text = query_text.lower().strip()
         detected = detect_language(query_text)
@@ -38,7 +41,11 @@ class OrcaPlanner:
         else:
             lang = "en"
 
-        # 1. Resolve Conversational References (Routes, Relative Time Shifts, Locations)
+        # 1. Score every intent once. The scored classifier is the only place
+        #    keyword logic lives; see app/agents/intent.py.
+        scored_intent, intent_scores = classify_intent(text)
+
+        # 2. Resolve Conversational References (Routes, Relative Time Shifts, Locations)
         route_ref = ConversationalReferenceResolver.resolve_route_reference(query_text, conversation_context)
         time_shift = ConversationalReferenceResolver.resolve_temporal_shift(query_text, conversation_context)
         loc_from_ref = ConversationalReferenceResolver.resolve_location_reference(query_text, conversation_context)
@@ -57,13 +64,23 @@ class OrcaPlanner:
         selected_route_id: Optional[str] = None
         is_route_follow_up: bool = False
 
-        # Prior location fallback
+        # Spatial fallback when the text names no place. The conversation's last
+        # location wins so "what about tomorrow?" stays where the user was
+        # looking; the device position wins when the user says "my area" or
+        # "near me", and is the only fallback on a fresh conversation. If none
+        # of these exist the planner asks rather than assuming a port.
         prev_loc = None
         if conversation_context and "last_location" in conversation_context:
             try:
                 prev_loc = LocationContext(**conversation_context["last_location"])
             except Exception:
                 pass
+        gps_loc = None
+        if user_location is not None:
+            gps_loc = location_from_coordinates(user_location.latitude, user_location.longitude, label="Your position")
+        fallback_loc = prev_loc or gps_loc
+        if gps_loc is not None and re.search(r"\b(?:my (?:location|area|position|spot)|near me|around me|where i am|here)\b", text):
+            fallback_loc = gps_loc
 
         if route_ref is not None:
             # CASE A: User is explicitly following up or comparing route candidates
@@ -95,7 +112,7 @@ class OrcaPlanner:
 
         else:
             # CASE C: Standard Intent Classification
-            intent = self._classify_intent(text)
+            intent = scored_intent
 
             if intent == QueryIntent.ROUTE_ANALYSIS:
                 origin_location, destination_location = self._extract_route_endpoints(query_text)
@@ -110,6 +127,11 @@ class OrcaPlanner:
                     origin_location = origin_location or orig_ctx
                     destination_location = destination_location or dest_ctx
                     is_route_follow_up = True
+
+                # A vessel leaves from where it is. Only the destination is
+                # unknowable from the device position.
+                if origin_location is None:
+                    origin_location = fallback_loc
 
                 missing = []
                 if origin_location is None:
@@ -132,7 +154,7 @@ class OrcaPlanner:
 
             elif intent == QueryIntent.SPATIAL_WHAT_IF:
                 origin_location, displaced_location, dist_km, direction, bearing = self._extract_displacement_params(
-                    query_text, text, prev_loc
+                    query_text, text, fallback_loc
                 )
                 if origin_location is None:
                     needs_clarification = True
@@ -152,7 +174,7 @@ class OrcaPlanner:
                 if loc_from_ref is not None:
                     location = loc_from_ref
                 else:
-                    location = resolve_location(query_text, default_fallback=prev_loc)
+                    location = resolve_location(query_text, default_fallback=fallback_loc)
 
                 if location is None:
                     needs_clarification = True
@@ -228,6 +250,7 @@ class OrcaPlanner:
             "shift_delta_hours": shift_delta_hours,
             "constraints": constraints,
             "required_agents": required_agents,
+            "intent_scores": {i.value: v for i, v in intent_scores.items() if v > 0},
             "needs_clarification": needs_clarification,
             "can_execute": not needs_clarification,
             "sub_intents": [intent.value],
@@ -242,57 +265,7 @@ class OrcaPlanner:
         }
 
     def _classify_intent(self, text: str) -> QueryIntent:
-        # 1. Spatial What-If / Displacement (High specificity)
-        if self._is_spatial_what_if_query(text):
-            return QueryIntent.SPATIAL_WHAT_IF
-        # 1. Route Optimization & Vessel Transit Passage
-        if any(w in text for w in ["route", "passage", "transit", "navigation corridor", "sail from", "voyage"]):
-            return QueryIntent.ROUTE_ANALYSIS
-        if "from" in text and "to" in text and any(w in text for w in ["avoiding", "risk", "lower-risk", "safe", "cross", "travel", "navigate", "reach"]):
-            return QueryIntent.ROUTE_ANALYSIS
-
-        # 2. Potential Fishing Zones & Fishing Search (High specificity)
-        if any(w in text for w in [
-            "fishing location", "fishing area", "fishing zone", "best fishing",
-            "top fishing", "top 3 fishing", "find fishing", "where to fish", "pfz",
-            "potential fishing zone", "chlorophyll", "trawling hotspot"
-        ]):
-            return QueryIntent.FISHING_ZONES
-
-        # 3. Regional Comparison (explicit comparison between two places)
-        comp_keywords = ["compare", "difference between", "versus", "vs", "better conditions"]
-        if any(w in text for w in comp_keywords) or (re.search(r"\bbetween\b.+\band\b", text) and any(w in text for w in ["lower wave", "higher", "better", "wind", "sst", "swell"])):
-            return QueryIntent.REGIONAL_COMPARISON
-
-        # 4. Historical Trend or Change Detection
-        if any(w in text for w in ["changed", "over the last", "historical", "past week", "yesterday vs", "trend", "anomaly", "warmed over the past", "decreased near", "past 7 days", "past 24 hours"]):
-            return QueryIntent.HISTORICAL_TREND
-
-        # 5. Geofence / Restriction / Marine Sanctuary
-        if any(w in text for w in ["protected area", "restricted area", "sanctuary", "marine national park", "wildlife sanctuary", "no-take zone", "enters a restricted", "flagged as restricted", "permitted for commercial"]):
-            return QueryIntent.GEOFENCE_RESTRICTION
-
-        # 6. Marine Safety (explicit safety/risk/advisory questions)
-        if any(w in text for w in ["is it safe", "safe", "safety", "danger", "risk", "can i go", "warning", "hazard", "advisable"]):
-            return QueryIntent.MARINE_SAFETY
-
-        # 7. General Fishing queries
-        if any(w in text for w in ["fishing", "fish catch", "tuna", "catch"]):
-            return QueryIntent.FISHING_ZONES
-
-        # 8. Ocean Conditions
-        if any(w in text for w in ["wave", "swell", "sea state", "currents", "tide", "sst"]):
-            return QueryIntent.OCEAN_CONDITIONS
-
-        # 9. Weather Forecast
-        if any(w in text for w in ["weather", "rain", "precipitation", "cyclone", "storm", "wind", "lightning"]):
-            return QueryIntent.WEATHER_FORECAST
-
-        # 10. Explainability
-        if any(w in text for w in ["why", "reason", "explain why", "how did you", "reject"]):
-            return QueryIntent.EXPLAINABILITY
-
-        return QueryIntent.MARINE_SAFETY
+        return classify_intent(text)[0]
 
     def _extract_route_endpoints(self, query_text: str) -> tuple[Optional[LocationContext], Optional[LocationContext]]:
         """Extracts origin and destination locations for vessel passage routes."""
@@ -376,46 +349,6 @@ class OrcaPlanner:
             max_wave_height_m=max_wave,
             min_chlorophyll_mg_m3=min_chloro
         )
-
-    def _is_spatial_what_if_query(self, text: str) -> bool:
-        """Identifies spatial what-if, displacement, and directional movement comparison queries."""
-        # 1. Explicit displacement distance + direction
-        has_dist_dir = bool(re.search(
-            r"(\d+(?:\.\d+)?)\s*(?:km|nautical\s*miles|nm|kilo\s*meters?)\s*(?:farther\s+|due\s+)?(north|south|east|west|northeast|north-east|northwest|north-west|southeast|south-east|southwest|south-west|offshore|inshore|closer\s+to\s+shore|toward\s+(?:the\s+)?coast|towards\s+shore)",
-            text
-        ))
-        if has_dist_dir:
-            return True
-
-        # 2. Distance followed by direction and location (e.g. "25 km north of Kakinada")
-        if re.search(r"(\d+(?:\.\d+)?)\s*(?:km|nm)\s+(?:north|south|east|west|offshore)", text):
-            return True
-
-        # 3. Concepts of movement with distance or direction
-        movement_verbs = ["move", "moving", "travel", "traveling", "travelling", "shift", "shifting", "relocate", "head", "heading", "sail", "sailing"]
-        has_movement = any(re.search(rf"\b{v}\b", text) for v in movement_verbs)
-        
-        has_dist = bool(re.search(r"(\d+(?:\.\d+)?)\s*(?:km|nautical\s*miles|nm|kilo\s*meters?)", text))
-        has_dir = any(d in text for d in ["north", "south", "east", "west", "offshore", "inshore", "closer to shore", "toward the coast", "farther out"])
-
-        if has_movement and (has_dist or has_dir):
-            return True
-
-        # 4. What-if phrases
-        what_if_phrases = [
-            "what changes if", "what happens if i", "which marine conditions are likely to change",
-            "which conditions change", "what happens to wave and wind conditions",
-            "compare current position with a displaced", "what happens 25 km",
-            "which conditions improve"
-        ]
-        if any(p in text for p in what_if_phrases) and (has_dist or has_dir or has_movement):
-            return True
-
-        # 5. "Compare <place> and 20 km east of <place>"
-        if "compare" in text and has_dist and has_dir:
-            return True
-
-        return False
 
     def _calculate_seaward_bearing(self, origin_loc: LocationContext) -> float:
         """Determines seaward bearing based on Indian coastline orientation."""
