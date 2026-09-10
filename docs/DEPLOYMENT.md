@@ -142,6 +142,40 @@ docker compose up --build
 
 ---
 
+## 4b. CI and branch protection
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+| Job | What it runs |
+| --- | --- |
+| `pytest` | the full suite, then `pytest -m honesty` and `pytest -m honesty_proof` |
+| `build and typecheck` | `npm run check:honesty`, its proofs, `npx tsc --noEmit`, `npm run build` |
+| `no AI attribution in git history` | fails on an AI co-author trailer, a "generated with" line, or an assistant named as author or committer |
+
+**Branch protection is not enabled, and requires a repository admin.** The
+account used to set up CI has push access but not admin, so the API returns 404
+on the protection endpoint. Until an admin turns it on, CI reports on `main`
+but cannot block a merge to it.
+
+An admin enables it at **Settings -> Branches -> Add branch ruleset** (or
+`Add rule` on the classic UI) for `main`, with *Require status checks to pass*
+ticked and these three checks selected, named exactly as the jobs above:
+
+```
+pytest
+build and typecheck
+no AI attribution in git history
+```
+
+Tick *Require branches to be up to date before merging* as well, so a check
+cannot pass against a stale base. Equivalent one-liner for an admin:
+
+```bash
+gh api -X PUT repos/Abhinav1480/sih/branches/main/protection   -f 'required_status_checks[strict]=true'   -f 'required_status_checks[contexts][]=pytest'   -f 'required_status_checks[contexts][]=build and typecheck'   -f 'required_status_checks[contexts][]=no AI attribution in git history'   -F 'enforce_admins=false' -F 'required_pull_request_reviews=null'   -F 'restrictions=null'
+```
+
+---
+
 ## 5. Post-deploy checklist
 1. `curl https://<backend>.onrender.com/health/deep` -> 200. Use `/health/deep`
    here, not `/health`: `/health` answers 200 even when the database is down, so
