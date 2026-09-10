@@ -136,7 +136,19 @@ async def test_regression_5_historical_trend():
     assert res.needs_clarification is False
     assert res.visualization_plan.result_type == "historical_trend"
     assert res.historical_trend is not None
-    assert len(res.historical_trend.points) >= 3
+
+    # Two observations exist for a trend: the orchestrator fetches
+    # offset_hours=-24 and the current hour. This assertion used to require
+    # >= 3 points, which was only ever satisfied because three of the five
+    # emitted points were straight-line interpolation between the two real
+    # ones, labelled T-18h / T-12h / T-6h and rendered as a time series.
+    # Asserting on a count that only invented data could reach is how the
+    # defect survived a passing suite.
+    assert len(res.historical_trend.points) == 2
+    assert [p.timestamp for p in res.historical_trend.points] == ["T - 24h", "Current"]
+
+    # Note for a later phase: the query asks for 7 days and this is a 24-hour
+    # lookback. The period label and the fetch window still disagree.
 
 @pytest.mark.asyncio
 async def test_regression_6_multilingual_telugu():

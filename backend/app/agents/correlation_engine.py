@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Optional
+from app.risk.engine import calculate_marine_risk
 from app.models.schemas import (
     RegionalComparisonData,
     ComparisonMetric,
@@ -460,34 +461,43 @@ class CorrelationEngine:
         past_weather: WeatherObservation,
         period_label: str = "Last 24 Hours"
     ) -> HistoricalTrendData:
-        points: List[TimeSeriesPoint] = []
-        labels = ["T - 24h", "T - 18h", "T - 12h", "T - 6h", "Current"]
-        
+        # Two observations exist: the orchestrator fetches offset_hours=-24 and
+        # the current hour. Nothing else was ever queried from any provider.
+        #
+        # This used to emit five points. Three of them -- T-18h, T-12h, T-6h --
+        # were straight-line interpolation between the two real ones, labelled
+        # with timestamps at which no provider was ever asked anything, and
+        # rendered by the frontend as a time series.
+        #
+        # Each point also carried a score from a second risk formula,
+        # int(min(100, max(10, wave*20 + wind*1.5))), which disagreed with
+        # app/risk/engine.py -- the file CLAUDE.md designates as the single
+        # source of risk -- by up to 55 points for the same location and
+        # instant, inside the same HTTP response.
+        #
+        # Now: only the two points that are observations, each scored by the
+        # deterministic engine.
         w_start = past_ocean.significant_wave_height_m
         w_end = current_ocean.significant_wave_height_m
         wind_start = past_weather.wind_speed_knots
         wind_end = current_weather.wind_speed_knots
 
-        for i, lbl in enumerate(labels):
-            fraction = i / 4.0
-            interp_wave = round(w_start + (w_end - w_start) * fraction, 2)
-            interp_wind = round(wind_start + (wind_end - wind_start) * fraction, 1)
-            if past_ocean.sea_surface_temp_c is None or current_ocean.sea_surface_temp_c is None:
-                interp_sst = None
-            else:
-                interp_sst = round(
-                    past_ocean.sea_surface_temp_c
-                    + (current_ocean.sea_surface_temp_c - past_ocean.sea_surface_temp_c) * fraction,
-                    1,
-                )
-            score = int(min(100, max(10, interp_wave * 20 + interp_wind * 1.5)))
-            points.append(TimeSeriesPoint(
-                timestamp=lbl,
-                wave_height_m=interp_wave,
-                wind_knots=interp_wind,
-                sst_c=interp_sst,
-                risk_score=score
-            ))
+        points: List[TimeSeriesPoint] = [
+            TimeSeriesPoint(
+                timestamp="T - 24h",
+                wave_height_m=round(w_start, 2),
+                wind_knots=round(wind_start, 1),
+                sst_c=past_ocean.sea_surface_temp_c,
+                risk_score=calculate_marine_risk(past_ocean, past_weather).overall_score,
+            ),
+            TimeSeriesPoint(
+                timestamp="Current",
+                wave_height_m=round(w_end, 2),
+                wind_knots=round(wind_end, 1),
+                sst_c=current_ocean.sea_surface_temp_c,
+                risk_score=calculate_marine_risk(current_ocean, current_weather).overall_score,
+            ),
+        ]
 
         wave_delta = round(w_end - w_start, 2)
         wind_delta = round(wind_end - wind_start, 1)
@@ -500,8 +510,17 @@ class CorrelationEngine:
             direction = "strengthened" if wind_delta > 0 else "weakened"
             change_reasons.append(f"Coastal surface wind speeds {direction} by {abs(wind_delta):.1f} knots.")
 
+        # At wave_delta == 0 the old ternary fell to the "increased" arm, so an
+        # unchanged 1.62m -> 1.62m reported "experienced increased wave
+        # roughness".
+        if wave_delta > 0:
+            movement = "experienced increased wave roughness"
+        elif wave_delta < 0:
+            movement = "moderated favorably"
+        else:
+            movement = "seen no measurable change in wave height"
         summary = (
-            f"Conditions near {location.name} have {'moderated favorably' if wave_delta < 0 else 'experienced increased wave roughness'} "
+            f"Conditions near {location.name} have {movement} "
             f"over the {period_label.lower()} ({w_start}m → {w_end}m SWH)."
         )
 
