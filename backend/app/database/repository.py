@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.models import ConversationDB, MessageDB, AnalysisDB
+from app.models.envelope import QueryEnvelope
 from app.models.schemas import OrcaAnalysisResponse
 
 async def get_or_create_conversation(db: AsyncSession, conversation_id: str) -> ConversationDB:
@@ -40,8 +41,10 @@ async def save_analysis_turn(
     db: AsyncSession,
     conversation_id: str,
     query_text: str,
-    response: OrcaAnalysisResponse
+    envelope: "QueryEnvelope"
 ) -> None:
+    """Persist one turn. Stores the public envelope so replayed history and a
+    live answer are the same shape for the frontend."""
     conv = await get_or_create_conversation(db, conversation_id)
     
     # Update title from first query if default
@@ -49,11 +52,11 @@ async def save_analysis_turn(
         conv.title = query_text[:60] + ("..." if len(query_text) > 60 else "")
 
     # Update context
-    conv.last_location_json = json.dumps(response.location.model_dump())
+    conv.last_location_json = json.dumps(envelope.meta.location.model_dump(mode="json"))
     state = {
-        "last_intent": response.intent.value,
-        "last_risk": response.risk_assessment.overall_score if response.risk_assessment else None,
-        "last_temporal": response.temporal.label
+        "last_intent": envelope.intent.value,
+        "last_risk": envelope.risk.score if envelope.risk else None,
+        "last_temporal": envelope.meta.temporal.label
     }
     conv.context_state_json = json.dumps(state)
 
@@ -71,20 +74,20 @@ async def save_analysis_turn(
         id=str(uuid.uuid4()),
         conversation_id=conversation_id,
         role="assistant",
-        content=response.executive_summary
+        content=envelope.answer.narrative
     )
     db.add(assistant_msg)
 
     # Save Analysis DB record
     analysis_db = AnalysisDB(
-        id=response.query_id,
+        id=envelope.request_id,
         conversation_id=conversation_id,
         query_text=query_text,
-        intent=response.intent.value,
-        result_type=response.visualization_plan.result_type,
-        summary=response.executive_summary,
-        risk_score=response.risk_assessment.overall_score if response.risk_assessment else None,
-        response_json=response.model_dump_json()
+        intent=envelope.intent.value,
+        result_type=envelope.intent.value,
+        summary=envelope.answer.headline,
+        risk_score=envelope.risk.score if envelope.risk else None,
+        response_json=envelope.model_dump_json()
     )
     db.add(analysis_db)
 
