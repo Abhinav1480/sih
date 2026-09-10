@@ -52,6 +52,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Personal assistant memory, never part of the product
+memory/
+
 # IDE
 .vscode/
 .idea/
