@@ -9,135 +9,115 @@ interface ConditionsGridProps {
   weather?: WeatherObservation;
 }
 
+interface Metric {
+  label: string;
+  value: string;
+  unit?: string;
+  sub?: string;
+  icon: React.ElementType;
+  accent?: string;
+}
+
 export const ConditionsGrid: React.FC<ConditionsGridProps> = ({ ocean, weather }) => {
+  const metrics: Metric[] = [];
+
+  if (ocean) {
+    metrics.push({
+      label: "Wave",
+      value: `${ocean.significant_wave_height_m}`,
+      unit: "m",
+      sub: ocean.sea_state,
+      icon: Waves,
+      accent: "text-orca-cyan",
+    });
+  }
+  if (weather) {
+    metrics.push({
+      label: "Wind",
+      value: `${weather.wind_speed_knots}`,
+      unit: "kt",
+      sub: `Gusts ${weather.wind_gust_knots} · ${weather.wind_direction_deg}°`,
+      icon: Wind,
+      accent: "text-sky-400",
+    });
+  }
+  if (ocean) {
+    metrics.push({
+      label: "Swell",
+      value: `${ocean.swell_height_m}`,
+      unit: "m",
+      sub: `T ${ocean.swell_period_sec}s · ${ocean.swell_direction_deg}°`,
+      icon: Compass,
+      accent: "text-teal-400",
+    });
+    metrics.push({
+      label: "SST",
+      value: `${ocean.sea_surface_temp_c}`,
+      unit: "°C",
+      sub: `Current ${ocean.ocean_current_speed_m_s} m/s`,
+      icon: Thermometer,
+      accent: "text-amber-400",
+    });
+  }
+  if (weather) {
+    metrics.push({
+      label: "Visibility",
+      value: `${weather.visibility_km}`,
+      unit: "km",
+      sub: `Rain ${weather.precipitation_mm} mm/h`,
+      icon: Eye,
+      accent: "text-slate-300",
+    });
+  }
+
+  const alertLevel = weather?.alert_level;
+  const alertColor =
+    alertLevel === "Orange" || alertLevel === "Red"
+      ? "text-rose-400"
+      : alertLevel === "Yellow"
+      ? "text-amber-400"
+      : "text-emerald-400";
+
+  if (metrics.length === 0) return null;
+
   return (
-    <div className="space-y-2">
-      <div className="text-[11px] uppercase tracking-wider text-orca-muted font-bold">
-        Key Environmental Conditions
-      </div>
+    <section className="space-y-3">
+      <h3 className="text-[13px] font-semibold text-slate-200">Conditions</h3>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        {/* Wave Height */}
-        {ocean && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>Wave Height</span>
-              <Waves className="w-3.5 h-3.5 text-orca-cyan" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+        {metrics.map((m) => {
+          const Icon = m.icon;
+          return (
+            <div key={m.label} className="min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-orca-dim font-semibold mb-1">
+                <Icon className={`w-3 h-3 ${m.accent}`} />
+                <span>{m.label}</span>
+              </div>
+              <div className="leading-none">
+                <span className="font-display text-[22px] font-bold text-white">{m.value}</span>
+                {m.unit && <span className="text-xs text-orca-muted ml-1">{m.unit}</span>}
+              </div>
+              {m.sub && <div className="text-[10.5px] text-orca-dim font-mono truncate mt-1">{m.sub}</div>}
             </div>
-            <div className="my-1">
-              <span className="font-display text-xl font-bold text-white">
-                {ocean.significant_wave_height_m}
-              </span>
-              <span className="text-xs text-orca-muted ml-1">m (SWH)</span>
-            </div>
-            <div className="text-[10px] text-orca-teal font-medium">
-              Sea: {ocean.sea_state}
-            </div>
-          </div>
-        )}
+          );
+        })}
 
-        {/* Swell State */}
-        {ocean && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>Swell Surge</span>
-              <Compass className="w-3.5 h-3.5 text-orca-teal" />
-            </div>
-            <div className="my-1">
-              <span className="font-display text-xl font-bold text-white">
-                {ocean.swell_height_m}
-              </span>
-              <span className="text-xs text-orca-muted ml-1">m</span>
-            </div>
-            <div className="text-[10px] text-orca-muted">
-              Period: {ocean.swell_period_sec}s · Dir: {ocean.swell_direction_deg}°
-            </div>
-          </div>
-        )}
-
-        {/* Sea Surface Temperature */}
-        {ocean && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>SST Surface</span>
-              <Thermometer className="w-3.5 h-3.5 text-orca-amber" />
-            </div>
-            <div className="my-1">
-              <span className="font-display text-xl font-bold text-white">
-                {ocean.sea_surface_temp_c}
-              </span>
-              <span className="text-xs text-orca-muted ml-1">°C</span>
-            </div>
-            <div className="text-[10px] text-emerald-400">
-              Current: {ocean.ocean_current_speed_m_s} m/s
-            </div>
-          </div>
-        )}
-
-        {/* Wind Speed */}
+        {/* IMD advisory */}
         {weather && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>Surface Wind</span>
-              <Wind className="w-3.5 h-3.5 text-orca-blue" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-orca-dim font-semibold mb-1">
+              <AlertOctagon className={`w-3 h-3 ${alertColor}`} />
+              <span>IMD</span>
             </div>
-            <div className="my-1">
-              <span className="font-display text-xl font-bold text-white">
-                {weather.wind_speed_knots}
-              </span>
-              <span className="text-xs text-orca-muted ml-1">knots</span>
+            <div className={`font-display text-[18px] font-bold ${alertColor} leading-none`}>
+              {(alertLevel || "Green").toUpperCase()}
             </div>
-            <div className="text-[10px] text-orca-muted">
-              Gusts: {weather.wind_gust_knots} kt ({weather.wind_direction_deg}°)
-            </div>
-          </div>
-        )}
-
-        {/* Visibility & Rain */}
-        {weather && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>Visibility</span>
-              <Eye className="w-3.5 h-3.5 text-slate-400" />
-            </div>
-            <div className="my-1">
-              <span className="font-display text-xl font-bold text-white">
-                {weather.visibility_km}
-              </span>
-              <span className="text-xs text-orca-muted ml-1">km</span>
-            </div>
-            <div className="text-[10px] text-orca-muted">
-              Precip: {weather.precipitation_mm} mm
-            </div>
-          </div>
-        )}
-
-        {/* Coastal Warning Alert */}
-        {weather && (
-          <div className="bg-orca-card border border-orca-border p-3 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-orca-muted text-[11px]">
-              <span>IMD Warning</span>
-              <AlertOctagon className="w-3.5 h-3.5 text-orca-amber" />
-            </div>
-            <div className="my-1">
-              <span
-                className={`font-display text-lg font-bold ${
-                  weather.alert_level === "Orange" || weather.alert_level === "Red"
-                    ? "text-rose-400"
-                    : weather.alert_level === "Yellow"
-                    ? "text-amber-400"
-                    : "text-emerald-400"
-                }`}
-              >
-                {weather.alert_level.toUpperCase()}
-              </span>
-            </div>
-            <div className="text-[10px] text-orca-muted truncate">
-              {weather.storm_warning || "No severe weather alert"}
+            <div className="text-[10.5px] text-orca-dim truncate mt-1">
+              {weather.storm_warning || "No active warning"}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 };

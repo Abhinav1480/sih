@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.schemas import TemporalContext
 
 def parse_temporal_context(query_text: str) -> TemporalContext:
@@ -8,7 +8,7 @@ def parse_temporal_context(query_text: str) -> TemporalContext:
     Distinguishes live observation, forward forecast, and historical analysis.
     """
     text = query_text.lower()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 1. Historical checks
     if any(k in text for k in ["yesterday", "last 24 hours", "24 hours ago", "past 24 hours", "previous day"]):

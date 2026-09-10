@@ -5,7 +5,7 @@ from app.geospatial.calculations import haversine_distance
 
 INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
     "visakhapatnam": {
-        "aliases": ["visakhapatnam", "vizag", "waltair", "visakha", "vizag port"],
+        "aliases": ["visakhapatnam", "vizag", "waltair", "visakha", "vizag port", "విశాఖపట్నం", "विशाखापत्तनम", "விசாகப்பட்டினம்"],
         "name": "Visakhapatnam",
         "latitude": 17.6868,
         "longitude": 83.2185,
@@ -14,7 +14,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Central Bay of Bengal",
     },
     "kakinada": {
-        "aliases": ["kakinada", "cocanada", "coringa", "hope island", "kakinada port"],
+        "aliases": ["kakinada", "cocanada", "coringa", "hope island", "kakinada port", "కాకినాడ", "काकीनाडा", "காக்கிநாடா"],
         "name": "Kakinada",
         "latitude": 16.9891,
         "longitude": 82.2475,
@@ -23,7 +23,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Central Bay of Bengal (Godavari Coast)",
     },
     "chennai": {
-        "aliases": ["chennai", "madras", "ennore", "royapuram", "chennai port"],
+        "aliases": ["chennai", "madras", "ennore", "royapuram", "chennai port", "చెన్నై", "चेन्नई", "சென்னை"],
         "name": "Chennai",
         "latitude": 13.0827,
         "longitude": 80.2707,
@@ -32,7 +32,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "South Bay of Bengal (Coromandel Coast)",
     },
     "paradeep": {
-        "aliases": ["paradeep", "paradip", "jagatsinghpur", "paradip port"],
+        "aliases": ["paradeep", "paradip", "jagatsinghpur", "paradip port", "odisha", "orissa", "gahirmatha", "पारदीप", "पारादीप", "ओडिशा", "ఒడిశా", "பாரதீப்", "ஒடிசா"],
         "name": "Paradip",
         "latitude": 20.2644,
         "longitude": 86.6667,
@@ -41,7 +41,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "North-West Bay of Bengal",
     },
     "mumbai": {
-        "aliases": ["mumbai", "bombay", "jnpt", "nhava sheva", "sasoon dock", "mumbai port"],
+        "aliases": ["mumbai", "bombay", "jnpt", "nhava sheva", "sasoon dock", "mumbai port", "ముంబై", "मुंबई", "மும்பை"],
         "name": "Mumbai",
         "latitude": 18.9438,
         "longitude": 72.8354,
@@ -50,7 +50,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "North-East Arabian Sea (Konkan Coast)",
     },
     "kochi": {
-        "aliases": ["kochi", "cochin", "ernakulam", "mattancherry", "cochin port"],
+        "aliases": ["kochi", "cochin", "ernakulam", "mattancherry", "cochin port", "కొచ్చి", "कोच्चि", "கொச்சி", "കൊച്ചി"],
         "name": "Kochi",
         "latitude": 9.9312,
         "longitude": 76.2673,
@@ -59,7 +59,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "South-East Arabian Sea (Malabar Coast)",
     },
     "mangalore": {
-        "aliases": ["mangalore", "mangaluru", "new mangalore", "panambur"],
+        "aliases": ["mangalore", "mangaluru", "new mangalore", "panambur", "మంగళూరు", "मंगलुरु", "மங்களூரு"],
         "name": "Mangalore",
         "latitude": 12.9141,
         "longitude": 74.8560,
@@ -68,7 +68,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "East Arabian Sea (Canara Coast)",
     },
     "tuticorin": {
-        "aliases": ["tuticorin", "thoothukudi", "thoothukudi port", "v.o. chidambaranar"],
+        "aliases": ["tuticorin", "thoothukudi", "thoothukudi port", "v.o. chidambaranar", "தூத்துக்குடி", "तूத்துக்குடி", "తూత్తుకుడి"],
         "name": "Thoothukudi (Tuticorin)",
         "latitude": 8.7642,
         "longitude": 78.1348,
@@ -77,7 +77,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Gulf of Mannar",
     },
     "porbandar": {
-        "aliases": ["porbandar", "porbandar port", "saurashtra coast"],
+        "aliases": ["porbandar", "porbandar port", "saurashtra coast", "पोरबंदर", "போர்பந்தர்", "పోర్‌బందర్", "પોરબંદર"],
         "name": "Porbandar",
         "latitude": 21.6417,
         "longitude": 69.6293,
@@ -95,7 +95,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Andaman Sea",
     },
     "machilipatnam": {
-        "aliases": ["machilipatnam", "bandar", "krishna district coast"],
+        "aliases": ["machilipatnam", "bandar", "krishna district coast", "మచిలీపట్నం", "मछलीपट्टनम"],
         "name": "Machilipatnam",
         "latitude": 16.1875,
         "longitude": 81.1389,
@@ -104,7 +104,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Krishna-Godavari Basin",
     },
     "goa": {
-        "aliases": ["goa", "mormugao", "panaji", "vasco da gama"],
+        "aliases": ["goa", "mormugao", "panaji", "vasco da gama", "गोवा"],
         "name": "Goa (Mormugao)",
         "latitude": 15.4056,
         "longitude": 73.8014,
@@ -113,7 +113,7 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "maritime_zone": "Central Arabian Sea",
     },
     "digha": {
-        "aliases": ["digha", "sankarpur", "petuaghat", "purba medinipur"],
+        "aliases": ["digha", "sankarpur", "petuaghat", "purba medinipur", "दीघा"],
         "name": "Digha Coast",
         "latitude": 21.6266,
         "longitude": 87.5074,
@@ -121,8 +121,89 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
         "nearest_port": "Petuaghat Fishery Harbour",
         "maritime_zone": "Northern Bay of Bengal",
     },
+    "gopalpur": {
+        "aliases": ["gopalpur", "gopalpur port", "ganjam coast", "berhampur coast", "గోపాల్‌పూర్", "गोपालपुर"],
+        "name": "Gopalpur",
+        "latitude": 19.3144,
+        "longitude": 84.9655,
+        "state": "Odisha",
+        "nearest_port": "Gopalpur Port",
+        "maritime_zone": "Central Odisha Bay of Bengal",
+    },
+    "puducherry": {
+        "aliases": ["puducherry", "pondicherry", "pondy", "karaikal", "புதுச்சேரி", "పుదుచ్చేరి", "पुदुचेरी"],
+        "name": "Puducherry",
+        "latitude": 11.9416,
+        "longitude": 79.8083,
+        "state": "Puducherry",
+        "nearest_port": "Puducherry Port",
+        "maritime_zone": "Coromandel Coast",
+    },
+    "veraval": {
+        "aliases": ["veraval", "veraval port", "somnath coast", "gir somnath", "वेरावल", "વેરાવળ"],
+        "name": "Veraval",
+        "latitude": 20.9077,
+        "longitude": 70.3678,
+        "state": "Gujarat",
+        "nearest_port": "Veraval Fishing Port",
+        "maritime_zone": "Saurashtra Coast (Arabian Sea)",
+    },
+    "haldia": {
+        "aliases": ["haldia", "haldia port", "diamond harbour", "sundarbans", "హల్దియా", "हल्दिया", "হলদিয়া"],
+        "name": "Haldia",
+        "latitude": 22.0667,
+        "longitude": 88.0667,
+        "state": "West Bengal",
+        "nearest_port": "Haldia Dock Complex",
+        "maritime_zone": "Hooghly River Estuary & Sundarbans",
+    },
+    "bhavnagar": {
+        "aliases": ["bhavnagar", "alang", "gulf of khambhat", "ભાવનગર", "भावनगर"],
+        "name": "Bhavnagar",
+        "latitude": 21.7645,
+        "longitude": 72.1519,
+        "state": "Gujarat",
+        "nearest_port": "Bhavnagar Port",
+        "maritime_zone": "Gulf of Khambhat",
+    },
+    "ratnagiri": {
+        "aliases": ["ratnagiri", "mirya bay", "jaigad", "रत्नागिरी"],
+        "name": "Ratnagiri",
+        "latitude": 16.9902,
+        "longitude": 73.3120,
+        "state": "Maharashtra",
+        "nearest_port": "Ratnagiri Mirya Bay Port",
+        "maritime_zone": "Konkan Coast",
+    },
+    "malvan": {
+        "aliases": ["malvan", "tarkarli", "sindhudurg", "malvan marine sanctuary", "मालवण"],
+        "name": "Malvan",
+        "latitude": 16.0558,
+        "longitude": 73.4688,
+        "state": "Maharashtra",
+        "nearest_port": "Malvan Fishing Harbour",
+        "maritime_zone": "South Konkan Coast",
+    },
+    "nagapattinam": {
+        "aliases": ["nagapattinam", "velankanni", "nagore", "காரைக்கால்", "நாகப்பட்டினம்"],
+        "name": "Nagapattinam",
+        "latitude": 10.7672,
+        "longitude": 79.8428,
+        "state": "Tamil Nadu",
+        "nearest_port": "Nagapattinam Port",
+        "maritime_zone": "Palk Strait Approach",
+    },
+    "beypore": {
+        "aliases": ["beypore", "calicut port", "kozhikode", "ബേപ്പൂർ"],
+        "name": "Beypore (Kozhikode)",
+        "latitude": 11.1611,
+        "longitude": 75.8058,
+        "state": "Kerala",
+        "nearest_port": "Beypore Port",
+        "maritime_zone": "North Malabar Coast",
+    },
     "rameswaram": {
-        "aliases": ["rameswaram", "pamban", "dhanushkodi"],
+        "aliases": ["rameswaram", "pamban", "dhanushkodi", "gulf of mannar", "रामेश्वरम", "రామేశ్వరం", "ராமேஸ்வரம்"],
         "name": "Rameswaram",
         "latitude": 9.2876,
         "longitude": 79.3129,
@@ -132,17 +213,28 @@ INDIAN_COASTAL_NODES: Dict[str, Dict[str, Any]] = {
     }
 }
 
-def resolve_location(query_text: str, default_fallback: Optional[LocationContext] = None) -> LocationContext:
+def resolve_location(query_text: str, default_fallback: Optional[LocationContext] = None) -> Optional[LocationContext]:
     """Dynamically extracts location from query text using coordinate regex, alias lookup, or fallback."""
     clean_text = query_text.lower()
 
-    # 1. Check for explicit coordinates e.g. "17.68, 83.21" or "lat 17.68 lon 83.21"
-    coord_match = re.search(r"(-?\d{1,2}\.\d{2,6})[,\s]+(-?\d{1,3}\.\d{2,6})", query_text)
+    # 1. Check for explicit coordinates e.g. "17.68, 83.21" or "16.98 N, 82.25 E"
+    coord_match = re.search(
+        r"(-?\d{1,2}(?:\.\d+)?)\s*[°º]?\s*([NSns])?[,\s]+(-?\d{1,3}(?:\.\d+)?)\s*[°º]?\s*([EWew])?",
+        query_text
+    )
     if coord_match:
         try:
             val1 = float(coord_match.group(1))
-            val2 = float(coord_match.group(2))
-            # Determine lat vs lon (India is lat ~6-37, lon ~68-98)
+            dir1 = (coord_match.group(2) or "").upper()
+            val2 = float(coord_match.group(3))
+            dir2 = (coord_match.group(4) or "").upper()
+
+            if dir1 == "S":
+                val1 = -val1
+            if dir2 == "W":
+                val2 = -val2
+
+            # Determine lat vs lon (India is lat ~6-38, lon ~65-100)
             if 6.0 <= val1 <= 38.0 and 65.0 <= val2 <= 100.0:
                 lat, lon = val1, val2
             elif 6.0 <= val2 <= 38.0 and 65.0 <= val1 <= 100.0:
@@ -171,37 +263,39 @@ def resolve_location(query_text: str, default_fallback: Optional[LocationContext
         except Exception:
             pass
 
-    # 2. Match known coastal nodes and aliases
+    # 2. Match known coastal nodes and aliases (handling ASCII word boundary and Unicode substring)
     for key, node in INDIAN_COASTAL_NODES.items():
         for alias in node["aliases"]:
-            # word boundary matching
-            pattern = rf"\b{re.escape(alias)}\b"
-            if re.search(pattern, clean_text):
-                return LocationContext(
-                    name=node["name"],
-                    latitude=node["latitude"],
-                    longitude=node["longitude"],
-                    radius_km=40.0,
-                    nearest_port=node["nearest_port"],
-                    state=node["state"],
-                    maritime_zone=node["maritime_zone"]
-                )
+            has_unicode = any(ord(c) > 127 for c in alias)
+            if has_unicode:
+                if alias in clean_text:
+                    return LocationContext(
+                        name=node["name"],
+                        latitude=node["latitude"],
+                        longitude=node["longitude"],
+                        radius_km=40.0,
+                        nearest_port=node["nearest_port"],
+                        state=node["state"],
+                        maritime_zone=node["maritime_zone"]
+                    )
+            else:
+                pattern = rf"\b{re.escape(alias)}\b"
+                if re.search(pattern, clean_text):
+                    return LocationContext(
+                        name=node["name"],
+                        latitude=node["latitude"],
+                        longitude=node["longitude"],
+                        radius_km=40.0,
+                        nearest_port=node["nearest_port"],
+                        state=node["state"],
+                        maritime_zone=node["maritime_zone"]
+                    )
 
     # 3. Fallback
     if default_fallback:
         return default_fallback
 
-    # Default to Visakhapatnam (Prime INCOIS observation hub)
-    default_node = INDIAN_COASTAL_NODES["visakhapatnam"]
-    return LocationContext(
-        name=default_node["name"],
-        latitude=default_node["latitude"],
-        longitude=default_node["longitude"],
-        radius_km=40.0,
-        nearest_port=default_node["nearest_port"],
-        state=default_node["state"],
-        maritime_zone=default_node["maritime_zone"]
-    )
+    return None
 
 def find_nearest_harbor(lat: float, lon: float) -> Tuple[str, float]:
     """Finds nearest coastal harbor and distance in km."""

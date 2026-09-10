@@ -1,5 +1,5 @@
 import httpx
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.models.schemas import (
     OceanObservation,
@@ -36,7 +36,7 @@ class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
         times = hourly.get("time", [])
         
         # Determine target hour index
-        target_time = datetime.utcnow() + timedelta(hours=offset_hours)
+        target_time = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
         target_iso = target_time.strftime("%Y-%m-%dT%H:00")
         idx = 0
         if target_iso in times:
@@ -82,7 +82,7 @@ class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
         hourly = data.get("hourly", {})
         times = hourly.get("time", [])
         
-        target_time = datetime.utcnow() + timedelta(hours=offset_hours)
+        target_time = datetime.now(timezone.utc) + timedelta(hours=offset_hours)
         target_iso = target_time.strftime("%Y-%m-%dT%H:00")
         idx = 0
         if target_iso in times:
