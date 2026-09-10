@@ -6,7 +6,9 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prebuild": "node scripts/check-no-mocks.mjs",
+    "check:no-mocks": "node scripts/check-no-mocks.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.1.1",

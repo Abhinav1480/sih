@@ -1,5 +1,4 @@
 import { OrcaAnalysisResponse, MarineAlert, ConversationSummary, Coordinates } from "./types";
-import { getMockAnalysisResponse } from "../mocks/mockAnalysisResponses";
 import { getApiBase, getBackendMode } from "./backend/config";
 import { fallbackCached } from "./backend/fallbackResponse";
 import { loadLastResponse, saveLastResponse } from "./offline/store";
@@ -10,7 +9,6 @@ export { getApiBase };
  * stringifies to the CURRENT mode's base URL instead of a build-time constant.
  */
 export const API_BASE = { toString: getApiBase };
-const FORCE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 const QUERY_TIMEOUT_MS = 30_000;
 
 export const DEFAULT_USER_LOCATION: Coordinates = { latitude: 16.9891, longitude: 82.2475 }; // Kakinada
@@ -44,7 +42,6 @@ export async function submitMarineQuery(
   preferredLanguage: string = "en",
   userLocation: Coordinates = DEFAULT_USER_LOCATION
 ): Promise<OrcaAnalysisResponse> {
-  if (FORCE_MOCKS) return getMockAnalysisResponse(query, conversationId);
   if (getBackendMode() === "cached") return cachedResponse();
 
   let res: Response;
