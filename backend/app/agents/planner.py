@@ -7,6 +7,7 @@ from app.models.schemas import (
     TemporalContext,
     ConstraintModel,
 )
+from app.agents.intent import classify_intent
 from app.geospatial.boundaries import resolve_location, INDIAN_COASTAL_NODES
 from app.utils.temporal import parse_temporal_context
 from app.utils.multilingual import detect_language
@@ -28,7 +29,7 @@ class OrcaPlanner:
         lang = detect_language(query_text)
 
         # 1. Determine Intent
-        intent = self._classify_intent(text)
+        intent, intent_scores = classify_intent(text)
 
         # 2. Extract Location (Primary)
         prev_loc = None
@@ -68,48 +69,12 @@ class OrcaPlanner:
             "temporal": temporal,
             "constraints": constraints,
             "required_agents": required_agents,
+            "intent_scores": {i.value: v for i, v in intent_scores.items() if v > 0},
             "planning_timestamp": datetime.utcnow().isoformat()
         }
 
     def _classify_intent(self, text: str) -> QueryIntent:
-        # Check safety first: if user explicitly asks "safe", "safety", "can i go", "risk", "danger", "warning", "hazard",
-        # they are seeking a safety assessment even if they mention "fishing" (e.g. "is it safe to go fishing?")
-        if any(w in text for w in ["safe", "safety", "danger", "risk", "can i go", "warning", "hazard", "advisable"]):
-            return QueryIntent.MARINE_SAFETY
-
-        # Check route analysis
-        if any(w in text for w in ["route", "passage", "cross protected", "transit", "corridor", "navigational", "voyage"]):
-            return QueryIntent.ROUTE_ANALYSIS
-
-        # Check regional comparison
-        if any(w in text for w in ["compare", "difference between", "versus", "vs", "better conditions"]):
-            return QueryIntent.REGIONAL_COMPARISON
-
-        # Check historical trend or change detection
-        if any(w in text for w in ["changed", "over the last", "historical", "past week", "yesterday vs", "trend", "anomaly"]):
-            return QueryIntent.HISTORICAL_TREND
-
-        # Check fishing zones (PFZ, find fishing zones, chlorophyll)
-        if any(w in text for w in ["fishing", "pfz", "fish catch", "chlorophyll", "trawling", "favorable fishing", "tuna", "catch"]):
-            return QueryIntent.FISHING_ZONES
-
-        # Check geofence / restriction / sanctuary
-        if any(w in text for w in ["protected", "restricted", "sanctuary", "marine national park", "wildlife", "no-take"]):
-            return QueryIntent.GEOFENCE_RESTRICTION
-
-        # Check ocean conditions
-        if any(w in text for w in ["wave", "swell", "sea state", "currents", "tide", "sst"]):
-            return QueryIntent.OCEAN_CONDITIONS
-
-        # Check weather forecast
-        if any(w in text for w in ["weather", "rain", "precipitation", "cyclone", "storm", "wind", "lightning"]):
-            return QueryIntent.WEATHER_FORECAST
-
-        # Check explainability
-        if any(w in text for w in ["why", "reason", "explain why", "how did you", "reject"]):
-            return QueryIntent.EXPLAINABILITY
-
-        return QueryIntent.MARINE_SAFETY
+        return classify_intent(text)[0]
 
     def _extract_secondary_location(self, text: str, primary_loc: LocationContext) -> Optional[LocationContext]:
         lower = text.lower()
