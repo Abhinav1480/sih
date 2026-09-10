@@ -188,6 +188,17 @@ def test_legacy_aliases_are_views_of_the_envelope(query):
     assert [a["action"] for a in raw["agent_activity"]] == [t["action"] for t in trace_without_done]
     assert [a["details"] for a in raw["agent_activity"]] == [t["detail"] for t in trace_without_done]
 
+    assert raw["location"] == raw["meta"]["location"]
+    assert raw["temporal"] == raw["meta"]["temporal"]
+    assert raw["limitations"] == raw["meta"]["limitations"]
+    assert raw["query_id"] == raw["request_id"] and raw["conversation_id"] == raw["session_id"]
+    if raw["risk"] is None:
+        assert raw["risk_assessment"] is None
+    else:
+        assert raw["risk_assessment"]["overall_score"] == raw["risk"]["score"]
+        assert raw["risk_assessment"]["contributing_factors"] == raw["risk"]["factors"]
+    assert [m["layer_id"] for m in raw["map_layers"]] == [l["id"] for l in raw["layers"] if l["kind"] == "geojson"]
+
     plan = raw["visualization_plan"]
     assert plan["active_layers"] == [layer["id"] for layer in raw["layers"]]
     if raw["intent"] != "needs_clarification":

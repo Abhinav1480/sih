@@ -38,6 +38,8 @@ from app.models.envelope import (
 from app.models.schemas import (
     AgentStepRecord,
     DataFreshness,
+    DeterministicRiskResult,
+    MapLayerData,
     OrcaAnalysisResponse,
     ProviderTier,
     QueryIntent,
@@ -453,7 +455,49 @@ def legacy_aliases(envelope: QueryEnvelope) -> dict:
     else:
         centre_lat, centre_lon = envelope.meta.location.latitude, envelope.meta.location.longitude
 
+    clarifying = envelope.intent == QueryIntent.NEEDS_CLARIFICATION
+    advisory = next((c for c in envelope.cards if c.type == "advisory_text"), None)
+    pfz = next((c for c in envelope.cards if c.type == "pfz_ranking"), None)
+    risk = envelope.risk
+
     return {
+        "query_id": envelope.request_id,
+        "conversation_id": envelope.session_id,
+        "query_text": envelope.meta.query_text,
+        "detected_language": envelope.language,
+        "location": envelope.meta.location,
+        "temporal": envelope.meta.temporal,
+        "limitations": list(envelope.meta.limitations),
+        "mode": envelope.meta.mode,
+        "recommendation": advisory.body if advisory else envelope.answer.headline,
+        "needs_clarification": clarifying,
+        "clarification_question": envelope.answer.headline if clarifying else None,
+        "missing_information": [envelope.answer.headline] if clarifying else [],
+        "risk_assessment": DeterministicRiskResult(
+            overall_score=risk.score,
+            category=risk.band,
+            contributing_factors=risk.factors,
+            triggered_rules=risk.triggered_rules,
+            missing_inputs=risk.missing_inputs,
+            confidence_percentage=risk.confidence,
+            data_quality_label=risk.data_quality,
+            data_quality_notes=risk.data_quality,
+        ) if risk else None,
+        # WMS descriptors have no inline features; the legacy shape only knew geojson.
+        "map_layers": [
+            MapLayerData(
+                layer_id=layer.id,
+                name=layer.name,
+                layer_type=layer.geometry_type or "point",
+                features=layer.features,
+                visible_by_default=layer.visible_by_default,
+                color=layer.color,
+                legend_title=layer.legend_title,
+                legend_unit=layer.legend_unit,
+            )
+            for layer in envelope.layers if layer.kind == "geojson"
+        ],
+        "fishing_zones": list(pfz.zones) if pfz else [],
         "executive_summary": envelope.answer.narrative,
         "visualization_plan": VisualizationPlan(
             result_type=result_type,

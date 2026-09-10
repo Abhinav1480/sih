@@ -69,23 +69,30 @@ present. Absent data is `null` (for `risk`) or `[]` (for the arrays).
 
 ### Deprecated aliases (1.3.0, one release only)
 
-Three pre-envelope fields are also emitted at the top level so the frontend
-built against the old shape keeps rendering while it migrates:
+The pre-envelope fields the current frontend dereferences are also emitted at
+the top level so it keeps rendering while it migrates:
 
 | Alias | Derived from | Read instead |
 | :--- | :--- | :--- |
 | `executive_summary` | `answer.narrative` | `answer.narrative` |
 | `visualization_plan` | `intent`, `layers[]`, `meta.location` | the cards and layers themselves |
 | `agent_activity[]` | `trace[]` without the final `done` event | `trace[]` |
+| `query_id`, `conversation_id`, `query_text`, `detected_language`, `mode` | `request_id`, `session_id`, `meta.query_text`, `language`, `meta.mode` | those |
+| `location`, `temporal`, `limitations[]` | `meta.location`, `meta.temporal`, `meta.limitations` | `meta.*` |
+| `recommendation` | `cards[type=advisory_text].body`, else `answer.headline` | the advisory card |
+| `needs_clarification`, `clarification_question`, `missing_information` | `intent == "needs_clarification"`, `answer.headline` | `intent`, `answer.headline` |
+| `risk_assessment` | `risk` (field-for-field) | `risk` |
+| `map_layers[]` | `layers[]` where `kind == "geojson"` (WMS layers are envelope-only) | `layers[]` |
+| `fishing_zones[]` | `cards[type=pfz_ranking].zones` | the card |
 
 They are **views of the envelope**, computed from it after it is built; they
 can never carry a value the envelope does not. They are marked `deprecated` in
 the JSON schema and are removed at contract 2.0.0 once the frontend reads the
-envelope directly. Nothing else from the old shape is emitted: `recommendation`,
-`risk_assessment`, `route_analysis`, `fishing_zones`, `comparison_data`,
-`historical_trend`, `spatial_what_if`, `route_comparison`, `map_layers`,
-`ocean_conditions` and `weather_conditions` have envelope equivalents
-(`cards[]`, `risk`, `layers[]`, `evidence[]`) or no equivalent yet.
+envelope directly. Not emitted, because the envelope does not carry them:
+`route_analysis`, `route_comparison`, `comparison_data`, `historical_trend`,
+`spatial_what_if`, `ocean_conditions`, `weather_conditions`. The UI guards
+each of those with a null check, so their cards simply do not render until a
+card type carries them.
 
 ---
 

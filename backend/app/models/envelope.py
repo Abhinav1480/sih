@@ -18,6 +18,8 @@ from pydantic import BaseModel, Field
 from app.models.schemas import (
     AgentStepRecord,
     ComparisonMetric,
+    DeterministicRiskResult,
+    MapLayerData,
     DataFreshness,
     EvidenceRecord,
     LocationContext,
@@ -328,3 +330,20 @@ class QueryEnvelope(BaseModel):
         deprecated="Read trace[]. Alias for one release only.",
         description="Deprecated view of `trace[]` without the final `done` event.",
     )
+    # The fields the pre-envelope UI dereferences without a guard. Each is a
+    # view of one envelope field; see legacy_aliases() for the mapping.
+    query_id: Optional[str] = Field(default=None, deprecated="Read request_id.")
+    conversation_id: Optional[str] = Field(default=None, deprecated="Read session_id.")
+    query_text: Optional[str] = Field(default=None, deprecated="Read meta.query_text.")
+    detected_language: Optional[str] = Field(default=None, deprecated="Read language.")
+    location: Optional[LocationContext] = Field(default=None, deprecated="Read meta.location.")
+    temporal: Optional[TemporalContext] = Field(default=None, deprecated="Read meta.temporal.")
+    limitations: List[str] = Field(default=[], deprecated="Read meta.limitations.")
+    mode: Optional[str] = Field(default=None, deprecated="Read meta.mode.")
+    recommendation: Optional[str] = Field(default=None, deprecated="Read cards[type=advisory_text].body.")
+    needs_clarification: bool = Field(default=False, deprecated="Compare intent to needs_clarification.")
+    clarification_question: Optional[str] = Field(default=None, deprecated="Read answer.headline when intent is needs_clarification.")
+    missing_information: List[str] = Field(default=[], deprecated="Derive from answer.headline.")
+    risk_assessment: Optional[DeterministicRiskResult] = Field(default=None, deprecated="Read risk.")
+    map_layers: List[MapLayerData] = Field(default=[], deprecated="Read layers[] (geojson kind only here).")
+    fishing_zones: List[PotentialFishingZone] = Field(default=[], deprecated="Read cards[type=pfz_ranking].zones.")
