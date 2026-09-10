@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.agents.base import BaseSpecialistAgent
 from app.models.schemas import (
     OrcaAnalysisResponse,
