@@ -31,7 +31,7 @@ from app.models.schemas import (
     TimeSeriesPoint,
 )
 
-CONTRACT_VERSION = "1.1.0"
+CONTRACT_VERSION = "1.2.0"
 
 __all__ = [
     "CONTRACT_VERSION",
