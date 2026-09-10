@@ -1,6 +1,6 @@
 # ORCA API Contract
 
-**Contract version: 1.0.0**
+**Contract version: 1.1.0**
 Machine-readable definition: [`backend/app/models/envelope.py`](../backend/app/models/envelope.py)
 
 This document is the agreement between the ORCA backend and the ORCA frontend.
@@ -180,6 +180,17 @@ branch now** so that lands without a contract bump.
 | `status` | enum | `LIVE` \| `FORECAST` \| `CACHED` \| `HISTORICAL` \| `DEMO` \| `UNAVAILABLE` |
 | `reliability_notes` | string? | True for how the value was produced |
 
+### Nullable observation values
+
+`sea_surface_temp_c`, `ocean_current_speed_m_s` and `ocean_current_direction_deg`
+are **nullable**, and `TimeSeriesPoint.sst_c` with them. A provider that does
+not carry a variable returns `null` for it and **no evidence record is emitted
+for that variable at all**.
+
+Render a null as an explicit "unavailable", never as a zero or a dash that
+could be mistaken for a reading. A missing value is honest and detectable; the
+constant that used to fill this gap was neither.
+
 ### The golden rule
 
 **Never label a fallback source as ISRO.** The frontend must display
@@ -285,6 +296,7 @@ Declared here so nothing in this document overclaims:
 | Gap | Effect | Closing issue |
 | :--- | :--- | :--- |
 | No ISRO provider is wired | Every `provider_tier` is `FALLBACK` today | BE-02 |
+| SST and currents come from Open-Meteo | Real, per-coordinate values, but tier `FALLBACK`; null where Open-Meteo has no coverage | BE-02 |
 | Tide is not modelled | Canonical query 3 answers weather + sea state only | BE-02 |
 | Lightning and cyclone tracks are not modelled | Canonical query 4 answers from the generic alert level | BE-02 |
 | `alerts[]` is request-scoped | No proactive push | BE-07 |
@@ -299,4 +311,5 @@ Declared here so nothing in this document overclaims:
 
 | Version | Change |
 | :--- | :--- |
+| 1.1.0 | **Breaking.** `OceanObservation.sea_surface_temp_c`, `ocean_current_speed_m_s`, `ocean_current_direction_deg` and `TimeSeriesPoint.sst_c` are now nullable. They previously held hardcoded constants that were returned identically for every coordinate; a provider without coverage now returns `null` and emits no evidence record for that variable. Consumers must render null as "unavailable". |
 | 1.0.0 | Initial contract. `/api/query` returns the envelope; `EvidenceRecord` gains `provider_tier`; `/api/export/report` takes the envelope. |

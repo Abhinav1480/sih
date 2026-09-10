@@ -55,16 +55,19 @@ class CorrelationEngine:
             favorability=fav_wind
         ))
 
-        # 3. Sea Surface Temperature
-        diff_sst = round(ocean_a.sea_surface_temp_c - ocean_b.sea_surface_temp_c, 1)
-        metrics.append(ComparisonMetric(
-            metric_name="Sea Surface Temperature (SST)",
-            unit="°C",
-            location_a_value=ocean_a.sea_surface_temp_c,
-            location_b_value=ocean_b.sea_surface_temp_c,
-            difference=diff_sst,
-            favorability="Normal Seasonal Fronts"
-        ))
+        # 3. Sea Surface Temperature, only when both sides actually have one.
+        #    Comparing against a fabricated constant produced a difference of
+        #    exactly 0.0 for every pair of locations.
+        if ocean_a.sea_surface_temp_c is not None and ocean_b.sea_surface_temp_c is not None:
+            diff_sst = round(ocean_a.sea_surface_temp_c - ocean_b.sea_surface_temp_c, 1)
+            metrics.append(ComparisonMetric(
+                metric_name="Sea Surface Temperature (SST)",
+                unit="°C",
+                location_a_value=ocean_a.sea_surface_temp_c,
+                location_b_value=ocean_b.sea_surface_temp_c,
+                difference=diff_sst,
+                favorability="Normal Seasonal Fronts"
+            ))
 
         # Verdict
         if ocean_a.significant_wave_height_m < ocean_b.significant_wave_height_m and weather_a.wind_speed_knots < weather_b.wind_speed_knots:
@@ -103,7 +106,14 @@ class CorrelationEngine:
             fraction = i / 4.0
             interp_wave = round(w_start + (w_end - w_start) * fraction, 2)
             interp_wind = round(wind_start + (wind_end - wind_start) * fraction, 1)
-            interp_sst = round(past_ocean.sea_surface_temp_c + (current_ocean.sea_surface_temp_c - past_ocean.sea_surface_temp_c) * fraction, 1)
+            if past_ocean.sea_surface_temp_c is None or current_ocean.sea_surface_temp_c is None:
+                interp_sst = None
+            else:
+                interp_sst = round(
+                    past_ocean.sea_surface_temp_c
+                    + (current_ocean.sea_surface_temp_c - past_ocean.sea_surface_temp_c) * fraction,
+                    1,
+                )
             score = int(min(100, max(10, interp_wave * 20 + interp_wind * 1.5)))
             points.append(TimeSeriesPoint(
                 timestamp=lbl,

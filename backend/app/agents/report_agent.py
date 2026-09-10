@@ -311,22 +311,26 @@ class ReportAgent(BaseSpecialistAgent):
                 unit="m / s",
                 live_note="Directional swell component of the wave spectrum.",
             ))
-            records.append(record(
-                ocean,
-                dataset="Sea Surface Temperature",
-                variable="Sea Surface Temperature",
-                value=f"{ocean.sea_surface_temp_c}",
-                unit="\u00b0C",
-                live_note="Sea surface temperature at the requested position.",
-            ))
-            records.append(record(
-                ocean,
-                dataset="Ocean Surface Currents",
-                variable="Surface Current Speed & Direction",
-                value=f"{ocean.ocean_current_speed_m_s} m/s @ {ocean.ocean_current_direction_deg}\u00b0",
-                unit="m/s",
-                live_note="Surface current vector at the requested position.",
-            ))
+            # Only cite a variable the provider actually returned. An absent
+            # value produces no evidence record rather than a fabricated one.
+            if ocean.sea_surface_temp_c is not None:
+                records.append(record(
+                    ocean,
+                    dataset="Sea Surface Temperature",
+                    variable="Sea Surface Temperature",
+                    value=f"{ocean.sea_surface_temp_c}",
+                    unit="\u00b0C",
+                    live_note="Sea surface temperature at the requested position.",
+                ))
+            if ocean.ocean_current_speed_m_s is not None:
+                records.append(record(
+                    ocean,
+                    dataset="Ocean Surface Currents",
+                    variable="Surface Current Speed & Direction",
+                    value=f"{ocean.ocean_current_speed_m_s} m/s @ {ocean.ocean_current_direction_deg}\u00b0",
+                    unit="m/s",
+                    live_note="Surface current vector at the requested position.",
+                ))
 
         if weather:
             records.append(record(

@@ -36,7 +36,11 @@ class OceanAgent(BaseSpecialistAgent):
             action=f"Retrieved ocean state at ({loc.latitude:.3f}°N, {loc.longitude:.3f}°E)",
             tool="get_ocean_conditions",
             duration_ms=duration_ms,
-            details=f"SWH: {obs.significant_wave_height_m}m, Swell: {obs.swell_height_m}m, SST: {obs.sea_surface_temp_c}°C ({obs.source})"
+            details=(
+                f"SWH: {obs.significant_wave_height_m}m, Swell: {obs.swell_height_m}m, "
+                f"SST: {obs.sea_surface_temp_c if obs.sea_surface_temp_c is not None else 'unavailable'}"
+                f"{'°C' if obs.sea_surface_temp_c is not None else ''} ({obs.source})"
+            )
         )
 
         return {
