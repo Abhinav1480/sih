@@ -12,7 +12,6 @@ from app.models.schemas import (
     MapLayerFeature,
     VisualizationPlan,
     EvidenceRecord,
-    DataFreshness,
     VesselRouteAnalysis,
     RouteComparisonData,
 )
@@ -103,22 +102,10 @@ class AgentOrchestrator:
             # The ClarificationCard UI provides interactive port selection buttons instead.
             map_layers: list[MapLayerData] = []
 
-            now_iso = datetime.now(timezone.utc).isoformat()
-            evidence = [
-                EvidenceRecord(
-                    id="loc_clarif",
-                    provider="ORCA Spatial Geocoder",
-                    dataset="Indian Maritime Port Registry",
-                    variable="Spatial Reference",
-                    value="Missing Location Details",
-                    unit="Coordinate",
-                    location="Indian Coastline",
-                    observation_or_forecast_time=now_iso,
-                    retrieval_time=now_iso,
-                    status=DataFreshness.DEMO if settings.ORCA_MODE == "DEMO" else DataFreshness.LIVE,
-                    reliability_notes="Location clarification requested from user to retrieve hyper-local wave and weather telemetry."
-                )
-            ]
+            # A clarification cites nothing: no provider was queried and no value
+            # was produced. An evidence record here would be provenance for a
+            # dataset that does not exist.
+            evidence: list[EvidenceRecord] = []
 
             return OrcaAnalysisResponse(
                 query_id=query_id,

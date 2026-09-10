@@ -252,7 +252,9 @@ def test_demo_mode_answers_every_canonical_query_with_the_network_disabled(no_ne
 def test_every_value_in_every_response_has_a_provider_and_tier(query):
     envelope = client.post("/api/query", json={"user_location": KAKINADA, "query": query}).json()
 
-    assert envelope["evidence"], "no evidence"
+    # A clarification cites nothing: no provider was queried. Every other answer must.
+    if envelope["intent"] != "needs_clarification":
+        assert envelope["evidence"], "no evidence"
     for record in envelope["evidence"]:
         assert record["provider"], record
         assert record["provider_tier"] in {"ISRO", "NATIONAL", "FALLBACK"}, record

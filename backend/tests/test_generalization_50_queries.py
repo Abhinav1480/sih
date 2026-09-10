@@ -1,5 +1,5 @@
 import pytest
-from app.models.schemas import UserQueryRequest
+from app.models.schemas import UserQueryRequest, QueryIntent
 from app.agents.orchestrator import orchestrator
 
 # 52 completely distinct unseen queries across Indian coastal waters
@@ -97,7 +97,9 @@ async def test_generalization_50_queries(query_text: str):
     assert res.location is not None
     assert res.temporal is not None
     assert len(res.agent_activity) >= 1
-    assert len(res.evidence) >= 1
+    # A clarification cites nothing: no provider was queried. Every other answer must.
+    if res.intent != QueryIntent.NEEDS_CLARIFICATION:
+        assert len(res.evidence) >= 1
     assert res.visualization_plan.result_type in [
         "marine_safety",
         "fishing_zones",
