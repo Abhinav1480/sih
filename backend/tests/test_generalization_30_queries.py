@@ -74,7 +74,9 @@ async def test_generalization_unseen_query(query_text: str):
     assert res.location is not None
     assert res.temporal is not None
     assert len(res.agent_activity) >= 2
-    assert len(res.evidence) >= 1
+    # A clarification cites nothing: no provider was queried. Every other answer must.
+    if res.intent != QueryIntent.NEEDS_CLARIFICATION:
+        assert len(res.evidence) >= 1
     # Clarification responses intentionally have empty map layers (clean neutral map)
     if res.intent != QueryIntent.NEEDS_CLARIFICATION:
         assert len(res.map_layers) >= 1

@@ -77,7 +77,9 @@ def calculate_marine_risk(
     ocean: Optional[OceanObservation],
     weather: Optional[WeatherObservation],
     is_inside_mpa: bool = False,
-    mpa_name: Optional[str] = None
+    mpa_name: Optional[str] = None,
+    crosses_protected_waters: bool = False,
+    protected_areas: Optional[List[str]] = None,
 ) -> DeterministicRiskResult:
     """Deterministic, mathematically transparent marine risk score (0-100).
 
@@ -190,20 +192,30 @@ def calculate_marine_risk(
     for factor, points in zip(factors, allocated):
         factor.points_added = points
 
-    # 5. Marine protected area / regulatory restriction, clipped so the factor
-    #    breakdown still sums exactly to the reported score.
+    # 5. Regulatory restriction: a position inside a marine protected area, or
+    #    a route corridor that crosses one. A legal fact, not a sea-state
+    #    measurement, so it is a flat penalty outside the weighted pool and
+    #    gets its own decomposition entry. Clipped so the factor breakdown
+    #    still sums exactly to the reported score.
     mpa_points = 0
-    if is_inside_mpa:
+    if is_inside_mpa or crosses_protected_waters:
         mpa_points = min(MPA_PENALTY_POINTS, 100 - weighted_int)
+        if is_inside_mpa:
+            value, where = "INSIDE MPA", mpa_name or "Sanctuary Zone"
+            description = f"Located within protected sanctuary: {where}"
+            rule = f"Wildlife Protection Act: operating inside {where} constitutes a legal violation."
+        else:
+            where = ", ".join(protected_areas or []) or "a marine protected area"
+            value = "ROUTE CROSSES MPA"
+            description = f"Corridor intersects or passes within the buffer of: {where}"
+            rule = f"Wildlife Protection Act: transiting {where} constitutes a legal violation."
         factors.append(RiskFactor(
             name="Marine Sanctuary Geofence Restriction",
-            value="INSIDE MPA",
+            value=value,
             points_added=mpa_points,
-            description=f"Located within protected sanctuary: {mpa_name or 'Sanctuary Zone'}",
+            description=description,
         ))
-        triggered_rules.append(
-            f"Wildlife Protection Act: operating inside {mpa_name or 'this MPA'} constitutes a legal violation."
-        )
+        triggered_rules.append(rule)
 
     final_score = weighted_int + mpa_points
 

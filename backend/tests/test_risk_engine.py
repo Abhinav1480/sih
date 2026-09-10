@@ -225,3 +225,21 @@ def test_an_all_clear_warning_feed_does_not_inflate_the_score():
     no_feed = calculate_marine_risk(_ocean(2.5, 1.8), _weather(18.0, "None"))
     assert quiet.overall_score == no_feed.overall_score
     assert "Coastal Weather Warning" in " ".join(f.name for f in quiet.contributing_factors)
+
+
+def test_route_crossing_a_sanctuary_is_a_named_factor_that_sums_into_the_score():
+    """A corridor through protected waters is scored by the engine, not assigned
+    HIGH by the vessel agent. The penalty appears as its own decomposition entry
+    and the displayed points still add up to the headline number."""
+    clear = calculate_marine_risk(_ocean(1.5), _weather(12.0))
+    crossing = calculate_marine_risk(
+        _ocean(1.5), _weather(12.0),
+        crosses_protected_waters=True, protected_areas=["Coringa Wildlife Sanctuary"],
+    )
+    geofence = [f for f in crossing.contributing_factors if "Geofence" in f.name]
+    assert len(geofence) == 1
+    assert geofence[0].value == "ROUTE CROSSES MPA"
+    assert "Coringa Wildlife Sanctuary" in geofence[0].description
+    assert crossing.overall_score - clear.overall_score == geofence[0].points_added > 0
+    assert sum(f.points_added for f in crossing.contributing_factors) == crossing.overall_score
+    assert any("Coringa" in rule for rule in crossing.triggered_rules)
