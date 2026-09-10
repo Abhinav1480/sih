@@ -109,9 +109,12 @@ class OceanObservation(BaseModel):
     swell_height_m: float
     swell_period_sec: float
     swell_direction_deg: float
-    sea_surface_temp_c: float
-    ocean_current_speed_m_s: float
-    ocean_current_direction_deg: float
+    # Optional because a provider that does not carry these variables must
+    # return nothing rather than a plausible-looking constant. A missing
+    # value is renderable ("--"); an invented one is not detectable.
+    sea_surface_temp_c: Optional[float] = None
+    ocean_current_speed_m_s: Optional[float] = None
+    ocean_current_direction_deg: Optional[float] = None
     sea_state: str = "Moderate"
     status: DataFreshness = DataFreshness.DEMO
     source: str = "Demo Provider"
@@ -301,7 +304,7 @@ class TimeSeriesPoint(BaseModel):
     timestamp: str
     wave_height_m: float
     wind_knots: float
-    sst_c: float
+    sst_c: Optional[float] = None
     risk_score: int
 
 

@@ -8,6 +8,19 @@ from app.models.schemas import (
 )
 from app.providers.base import BaseOceanProvider, BaseWeatherProvider
 
+def _at(hourly: dict, variable: str, idx: int) -> Optional[float]:
+    """Value of `variable` at `idx`, or None when the series is absent or null.
+
+    Returning None is the point: a provider that does not carry a variable
+    must say so, so the value is labelled unavailable rather than fabricated.
+    """
+    series = hourly.get(variable)
+    if not series or idx >= len(series):
+        return None
+    value = series[idx]
+    return round(float(value), 2) if value is not None else None
+
+
 class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
     """
     Live Marine & Weather Provider using open-access Copernicus/ECMWF
@@ -23,7 +36,11 @@ class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
         params = {
             "latitude": lat,
             "longitude": lon,
-            "hourly": "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period",
+            "hourly": (
+                "wave_height,wave_direction,wave_period,"
+                "swell_wave_height,swell_wave_direction,swell_wave_period,"
+                "sea_surface_temperature,ocean_current_velocity,ocean_current_direction"
+            ),
             "forecast_days": 3
         }
 
@@ -49,6 +66,15 @@ class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
         swell_period = hourly.get("swell_wave_period", [8.0])[idx] or 8.0
         swell_dir = hourly.get("swell_wave_direction", [160.0])[idx] or 160.0
 
+        # Open-Meteo does not carry SST and currents everywhere. When a series
+        # is absent or null at this hour we report nothing. These three fields
+        # used to be the literals 28.4, 0.45 and 75.0, returned identically for
+        # every coordinate in Indian waters and published as a live Copernicus
+        # observation.
+        sst = _at(hourly, "sea_surface_temperature", idx)
+        current_speed = _at(hourly, "ocean_current_velocity", idx)
+        current_dir = _at(hourly, "ocean_current_direction", idx)
+
         sea_state = "Moderate" if wave_height < 2.5 else ("Rough" if wave_height < 4.0 else "High")
 
         return OceanObservation(
@@ -56,9 +82,9 @@ class OpenMeteoProvider(BaseOceanProvider, BaseWeatherProvider):
             swell_height_m=round(float(swell_height), 2),
             swell_period_sec=round(float(swell_period), 1),
             swell_direction_deg=round(float(swell_dir), 1),
-            sea_surface_temp_c=28.4,
-            ocean_current_speed_m_s=0.45,
-            ocean_current_direction_deg=75.0,
+            sea_surface_temp_c=sst,
+            ocean_current_speed_m_s=current_speed,
+            ocean_current_direction_deg=current_dir,
             sea_state=sea_state,
             status=DataFreshness.LIVE if offset_hours == 0 else DataFreshness.FORECAST,
             source="Open-Meteo Marine / Copernicus Marine Service (Live API)",

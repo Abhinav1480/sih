@@ -80,7 +80,7 @@ class HighFidelityDemoProvider(BaseOceanProvider, BaseWeatherProvider, BaseFishe
             ocean_current_direction_deg=current_dir,
             sea_state=sea_state,
             status=freshness,
-            source="INCOIS OSF Multi-Grid (Demo Mode)",
+            source="ORCA Deterministic Demo Model (synthetic ocean state, not an observation)",
             timestamp=obs_time
         )
 
@@ -125,7 +125,7 @@ class HighFidelityDemoProvider(BaseOceanProvider, BaseWeatherProvider, BaseFishe
             storm_warning=storm_warning,
             alert_level=alert_level,
             status=freshness,
-            source="IMD Coastal Marine Bulletin (Demo Mode)",
+            source="ORCA Deterministic Demo Model (synthetic coastal weather, not an observation)",
             timestamp=obs_time
         )
 
