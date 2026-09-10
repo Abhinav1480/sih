@@ -35,25 +35,18 @@ app.add_middleware(
 # Mount API
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/health")
-async def health_check():
-    """Liveness plus a real database probe.
-
-    `status` and `database` used to be the string literals "HEALTHY" and
-    "CONNECTED", returned without touching the database at all. Pointing
-    DATABASE_URL at a non-existent directory and skipping startup still
-    reported CONNECTED, so an uptime monitor watching this endpoint reported
-    green while the database was unreachable.
-    """
-    database = "CONNECTED"
-    database_error = None
+async def _probe_database() -> tuple[str, str | None]:
+    """Run SELECT 1 against the engine. Returns (state, error-or-None)."""
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
+        return "CONNECTED", None
     except Exception as exc:
-        database = "UNAVAILABLE"
-        database_error = f"{type(exc).__name__}: {exc}"[:200]
+        return "UNAVAILABLE", f"{type(exc).__name__}: {exc}"[:200]
 
+
+async def _health_payload() -> tuple[dict, str]:
+    database, database_error = await _probe_database()
     payload = {
         "status": "HEALTHY" if database == "CONNECTED" else "DEGRADED",
         "service": "ORCA Marine Intelligence Engine",
@@ -63,13 +56,37 @@ async def health_check():
     }
     if database_error:
         payload["database_error"] = database_error
+    return payload, database
 
-    # A degraded service must not answer 200 to a health probe, or the probe
-    # is decorative.
+
+@app.get("/health")
+async def health_check():
+    """Liveness. This is the endpoint the hosting platform polls.
+
+    It answers 200 whenever the process is up, and reports the database state
+    in the body. It deliberately does NOT answer 503 on a database failure:
+    Render and most platforms read a non-2xx health check as a failed
+    instance, so a transient database blip would take the whole service down
+    and could block a deploy from ever going live. The probe is real -- read
+    `database` and `database_error` in the body, or poll /health/deep.
+    """
+    payload, _ = await _health_payload()
+    return JSONResponse(status_code=200, content=payload)
+
+
+@app.get("/health/deep")
+async def health_check_deep():
+    """Dependency health, for humans and monitoring -- never for the platform.
+
+    Answers 503 when a dependency is genuinely unavailable, so an alerting
+    rule can page on it without the platform recycling the instance.
+    """
+    payload, database = await _health_payload()
     return JSONResponse(
         status_code=200 if database == "CONNECTED" else 503,
         content=payload,
     )
+
 
 @app.get("/")
 async def root():

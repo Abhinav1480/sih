@@ -8,6 +8,10 @@ services:
     region: singapore
     dockerfilePath: ./Dockerfile.backend
     dockerContext: .
+    # Must be /health, never /health/deep. /health answers 200 whenever the
+    # process is up and reports the database in the body; /health/deep answers
+    # 503 on a dependency failure and would make Render recycle a healthy
+    # process (or block the deploy) over a transient blip. See docs/DEPLOYMENT.md.
     healthCheckPath: /health
     autoDeploy: true
     envVars:

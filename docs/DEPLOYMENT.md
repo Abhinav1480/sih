@@ -20,8 +20,9 @@ Files: `Dockerfile.backend` (repo root), `render.yaml` (Blueprint, repo root).
 3. First build takes ~3-5 min (pip install of numpy / xarray / netCDF4 / h5py wheels).
 4. Note the URL, e.g. `https://orca-backend.onrender.com`. Verify:
    ```bash
-   curl https://orca-backend.onrender.com/health
-   # {"status":"HEALTHY", ...}
+   curl https://orca-backend.onrender.com/health/deep
+   # {"status":"HEALTHY", "database":"CONNECTED", ...}  -> 200
+   # a dependency failure gives {"status":"DEGRADED", ...} -> 503
    ```
 
 ### 1b. Manual alternative (no Blueprint)
@@ -51,9 +52,32 @@ npx -y @render/cli blueprints launch --repo <github-url> --branch main   # or us
 `CORS_ORIGINS` and redeploy the backend. Preview deployments get a different hostname
 per commit; add them too, or point previews at a local backend.
 
-**Health check**: `GET /health` returns `{"status":"HEALTHY"}`; Render marks the deploy
-live only once it responds 200. Free instances sleep after 15 min idle; the first
-request afterwards takes ~30-60 s. Ping `/health` before a demo.
+**Health check**: there are two endpoints, and the platform must poll the first one.
+
+| Endpoint | Status code | Who polls it |
+| --- | --- | --- |
+| `/health` | **always 200 while the process is up** | Render, and any platform health check (`healthCheckPath: /health`) |
+| `/health/deep` | **503 when a dependency is genuinely unavailable** | humans, uptime monitors, alerting rules |
+
+Both run the same real `SELECT 1` probe and both report the result in the body as
+`database` (`CONNECTED` / `UNAVAILABLE`) plus a `database_error` string when it fails.
+The only difference is the status code.
+
+Point `healthCheckPath` at `/health`, never at `/health/deep`. Render treats a non-2xx
+health check as a failed instance: it will recycle a process that is running fine and
+can refuse to promote a deploy at all, so a transient database blip would take the whole
+service down. Read the database state out of the 200 body instead:
+
+```bash
+curl -s https://orca-backend.onrender.com/health | jq '.status, .database'
+# "HEALTHY"  "CONNECTED"   -- or "DEGRADED"  "UNAVAILABLE"
+```
+
+Alert on `/health/deep`, which does answer 503, so paging works without the platform
+reacting to it.
+
+Free instances sleep after 15 min idle; the first request afterwards takes ~30-60 s.
+Ping `/health` before a demo.
 
 ---
 
@@ -119,7 +143,10 @@ docker compose up --build
 ---
 
 ## 5. Post-deploy checklist
-1. `curl https://<backend>.onrender.com/health` -> 200.
+1. `curl https://<backend>.onrender.com/health/deep` -> 200. Use `/health/deep`
+   here, not `/health`: `/health` answers 200 even when the database is down, so
+   it cannot tell you the deploy is actually wired up. (If you do curl `/health`,
+   read `.database` from the body -- a 200 alone proves nothing but liveness.)
 2. `CORS_ORIGINS` on Render includes the Vercel origin; redeploy backend.
 3. `NEXT_PUBLIC_API_BASE_URL` on Vercel equals the Render URL; redeploy frontend.
 4. Open the Vercel URL, run a query (e.g. "Is it safe to fish near Visakhapatnam tomorrow?"),
