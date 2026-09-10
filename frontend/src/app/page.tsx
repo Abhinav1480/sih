@@ -516,13 +516,23 @@ export default function Home() {
                         </div>
                       }
                     >
-                      {cachedMarker && <StaleWarning savedAt={cachedMarker.savedAt} lang={selectedLanguage} />}
+                      {cachedMarker && (
+                        <StaleWarning
+                          savedAt={cachedMarker.savedAt}
+                          lang={selectedLanguage}
+                          queryText={currentAnalysis?.meta?.query_text ?? currentAnalysis?.query_text ?? null}
+                        />
+                      )}
                       {geofenceBlock}
                     </FishermanHome>
                   ) : (
                   <>
                   {cachedMarker && currentAnalysis && !isLoading && (
-                    <StaleWarning savedAt={cachedMarker.savedAt} lang={selectedLanguage} />
+                    <StaleWarning
+                      savedAt={cachedMarker.savedAt}
+                      lang={selectedLanguage}
+                      queryText={currentAnalysis?.meta?.query_text ?? currentAnalysis?.query_text ?? null}
+                    />
                   )}
                   {geofenceBlock}
                   {errorMessage && (

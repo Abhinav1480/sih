@@ -90,7 +90,8 @@ In short: a value ORCA did not measure must say so (fall back to `unavailable`,
 never to a plausible number); the browser never bands a value or decides safe
 versus unsafe; `calculate_marine_risk` is the only risk formula; and an agency
 name arrives from the response or not at all. Every check has a proof test that
-has been watched to fail — `npm run check:honesty:proof`, `pytest -m honesty_proof`.
+has been watched to fail (18 frontend, 5 backend) — `npm run check:honesty:proof`,
+`pytest -m honesty_proof`.
 
 Genuine exceptions go in `frontend/scripts/honesty-allowlist.mjs` with a
 one-line justification. There are four. Fixing the code or sharpening the rule

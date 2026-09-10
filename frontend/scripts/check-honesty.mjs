@@ -22,6 +22,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FRONTEND_RULES, REGRESSION_RULES } from "./honesty-rules.mjs";
 import { ALLOWLIST, isAllowed } from "./honesty-allowlist.mjs";
+import { STRUCTURAL_CHECKS } from "./honesty-structural.mjs";
 import { readViews, walk, relPath, report } from "./honesty-lib.mjs";
 
 const ROOT = new URL("../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -74,6 +75,10 @@ for (const file of walk(SRC)) {
   }
 }
 
+// -------------------------------------------------- 3. structural checks
+// Rules about how components fit together, which no line regex can see.
+for (const check of STRUCTURAL_CHECKS) findings.push(...check());
+
 // ------------------------------------------------------------------ output
 findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
 
@@ -90,7 +95,7 @@ const count = report(
   "check-honesty",
   findings,
   sourceLines,
-  "the UI is originating a value it was not given",
+  "the UI is originating a value it was not given, or hiding what it is showing",
   "  A value ORCA did not measure must say so. An agency name must never appear\n" +
     "  beside a value that agency did not produce. The browser never decides safe\n" +
     "  versus unsafe.\n\n" +

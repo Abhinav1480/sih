@@ -79,7 +79,8 @@ Line numbers are preserved exactly, so a failure names a real line.
 | `hardcoded-agency` | `INCOIS`, `IMD`, `ISRO`, `MoEFCC`, `Copernicus`, `NRSC`, `MOSDAC`, `Bhoonidhi` written into the UI. Comparisons and type unions are exempt — they read provenance rather than assert it |
 | `mock-import` | anything under `src/mocks/`, any import reaching it, any known mock symbol, and the directory existing at all |
 | `hardcoded-legal-text` | statutory citations — `... Act 1972`, `CRZ Notification`, `Section 12 of`, `Schedule I`, `Gazette of India` |
-| `P0-5`, `P0-7` | the exact literal defects Phase 0 removed, kept named so a reintroduction fails with its history attached rather than as an anonymous pattern hit |
+| `cached-shows-question` | a structural check: `StaleWarning` must accept AND render `queryText`, every call site must pass it, and the `offline.cached.forQuestion` label must exist in every language that has the banner. Was `check-cached-shows-question.mjs` (P0-8), folded in here |
+| `P0-5`, `P0-7`, `P0-8` | the exact literal defects Phase 0 removed, kept named so a reintroduction fails with its history attached rather than as an anonymous pattern hit |
 
 ### Backend — `backend/tests/test_honesty_rule.py` (`pytest -m honesty`)
 

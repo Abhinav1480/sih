@@ -94,6 +94,27 @@ function fileCheck(name, expectRule, relFile, line) {
   );
 }
 
+/** Temporarily rewrite a real file with a transform, then restore it. */
+function editCheck(name, expectRule, relFile, transform) {
+  const abs = join(ROOT, relFile);
+  let original;
+  check(
+    name,
+    expectRule,
+    () => {
+      original = readFileSync(abs, "utf8");
+      const next = transform(original);
+      if (next === original) {
+        failures.push(`${name}: the transform changed nothing, so nothing was proven`);
+      }
+      writeFileSync(abs, next, "utf8");
+    },
+    () => {
+      if (original !== undefined) writeFileSync(abs, original, "utf8");
+    }
+  );
+}
+
 // ---------------------------------------------------------------------------
 
 const clean = run();
@@ -201,6 +222,36 @@ fileCheck(
   "P0-5",
   "src/lib/stream.ts",
   "const _probe = () => runMockSSEReplay();"
+);
+
+// P0-8, folded in from the old check-cached-shows-question.mjs. A cached
+// answer must say which question it answers, not just how old it is.
+editCheck(
+  "P0-8 StaleWarning: dropping the queryText prop",
+  "cached-shows-question",
+  "src/components/Offline/StaleWarning.tsx",
+  (t) => t.replace(/queryText/g, "unusedProp")
+);
+
+editCheck(
+  "P0-8 StaleWarning: accepting queryText but never rendering it",
+  "cached-shows-question",
+  "src/components/Offline/StaleWarning.tsx",
+  (t) => t.replace(/\{queryText/g, "{undefined && queryText")
+);
+
+editCheck(
+  "P0-8 page.tsx: a StaleWarning that does not pass the question",
+  "cached-shows-question",
+  "src/app/page.tsx",
+  (t) => t.replace(/queryText=\{[^}]*\}/, "")
+);
+
+editCheck(
+  "P0-8 i18n: the question label missing for a language that has the banner",
+  "cached-shows-question",
+  "src/lib/i18n/offline.ts",
+  (t) => t.replace(/"offline\.cached\.forQuestion":/, '"offline.cached.forQuestionGONE":')
 );
 
 // ---------------------------------------------------------------------------
