@@ -5,8 +5,24 @@
     81.5,
     83.5
   ],
-  "generated_utc": "2026-09-10T09:04:16+00:00",
+  "track_bbox_lat_min_lat_max_lon_min_lon_max": [
+    11.0,
+    23.0,
+    76.5,
+    88.5
+  ],
+  "track_margin_deg": 5.0,
+  "track_sampled_products": [
+    "saral_altika_igdr_swh"
+  ],
+  "track_bbox_note": "Nadir-altimeter products are clipped to the track bbox, not the bbox. A 2-degree box is below the sampling density of a 35-day repeat: no SARAL pass in this set comes within 320 km of the Kakinada box. Each fixture records the box that actually produced it.",
+  "generated_utc": "2026-09-10T17:52:40+00:00",
   "source_dir_note": "Raw granules are not committed; see backend/scripts/subset_granules.py",
+  "not_quality_filtered": "These are faithful clips, not curated measurements. Values, names, units and fill values are the granule's own and nothing is dropped. Read product_notes before publishing any value from them.",
+  "product_notes": {
+    "eos06_ocm3_l3c_flh_8day": "An 8-day composite: acquisition_start and acquisition_end span the whole compositing window (65 input scenes), not one overpass. Do not present it as an observation at a single time.",
+    "saral_altika_igdr_swh": "NOT quality filtered. Clipped faithfully, flags included, nothing dropped. Of 981 1-Hz points here the raw swh reaches 29.66 m, which is not a physical Bay of Bengal sea state. surface_type==0 removes land crossings (to 23.96 m) and qual_alt_1hz_swh==0 removes nothing further -- that flag does not discriminate in this set. swh_rms is what does: adding swh_numval>=20 and swh_rms<2.0 keeps 809 of the 877 ocean points and brings the maximum to 6.80 m, p99 5.32 m, median 1.75 m, which is a sensible September sea state including one genuine high-sea event. Apply surface_type==0 AND swh_numval>=20 AND swh_rms<2.0 before publishing any value from this product."
+  },
   "products": {
     "eos06_ocm3_l2c_ga": [
       {
@@ -26,7 +42,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -47,7 +65,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 0.09127911925315857,
-            "max": 0.4355798065662384
+            "max": 0.4355798065662384,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -68,7 +88,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -89,7 +111,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -110,7 +134,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -131,7 +157,9 @@
             "valid_pixels": 70089,
             "total_pixels": 372710,
             "min": 0.05296734347939491,
-            "max": 29.848602294921875
+            "max": 29.848602294921875,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -152,7 +180,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -173,7 +203,9 @@
             "valid_pixels": 0,
             "total_pixels": 191243,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -194,7 +226,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -215,7 +249,9 @@
             "valid_pixels": 97514,
             "total_pixels": 373321,
             "min": 0.048902031034231186,
-            "max": 1121.648681640625
+            "max": 1121.648681640625,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -236,7 +272,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -257,7 +295,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -278,7 +318,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -299,7 +341,9 @@
             "valid_pixels": 0,
             "total_pixels": 157990,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -320,7 +364,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -341,7 +387,9 @@
             "valid_pixels": 0,
             "total_pixels": 372100,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       }
@@ -364,7 +412,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -373,7 +423,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -382,7 +434,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -391,7 +445,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -400,7 +456,9 @@
             "valid_pixels": 0,
             "total_pixels": 153972,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -421,7 +479,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 0.003949041943997145,
-            "max": 0.014922920614480972
+            "max": 0.014922920614480972,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -430,7 +490,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 6.304526777967112e-06,
-            "max": 0.13058747351169586
+            "max": 0.13058747351169586,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -439,7 +501,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 0.000403103738790378,
-            "max": 5.3194379806518555
+            "max": 5.3194379806518555,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -448,7 +512,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 0.000185614509973675,
-            "max": 0.07979849725961685
+            "max": 0.07979849725961685,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -457,7 +523,9 @@
             "valid_pixels": 1677,
             "total_pixels": 373321,
             "min": 9.184056580124889e-06,
-            "max": 0.025707680732011795
+            "max": 0.025707680732011795,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -478,7 +546,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -487,7 +557,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -496,7 +568,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -505,7 +579,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -514,7 +590,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -535,7 +613,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -544,7 +624,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -553,7 +635,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -562,7 +646,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -571,7 +657,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -592,7 +680,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -601,7 +691,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -610,7 +702,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -619,7 +713,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -628,7 +724,9 @@
             "valid_pixels": 0,
             "total_pixels": 373321,
             "min": null,
-            "max": null
+            "max": null,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -649,7 +747,9 @@
             "valid_pixels": 70194,
             "total_pixels": 372710,
             "min": 2.7429012334323488e-05,
-            "max": 0.06568492949008942
+            "max": 0.06568492949008942,
+            "source": "",
+            "institution": ""
           },
           "CDOM": {
             "units": "1/m",
@@ -658,7 +758,9 @@
             "valid_pixels": 70194,
             "total_pixels": 372710,
             "min": 8.260100230472744e-07,
-            "max": 1.5901840925216675
+            "max": 1.5901840925216675,
+            "source": "",
+            "institution": ""
           },
           "CHL": {
             "units": "mg/m3",
@@ -667,7 +769,9 @@
             "valid_pixels": 70194,
             "total_pixels": 372710,
             "min": 3.777668462134898e-05,
-            "max": 22.476869583129883
+            "max": 22.476869583129883,
+            "source": "",
+            "institution": ""
           },
           "APH": {
             "units": "1/m",
@@ -676,7 +780,9 @@
             "valid_pixels": 70194,
             "total_pixels": 372710,
             "min": 4.088806963409297e-05,
-            "max": 0.21626846492290497
+            "max": 0.21626846492290497,
+            "source": "",
+            "institution": ""
           },
           "AD": {
             "units": "1/m",
@@ -685,7 +791,704 @@
             "valid_pixels": 70194,
             "total_pixels": 372710,
             "min": 8.903084136591133e-08,
-            "max": 0.22265656292438507
+            "max": 0.22265656292438507,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260904_070829_055_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-04T07:08:29+00:00",
+        "acquisition_end": "2026-09-04T07:11:59+00:00",
+        "source_file": "E06OCML2OC_20260904_070829_055_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260904_071148_055_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-04T07:11:48+00:00",
+        "acquisition_end": "2026-09-04T07:15:18+00:00",
+        "source_file": "E06OCML2OC_20260904_071148_055_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 191243,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260905_062231_061_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-05T06:22:31+00:00",
+        "acquisition_end": "2026-09-05T06:26:01+00:00",
+        "source_file": "E06OCML2OC_20260905_062231_061_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260905_062550_061_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-05T06:25:50+00:00",
+        "acquisition_end": "2026-09-05T06:29:20+00:00",
+        "source_file": "E06OCML2OC_20260905_062550_061_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 98662,
+            "total_pixels": 373321,
+            "min": 0.0014056283980607986,
+            "max": 0.13279570639133453,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 98662,
+            "total_pixels": 373321,
+            "min": 3.674124116059829e-07,
+            "max": 4.407724380493164,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 98662,
+            "total_pixels": 373321,
+            "min": 2.0436102204257622e-05,
+            "max": 21.20731544494629,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 98662,
+            "total_pixels": 373321,
+            "min": 2.7611813493422233e-05,
+            "max": 0.19291897118091583,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 98662,
+            "total_pixels": 373321,
+            "min": 5.519066235137871e-07,
+            "max": 8.07253646850586,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260906_071608_054_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-06T07:16:08+00:00",
+        "acquisition_end": "2026-09-06T07:19:37+00:00",
+        "source_file": "E06OCML2OC_20260906_071608_054_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260907_063010_060_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-07T06:30:10+00:00",
+        "acquisition_end": "2026-09-07T06:33:39+00:00",
+        "source_file": "E06OCML2OC_20260907_063010_060_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260907_063329_060_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-07T06:33:29+00:00",
+        "acquisition_end": "2026-09-07T06:36:59+00:00",
+        "source_file": "E06OCML2OC_20260907_063329_060_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260908_072346_053_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-08T07:23:46+00:00",
+        "acquisition_end": "2026-09-08T07:27:16+00:00",
+        "source_file": "E06OCML2OC_20260908_072346_053_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 157990,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260909_063748_059_013_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-09T06:37:48+00:00",
+        "acquisition_end": "2026-09-09T06:41:18+00:00",
+        "source_file": "E06OCML2OC_20260909_063748_059_013_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 373321,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      },
+      {
+        "file": "eos06_ocm3_l2c_oc/E06OCML2OC_20260909_064108_059_014_360m_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l2c_oc",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L2C",
+        "acquisition_start": "2026-09-09T06:41:08+00:00",
+        "acquisition_end": "2026-09-09T06:44:37+00:00",
+        "source_file": "E06OCML2OC_20260909_064108_059_014_360m_LAC_v1.0.0.nc",
+        "variables": {
+          "BP0": {
+            "units": "1/m",
+            "long_name": "Back-scattering coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CDOM": {
+            "units": "1/m",
+            "long_name": "Coloured Dissolved Organic Matter absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "CHL": {
+            "units": "mg/m3",
+            "long_name": "Chlorophyll-a",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "APH": {
+            "units": "1/m",
+            "long_name": "Phytoplankton absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          },
+          "AD": {
+            "units": "1/m",
+            "long_name": "Detritus absorption coefficient (443nm)",
+            "fill_value": -999.0,
+            "valid_pixels": 0,
+            "total_pixels": 372100,
+            "min": null,
+            "max": null,
+            "source": "",
+            "institution": ""
+          }
+        }
+      }
+    ],
+    "eos06_ocm3_l3c_flh_8day": [
+      {
+        "file": "eos06_ocm3_l3c_flh_8day/E06OCML3FL_20260905_8D_04km_LAC_v1.0.0.nc",
+        "product": "eos06_ocm3_l3c_flh_8day",
+        "satellite": "EOS06",
+        "sensor": "OCM3",
+        "processing_level": "L3C",
+        "acquisition_start": "2026-08-29T06:44:05+00:00",
+        "acquisition_end": "2026-09-05T08:09:35+00:00",
+        "source_file": "E06OCML3FL_20260905_8D_04km_LAC_v1.0.0.nc",
+        "variables": {
+          "FLH": {
+            "units": "W m^-2 sr^-1 Mu(m)^-1",
+            "long_name": "Fluorescence Line Height",
+            "fill_value": -999.0,
+            "valid_pixels": 461,
+            "total_pixels": 2500,
+            "min": 0.05896841362118721,
+            "max": 2.020022392272949,
+            "source": "",
+            "institution": "SAC"
           }
         }
       }
@@ -708,7 +1511,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 213.37863159179688,
-            "max": 252.69155883789062
+            "max": 252.69155883789062,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -729,7 +1534,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 197.51651000976562,
-            "max": 236.6435546875
+            "max": 236.6435546875,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -750,7 +1557,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 207.2459259033203,
-            "max": 262.09417724609375
+            "max": 262.09417724609375,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -771,7 +1580,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 186.81483459472656,
-            "max": 274.4698486328125
+            "max": 274.4698486328125,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -792,7 +1603,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 214.12222290039062,
-            "max": 274.0523681640625
+            "max": 274.0523681640625,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -813,7 +1626,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 193.039306640625,
-            "max": 268.64544677734375
+            "max": 268.64544677734375,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -834,7 +1649,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 248.65074157714844,
-            "max": 276.83154296875
+            "max": 276.83154296875,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -855,7 +1672,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 227.8492889404297,
-            "max": 273.0657653808594
+            "max": 273.0657653808594,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -876,7 +1695,9 @@
             "valid_pixels": 2860,
             "total_pixels": 2860,
             "min": 163.2545166015625,
-            "max": 239.76129150390625
+            "max": 239.76129150390625,
+            "source": "",
+            "institution": ""
           }
         }
       }
@@ -899,7 +1720,9 @@
             "valid_pixels": 1123,
             "total_pixels": 2860,
             "min": 299.3014221191406,
-            "max": 303.4885559082031
+            "max": 303.4885559082031,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -920,7 +1743,9 @@
             "valid_pixels": 1081,
             "total_pixels": 2860,
             "min": 299.22808837890625,
-            "max": 303.4217834472656
+            "max": 303.4217834472656,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -941,7 +1766,9 @@
             "valid_pixels": 1176,
             "total_pixels": 2860,
             "min": 299.7188720703125,
-            "max": 303.47882080078125
+            "max": 303.47882080078125,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -962,7 +1789,9 @@
             "valid_pixels": 1438,
             "total_pixels": 2860,
             "min": 299.7405700683594,
-            "max": 302.9477233886719
+            "max": 302.9477233886719,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -983,7 +1812,9 @@
             "valid_pixels": 1452,
             "total_pixels": 2860,
             "min": 299.94781494140625,
-            "max": 303.5235595703125
+            "max": 303.5235595703125,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -1004,7 +1835,9 @@
             "valid_pixels": 1337,
             "total_pixels": 2860,
             "min": 299.59661865234375,
-            "max": 303.54388427734375
+            "max": 303.54388427734375,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -1025,7 +1858,9 @@
             "valid_pixels": 1450,
             "total_pixels": 2860,
             "min": 299.88482666015625,
-            "max": 303.60833740234375
+            "max": 303.60833740234375,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -1046,7 +1881,9 @@
             "valid_pixels": 1420,
             "total_pixels": 2860,
             "min": 299.8946228027344,
-            "max": 303.6214904785156
+            "max": 303.6214904785156,
+            "source": "",
+            "institution": ""
           }
         }
       },
@@ -1067,7 +1904,2079 @@
             "valid_pixels": 1006,
             "total_pixels": 2860,
             "min": 299.9154052734375,
-            "max": 303.7268371582031
+            "max": 303.7268371582031,
+            "source": "",
+            "institution": ""
+          }
+        }
+      }
+    ],
+    "saral_altika_igdr_swh": [
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0026_20260901_123022_20260901_132039.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-01T12:49:00.645278+00:00",
+        "acquisition_end": "2026-09-01T12:52:22.156837+00:00",
+        "source_file": "SRL_IPN_2PfP206_0026_20260901_123022_20260901_132039.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 11.03451,
+            "max": 22.979377,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 78.025947,
+            "max": 80.83146099999999,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 841582140.645278,
+            "max": 841582342.156837,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 16,
+            "total_pixels": 190,
+            "min": 0.084,
+            "max": 27.029,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 16,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 12.924,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 26.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 16,
+            "total_pixels": 190,
+            "min": 0.76,
+            "max": 10.950000000000001,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 3.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": -372677.0,
+            "max": -33266.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 190,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 190,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 3.71,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": -2.83,
+            "max": 1.49,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0039_20260901_232357_20260902_001414.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-01T23:53:43.878237+00:00",
+        "acquisition_end": "2026-09-01T23:55:36.213758+00:00",
+        "source_file": "SRL_IPN_2PfP206_0039_20260901_232357_20260902_001414.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 16.337611,
+            "max": 22.994937,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 86.903994,
+            "max": 88.498778,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 841622023.8782368,
+            "max": 841622136.213758,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 85,
+            "total_pixels": 110,
+            "min": 3.2880000000000003,
+            "max": 17.941,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 85,
+            "total_pixels": 110,
+            "min": 1.079,
+            "max": 8.582,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 85,
+            "total_pixels": 110,
+            "min": 5.5200000000000005,
+            "max": 13.32,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": -110672.0,
+            "max": 459023.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 90,
+            "total_pixels": 110,
+            "min": 4.26,
+            "max": 6.42,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 90,
+            "total_pixels": 110,
+            "min": 179.85,
+            "max": 211.48000000000002,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": -1.52,
+            "max": 10.18,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 110,
+            "total_pixels": 110,
+            "min": 0.3,
+            "max": 7.48,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0054_20260902_115806_20260902_124823.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-02T12:17:12.577795+00:00",
+        "acquisition_end": "2026-09-02T12:20:06.758644+00:00",
+        "source_file": "SRL_IPN_2PfP206_0054_20260902_115806_20260902_124823.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 11.015884,
+            "max": 21.342551999999998,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 86.089235,
+            "max": 88.497717,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 841666632.577795,
+            "max": 841666806.7586441,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 1.449,
+            "max": 12.996,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 0.277,
+            "max": 9.899000000000001,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 10.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 3.88,
+            "max": 9.84,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 20745.0,
+            "max": 648321.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 5.65,
+            "max": 6.95,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 187.8,
+            "max": 208.17000000000002,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 3.66,
+            "max": 8.1,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 170,
+            "total_pixels": 170,
+            "min": 2.16,
+            "max": 6.34,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0097_20260903_235959_20260904_005016.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-04T00:28:16.103104+00:00",
+        "acquisition_end": "2026-09-04T00:31:37.340734+00:00",
+        "source_file": "SRL_IPN_2PfP206_0097_20260903_235959_20260904_005016.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 11.023024,
+            "max": 22.955713,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 77.910265,
+            "max": 80.712265,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 841796896.1031041,
+            "max": 841797097.340734,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 57,
+            "total_pixels": 190,
+            "min": 1.811,
+            "max": 23.961000000000002,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 57,
+            "total_pixels": 190,
+            "min": 0.106,
+            "max": 14.529,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 57,
+            "total_pixels": 190,
+            "min": 0.77,
+            "max": 13.700000000000001,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": -513457.0,
+            "max": 93270.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 43,
+            "total_pixels": 190,
+            "min": 3.18,
+            "max": 4.78,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 43,
+            "total_pixels": 190,
+            "min": 144.05,
+            "max": 170.0,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": 0.16,
+            "max": 6.6000000000000005,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 190,
+            "total_pixels": 190,
+            "min": -1.2,
+            "max": 4.41,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0112_20260904_123408_20260904_132425.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-04T12:52:46.783914+00:00",
+        "acquisition_end": "2026-09-04T12:56:07.955035+00:00",
+        "source_file": "SRL_IPN_2PfP206_0112_20260904_123408_20260904_132425.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 11.053064,
+            "max": 22.977045999999998,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 77.094652,
+            "max": 79.89555299999999,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 841841566.7839141,
+            "max": 841841767.9550352,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 24,
+            "total_pixels": 191,
+            "min": 1.988,
+            "max": 28.514,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 24,
+            "total_pixels": 191,
+            "min": 0.185,
+            "max": 17.173000000000002,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 0.0,
+            "max": 20.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 24,
+            "total_pixels": 191,
+            "min": 0.73,
+            "max": 11.700000000000001,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 3.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": -445197.0,
+            "max": -37864.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 191,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 191,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": 1.53,
+            "max": 4.44,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 191,
+            "total_pixels": 191,
+            "min": -1.81,
+            "max": 3.3200000000000003,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0125_20260904_232744_20260905_001800.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-04T23:56:21.503076+00:00",
+        "acquisition_end": "2026-09-04T23:59:21.951208+00:00",
+        "source_file": "SRL_IPN_2PfP206_0125_20260904_232744_20260905_001800.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 12.278469999999999,
+            "max": 22.977356999999998,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 85.972871,
+            "max": 88.496065,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 841881381.5030761,
+            "max": 841881561.9512081,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 136,
+            "total_pixels": 174,
+            "min": 1.125,
+            "max": 23.077,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 136,
+            "total_pixels": 174,
+            "min": 0.233,
+            "max": 13.315,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 136,
+            "total_pixels": 174,
+            "min": 0.88,
+            "max": 6.78,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": -137521.0,
+            "max": 552182.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 134,
+            "total_pixels": 174,
+            "min": 5.46,
+            "max": 6.53,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 134,
+            "total_pixels": 174,
+            "min": 173.04,
+            "max": 200.83,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": 0.53,
+            "max": 5.82,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 174,
+            "min": -0.8300000000000001,
+            "max": 4.3,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0140_20260905_120152_20260905_125209.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-05T12:20:30.893134+00:00",
+        "acquisition_end": "2026-09-05T12:23:52.967997+00:00",
+        "source_file": "SRL_IPN_2PfP206_0140_20260905_120152_20260905_125209.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 11.008462,
+            "max": 22.985937,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 85.151946,
+            "max": 87.96510699999999,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 841926030.8931341,
+            "max": 841926232.9679971,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 197,
+            "min": 0.757,
+            "max": 1.841,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 197,
+            "min": 0.211,
+            "max": 0.421,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 174,
+            "total_pixels": 197,
+            "min": 4.19,
+            "max": 6.38,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": -84691.0,
+            "max": 564733.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 180,
+            "total_pixels": 197,
+            "min": 3.13,
+            "max": 6.28,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 180,
+            "total_pixels": 197,
+            "min": 178.99,
+            "max": 192.22,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": -1.33,
+            "max": 5.98,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 197,
+            "total_pixels": 197,
+            "min": 0.46,
+            "max": 6.49,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0183_20260907_000345_20260907_005402.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-07T00:32:01.841639+00:00",
+        "acquisition_end": "2026-09-07T00:35:23.679843+00:00",
+        "source_file": "SRL_IPN_2PfP206_0183_20260907_000345_20260907_005402.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 11.009157,
+            "max": 22.977856,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 76.969517,
+            "max": 79.779946,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 842056321.841639,
+            "max": 842056523.679843,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 179,
+            "min": 2.358,
+            "max": 25.69,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 179,
+            "min": 0.124,
+            "max": 5.91,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 0.0,
+            "max": 10.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 179,
+            "min": 0.77,
+            "max": 5.65,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 3.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": -498491.0,
+            "max": -7048.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 7,
+            "total_pixels": 179,
+            "min": 3.5500000000000003,
+            "max": 4.45,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 7,
+            "total_pixels": 179,
+            "min": 137.57,
+            "max": 141.02,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": 0.79,
+            "max": 4.22,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 179,
+            "total_pixels": 179,
+            "min": -2.31,
+            "max": 2.57,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0198_20260907_123754_20260907_132811.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-07T12:56:32.501109+00:00",
+        "acquisition_end": "2026-09-07T12:59:27.900984+00:00",
+        "source_file": "SRL_IPN_2PfP206_0198_20260907_123754_20260907_132811.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 12.600290999999999,
+            "max": 22.994705999999997,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 76.50905999999999,
+            "max": 78.963717,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 842100992.5011091,
+            "max": 842101167.9009838,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 168,
+            "min": 6.075,
+            "max": 28.224,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 168,
+            "min": 0.66,
+            "max": 10.538,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 0.0,
+            "max": 9.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 1.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 12,
+            "total_pixels": 168,
+            "min": 0.64,
+            "max": 10.51,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 3.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": -517679.0,
+            "max": -11778.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 168,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 0,
+            "total_pixels": 168,
+            "min": null,
+            "max": null,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": 1.42,
+            "max": 4.71,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 168,
+            "total_pixels": 168,
+            "min": -2.08,
+            "max": 1.6500000000000001,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0211_20260907_233130_20260908_002146.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-07T23:59:46.571236+00:00",
+        "acquisition_end": "2026-09-08T00:03:07.857175+00:00",
+        "source_file": "SRL_IPN_2PfP206_0211_20260907_233130_20260908_002146.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 11.039792,
+            "max": 22.975921,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 85.038012,
+            "max": 87.840901,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 842140786.5712361,
+            "max": 842140987.8571749,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 148,
+            "total_pixels": 193,
+            "min": 1.0070000000000001,
+            "max": 29.657,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 148,
+            "total_pixels": 193,
+            "min": 0.177,
+            "max": 15.096,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 148,
+            "total_pixels": 193,
+            "min": 1.32,
+            "max": 9.64,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": -140248.0,
+            "max": 594735.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 147,
+            "total_pixels": 193,
+            "min": 4.57,
+            "max": 5.4,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 147,
+            "total_pixels": 193,
+            "min": 182.43,
+            "max": 208.5,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": 0.12,
+            "max": 7.49,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 193,
+            "total_pixels": 193,
+            "min": -0.66,
+            "max": 6.04,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          }
+        }
+      },
+      {
+        "file": "saral_altika_igdr_swh/SRL_IPN_2PfP206_0226_20260908_120538_20260908_125555.CNES.nc",
+        "product": "saral_altika_igdr_swh",
+        "satellite": "SARAL",
+        "sensor": "ALTIKA",
+        "processing_level": "IGDR",
+        "acquisition_start": "2026-09-08T12:24:17.383688+00:00",
+        "acquisition_end": "2026-09-08T12:27:38.427555+00:00",
+        "source_file": "SRL_IPN_2PfP206_0226_20260908_120538_20260908_125555.CNES.nc",
+        "variables": {
+          "lat": {
+            "units": "degrees_north",
+            "long_name": "latitude",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 11.039679999999999,
+            "max": 22.955457,
+            "source": "",
+            "institution": ""
+          },
+          "lon": {
+            "units": "degrees_east",
+            "long_name": "longitude",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 84.222904,
+            "max": 87.021289,
+            "source": "",
+            "institution": ""
+          },
+          "time": {
+            "units": "seconds since 2000-01-01 00:00:00.0",
+            "long_name": "time (sec. since 2000-01-01)",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 842185457.383688,
+            "max": 842185658.4275551,
+            "source": "",
+            "institution": ""
+          },
+          "swh": {
+            "units": "m",
+            "long_name": "Corrected significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 147,
+            "total_pixels": 196,
+            "min": 0.871,
+            "max": 26.834,
+            "source": "",
+            "institution": ""
+          },
+          "swh_rms": {
+            "units": "m",
+            "long_name": "RMS of the significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 147,
+            "total_pixels": 196,
+            "min": 0.213,
+            "max": 1.576,
+            "source": "",
+            "institution": ""
+          },
+          "swh_numval": {
+            "units": "count",
+            "long_name": "number of valid points used to compute significant waveheight",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 0.0,
+            "max": 40.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_alt_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz altimeter data: SWH",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "qual_inst_corr_1hz_swh": {
+            "units": "",
+            "long_name": "quality flag for 1 Hz instrumental correction: SWH",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 0.0,
+            "max": 1.0,
+            "source": "",
+            "institution": ""
+          },
+          "wind_speed_alt": {
+            "units": "m/s",
+            "long_name": "altimeter wind speed",
+            "fill_value": null,
+            "valid_pixels": 147,
+            "total_pixels": 196,
+            "min": 2.64,
+            "max": 7.42,
+            "source": "Tran2014",
+            "institution": "CLS/CNES"
+          },
+          "surface_type": {
+            "units": "",
+            "long_name": "surface type",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 0.0,
+            "max": 3.0,
+            "source": "",
+            "institution": ""
+          },
+          "dist_coast": {
+            "units": "m",
+            "long_name": "distance to the coast",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": -113518.0,
+            "max": 468937.0,
+            "source": "",
+            "institution": ""
+          },
+          "ice_flag": {
+            "units": "",
+            "long_name": "ice flag",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": 0.0,
+            "max": 0.0,
+            "source": "",
+            "institution": ""
+          },
+          "mean_wave_period_t02": {
+            "units": "s",
+            "long_name": "t02 mean wave period",
+            "fill_value": null,
+            "valid_pixels": 150,
+            "total_pixels": 196,
+            "min": 4.93,
+            "max": 6.25,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "mean_wave_direction": {
+            "units": "degrees",
+            "long_name": "mean direction of the sea surface wave",
+            "fill_value": null,
+            "valid_pixels": 150,
+            "total_pixels": 196,
+            "min": 176.64000000000001,
+            "max": 205.01,
+            "source": "MFWAM",
+            "institution": "Meteo France"
+          },
+          "wind_speed_model_u": {
+            "units": "m/s",
+            "long_name": "U component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": -2.13,
+            "max": 6.15,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
+          },
+          "wind_speed_model_v": {
+            "units": "m/s",
+            "long_name": "V component of the model wind vector",
+            "fill_value": null,
+            "valid_pixels": 196,
+            "total_pixels": 196,
+            "min": -1.85,
+            "max": 4.98,
+            "source": "European Center for Medium Range Weather Forecasting",
+            "institution": "ECMWF"
           }
         }
       }

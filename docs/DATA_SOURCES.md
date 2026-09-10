@@ -79,6 +79,57 @@ produces a `not_configured` skip, not an error and not a substitute value.
 
 ---
 
+## 4b. Clipped ISRO fixtures in this repository
+
+`backend/fixtures/isro/kakinada/` holds real MOSDAC granules clipped to the
+demo box by `backend/scripts/subset_granules.py`. The raw granules (400 files,
+4.8 GB) are fetched out of band and are gitignored; only the clipped output is
+committed. `index.json` records, per granule, the acquisition window, the
+satellite and sensor, and every variable's units, fill value, valid-pixel count
+and range.
+
+| Product key | Satellite / sensor | Level | Granules | Variables | Units |
+| :--- | :--- | :--- | ---: | :--- | :--- |
+| `eos06_ocm3_l2c_ga` | EOS-06 OCM3 | L2C | 16 | `CDOM` | 1/m at 412 nm |
+| `eos06_ocm3_l2c_oc` | EOS-06 OCM3 | L2C | 16 | `CHL`, `APH`, `AD`, `BP0`, `CDOM` | mg/m3, 1/m |
+| `eos06_ocm3_l3c_flh_8day` | EOS-06 OCM3 | L3C | 1 | `FLH` | `W m^-2 sr^-1 Mu(m)^-1` |
+| `insat3dr_l3b_olr_daily` | INSAT-3DR Imager | L3B | 9 | `OLR_DLY` | W.m-2 |
+| `insat3dr_l3b_sst_daily` | INSAT-3DR Imager | L3B | 9 | `SST_DLY` | K |
+| `saral_altika_igdr_swh` | SARAL / AltiKa | IGDR | 11 | `swh`, `swh_rms`, `swh_numval`, `wind_speed_alt` | m, m, count, m/s |
+
+**Variable names are the granule's own.** They are not what the product
+descriptions suggest: the 8-day fluorescence composite is described as nFLH and
+the variable inside it is `FLH`; the OSCAT-3 L3 wind grid keeps its attributes
+on the `science_data` group rather than the file root, and its datasets carry
+no units, no scale factors and no fill values at all.
+
+**These are faithful clips, not curated measurements.** Nothing is resampled,
+renamed, re-scaled or filtered. `index.json` carries a `product_notes` block and
+each fixture an `orca_usage_note` attribute; read them before publishing a value.
+The SARAL note matters most: raw `swh` in this set reaches 29.66 m, which is not
+a physical Bay of Bengal sea state. `surface_type == 0` removes land crossings
+and `qual_alt_1hz_swh` removes nothing further — it does not discriminate here.
+`swh_rms` is what does. Applying `surface_type == 0 AND swh_numval >= 20 AND
+swh_rms < 2.0` keeps 809 of 877 ocean points and gives max 6.80 m, p99 5.32 m,
+median 1.75 m.
+
+**Per-variable provenance is recorded, and it is not all ISRO.** A SARAL IGDR
+carries ECMWF model wind (`wind_speed_model_u`/`_v`) and Météo-France MFWAM wave
+period and direction (`mean_wave_period_t02`, `mean_wave_direction`) alongside
+the altimeter's own `swh`, in a file whose `institution` is CNES. Each
+variable's `source` and `institution` ride into `index.json` so an adapter
+cannot label a European model field an ISRO measurement — see
+`app/providers/provenance.py`, which caps anything ECMWF-derived at `FALLBACK`.
+
+**Two ordered products yield nothing over this box, for different reasons.**
+
+| Product | Why |
+| :--- | :--- |
+| `E06SCT_L3_WW12` (OSCAT-3 winds) | The nine granules held contain **no valid retrieval anywhere in the Indian Ocean** — 0 of 416,000 cells in 40°S–25°N, 20–120°E, against 13.9% coverage globally. Each file is a single ~100-minute revolution and these orbits cross the Pacific and the Americas. The reader is implemented and verified against a box where these orbits do have data; the fix is fetching the right revolutions, not changing the clip. |
+| `SRLIPN_F` (SARAL) at the 2° box | Nadir tracks are ~300 km apart and the nearest pass misses the Kakinada box by 320 km. The product **is** clipped, using `--track-margin-deg` (default 5°), and both the requested box and the box actually used are recorded in every fixture and in `index.json`. |
+
+---
+
 ## 5. Endpoints and reachability
 
 | Endpoint | Observed from a developer machine |
