@@ -109,7 +109,16 @@ python -m pytest -v
 
 ---
 
-## 5. Repository Documentation Index
+## 5. Deployment (Render + Vercel)
+
+- **Backend -> Render**: `render.yaml` at the repo root is a Blueprint (Docker, `Dockerfile.backend`, health check `/health`, `ORCA_MODE=DEMO`). Dashboard -> New -> Blueprint -> select this repo.
+- **Frontend -> Vercel**: import the repo with Root Directory `frontend`, set `NEXT_PUBLIC_API_BASE_URL=https://<backend>.onrender.com`. Or from `frontend/`: `npx vercel --prod`.
+- Then add the Vercel URL to the backend's `CORS_ORIGINS` on Render.
+- DEMO mode needs no outbound network or API keys. Full steps: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+---
+
+## 6. Repository Documentation Index
 
 | Document | Purpose |
 | :--- | :--- |

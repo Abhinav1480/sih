@@ -1,62 +1,127 @@
-# Production Deployment & Infrastructure Guide
+# Deployment Guide
 ## ORCA: SIH 2026 PS 26176
 
-### 1. Prerequisites
-- Node.js 18+ or 20+
-- Python 3.10+
-- PostgreSQL 15+ with PostGIS 3+ (optional for production; SQLite included for local zero-dependency development)
-- Docker & Docker Compose (optional for containerized deployment)
+Target topology: **FastAPI backend on Render (Docker)** + **Next.js frontend on Vercel**.
+Both run in `ORCA_MODE=DEMO` by default, which needs **no API keys and no outbound
+network** (deterministic fixtures, seeded SQLite). Switch to `LIVE` only after adding
+provider credentials.
 
 ---
 
-### 2. Local Bare-Metal Startup (Fastest Developer Workflow)
+## 1. Backend -> Render
 
-#### Terminal 1: Backend
+Files: `Dockerfile.backend` (repo root), `render.yaml` (Blueprint, repo root).
+
+### 1a. One-time setup (Blueprint, recommended)
+1. Push the branch to GitHub.
+2. Render Dashboard -> **New** -> **Blueprint** -> connect the repo -> **Apply**.
+   Render reads `render.yaml`: Docker runtime, `dockerfilePath: ./Dockerfile.backend`,
+   `healthCheckPath: /health`, plan `free`, region `singapore`.
+3. First build takes ~3-5 min (pip install of numpy / xarray / netCDF4 / h5py wheels).
+4. Note the URL, e.g. `https://orca-backend.onrender.com`. Verify:
+   ```bash
+   curl https://orca-backend.onrender.com/health
+   # {"status":"HEALTHY", ...}
+   ```
+
+### 1b. Manual alternative (no Blueprint)
+New -> Web Service -> Docker -> Dockerfile path `./Dockerfile.backend`, context `.`,
+Health Check Path `/health`, then add the env vars from the table below.
+
+### 1c. Render CLI / API (if you have a key)
 ```bash
-# Clone and enter repository
-cd sih
-
-# Setup Python environment
-python -m venv venv
-.\venv\Scripts\Activate.ps1   # On Windows PowerShell (or source venv/bin/activate on Linux/Mac)
-pip install -r backend/requirements.txt
-
-# Run FastAPI backend (http://127.0.0.1:8000)
-python backend/run.py
+# Render has no login-less CLI flow; get a key at Dashboard -> Account Settings -> API Keys
+export RENDER_API_KEY=rnd_xxx
+npx -y @render/cli blueprints launch --repo <github-url> --branch main   # or use the dashboard
 ```
 
-#### Terminal 2: Frontend
-```bash
-cd sih/frontend
-npm install
-npm run dev
-# Running on http://localhost:3000
-```
+### Backend env vars (Render -> orca-backend -> Environment)
 
----
-
-### 3. Containerized Deployment (Docker Compose)
-
-```bash
-cd sih
-docker compose up --build -d
-```
-
-The stack provisions:
-1. `orca-db`: PostgreSQL 16 with PostGIS extensions
-2. `orca-backend`: FastAPI application on port 8000
-3. `orca-frontend`: Next.js 14 production standalone server on port 3000
-
----
-
-### 4. Environment Variables Reference
-
-| Variable | Default Value | Description |
+| Variable | Value | Note |
 | :--- | :--- | :--- |
-| `ORCA_MODE` | `DEMO` | Sets system mode: `DEMO` (deterministic offline fixtures) or `LIVE` (real network calls). |
-| `DATABASE_URL` | `sqlite+aiosqlite:///./orca.db` | Connection string for database. |
-| `HOST` | `127.0.0.1` | Host address for FastAPI backend. |
-| `PORT` | `8000` | Port for FastAPI backend. |
-| `ANTHROPIC_API_KEY` | *(Optional)* | Anthropic Claude API key for live Claude synthesis. |
-| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20241022` | Configured Claude model identifier. |
-| `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:8000` | Target URL used by Next.js frontend to query backend. |
+| `PORT` | *(injected by Render)* | Dockerfile CMD binds `0.0.0.0:${PORT:-8000}` |
+| `ORCA_MODE` | `DEMO` | Offline deterministic mode; `LIVE` enables real providers |
+| `DEBUG` | `False` | Disables uvicorn reload |
+| `CORS_ORIGINS` | `http://localhost:3000,https://<frontend>.vercel.app` | Comma list, no spaces, no trailing slash |
+| `DATABASE_URL` | `sqlite+aiosqlite:///./orca.db` | Free plan disk is ephemeral; fine for DEMO |
+| `ANTHROPIC_API_KEY` | *(empty)* | LIVE synthesis only |
+| `MOSDAC_API_TOKEN`, `BHOONIDHI_API_TOKEN` | *(empty)* | LIVE ISRO products only |
+
+**CORS**: after the frontend is live, add its exact origin (`https://...vercel.app`) to
+`CORS_ORIGINS` and redeploy the backend. Preview deployments get a different hostname
+per commit; add them too, or point previews at a local backend.
+
+**Health check**: `GET /health` returns `{"status":"HEALTHY"}`; Render marks the deploy
+live only once it responds 200. Free instances sleep after 15 min idle; the first
+request afterwards takes ~30-60 s. Ping `/health` before a demo.
+
+---
+
+## 2. Frontend -> Vercel
+
+Files: `frontend/` (Next.js 14, auto-detected). No `vercel.json` is needed.
+
+### 2a. Git integration (recommended)
+1. Vercel Dashboard -> **Add New** -> **Project** -> import the repo.
+2. **Root Directory**: `frontend` (important: the repo root is not the Next.js app).
+3. Framework preset: Next.js (auto). Build `npm run build`, output `.next` (defaults).
+4. Environment Variables (Production + Preview):
+
+   | Variable | Value |
+   | :--- | :--- |
+   | `NEXT_PUBLIC_API_BASE_URL` | `https://orca-backend.onrender.com` |
+   | `NEXT_PUBLIC_API_URL` | same value (legacy fallback name read by `src/lib/api.ts`) |
+   | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | your Maps JavaScript API key (optional) |
+
+5. Deploy. `NEXT_PUBLIC_*` values are inlined at build time, so **changing them
+   requires a redeploy** (Deployments -> ... -> Redeploy).
+
+### 2b. CLI
+```bash
+cd frontend
+npx vercel login                 # once; opens browser
+npx vercel link --yes --project orca-frontend
+npx vercel env add NEXT_PUBLIC_API_BASE_URL production   # paste the Render URL
+npx vercel --yes --prod
+```
+
+Current production deployment (CLI, project `orca-frontend`): see the URL recorded in
+section 4. It was deployed **before** a Render URL existed, so `NEXT_PUBLIC_API_BASE_URL`
+is unset there and the client falls back to `http://127.0.0.1:8000` — set the env var in
+the Vercel dashboard and redeploy once the backend is up.
+
+---
+
+## 3. Local Docker (optional)
+
+```bash
+# Backend only, on a spare port
+docker build -f Dockerfile.backend -t orca-backend .
+docker run --rm -p 8123:8123 -e PORT=8123 orca-backend
+curl http://localhost:8123/health
+
+# Frontend image needs the backend URL at build time
+docker build -f Dockerfile.frontend --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 -t orca-frontend .
+
+# Full stack
+docker compose up --build
+```
+
+---
+
+## 4. Deployment record
+
+| Component | Status | URL |
+| :--- | :--- | :--- |
+| Frontend (Vercel, `orca-frontend`) | Project created + linked; production build **failed** on a pre-existing TS error (`src/components/MapView.tsx:872`, `LayerControl` missing `opacities`/`onOpacityChange`). Fix, then `cd frontend && npx vercel --yes --prod` | [inspect](https://vercel.com/24911a05c5-3655s-projects/orca-frontend/4MJGWFLWb1uitZkCUFxNMocVyuMg); target `https://orca-frontend-*.vercel.app` |
+| Backend (Render, `orca-backend`) | Blocked: no `RENDER_API_KEY` / Render CLI on the build machine | apply `render.yaml` via dashboard |
+
+---
+
+## 5. Post-deploy checklist
+1. `curl https://<backend>.onrender.com/health` -> 200.
+2. `CORS_ORIGINS` on Render includes the Vercel origin; redeploy backend.
+3. `NEXT_PUBLIC_API_BASE_URL` on Vercel equals the Render URL; redeploy frontend.
+4. Open the Vercel URL, run a query (e.g. "Is it safe to fish near Visakhapatnam tomorrow?"),
+   confirm the Evidence drawer shows `DEMO` provenance tags.
+5. Wake the free Render instance a few minutes before any live demo.

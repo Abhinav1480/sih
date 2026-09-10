@@ -1,0 +1,26 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Dashboard -> New -> Blueprint -> pick this repo. Render reads this file.
+services:
+  - type: web
+    name: orca-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ORCA_MODE
+        value: DEMO
+      - key: DEBUG
+        value: "False"
+      # Comma-separated. Replace the vercel.app entry with the real frontend URL
+      # (Dashboard -> orca-backend -> Environment) after the first Vercel deploy.
+      - key: CORS_ORIGINS
+        value: http://localhost:3000,http://127.0.0.1:3000,https://orca-frontend.vercel.app
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./orca.db
+      # LIVE mode only; leave empty for the offline DEMO.
+      - key: ANTHROPIC_API_KEY
+        sync: false

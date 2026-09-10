@@ -1,22 +1,22 @@
-FROM python:3.11-slim
+# ORCA backend: FastAPI + deterministic DEMO providers.
+# python:3.12-slim + manylinux wheels: numpy / h5py / netCDF4 / xarray / shapely
+# all ship prebuilt wheels for 3.12, so no compiler or libgeos is needed.
+FROM python:3.12-slim
 
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    ORCA_MODE=DEMO \
+    HOST=0.0.0.0 \
+    DEBUG=False
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libgeos-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Includes backend/fixtures/ when present (DEMO providers read from it).
+COPY backend/ /app/backend/
 
-COPY backend/ /app/
-
+# Render injects $PORT; local runs fall back to 8000. Health check: GET /health
 EXPOSE 8000
-
-CMD ["python", "run.py"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --app-dir backend"]
