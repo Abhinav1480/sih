@@ -187,7 +187,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       {/* Live region for state + errors (also visible text). */}
       <span
         aria-live="polite"
-        className={`sr-only-fallback text-[10.5px] ${
+        className={`text-[10.5px] ${
           state === "denied" || state === "error" || state === "unavailable"
             ? "text-amber-300"
             : "text-orca-dim"
