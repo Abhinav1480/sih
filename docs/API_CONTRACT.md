@@ -160,7 +160,7 @@ sanctuary still surfaces the warning. Never suppress it based on `intent`.
 | `attribution` | string? | Display verbatim when present |
 | `provider_tier` | enum | See §6 |
 
-At contract 1.0.0 every layer is `kind="geojson"` and tier `FALLBACK` — these
+As of contract 1.1.0 every layer is `kind="geojson"` and tier `FALLBACK` — these
 are ORCA's own derived geometries, not an agency product. `kind="wms"` is
 reserved for the ISRO Bhuvan layers arriving in BE-02; **implement the `wms`
 branch now** so that lands without a contract bump.
@@ -228,7 +228,7 @@ tier stays a pure statement about authority.
 | `evidence_ids[]` | string | |
 | `source`, `provider_tier` | string, enum | Same rule as §6 |
 
-At contract 1.0.0 these are **request-scoped**: derived from the observations
+As of contract 1.1.0 these are **request-scoped**: derived from the observations
 of this response. `lightning` and `cyclone` are declared in the enum but not
 yet produced — the data is not modelled (see §11). The background monitor that
 pushes alerts without a request behind them arrives in BE-07.
