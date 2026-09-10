@@ -1,6 +1,9 @@
 # ORCA — Marine EcOsystem Reasoning with Collaborative Agents
 ### Smart India Hackathon (SIH 2026) — Problem Statement 26176
-**Domain:** Ministry of Earth Sciences (MoES) / INCOIS / Department of Fisheries
+**Organisation:** Indian Space Research Organisation (ISRO)  
+**Department:** Department of Space  
+**Category:** Software  
+**Theme:** Disaster Management
 
 [![Tests](https://img.shields.io/badge/pytest-51%20passed-brightgreen.svg)](docs/TESTING.md)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-blue.svg)](https://nextjs.org)
