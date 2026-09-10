@@ -30,18 +30,23 @@ BOUNDARIES_TS = (
     / "boundaries.ts"
 )
 
-# id: "mpa_x", ... coordinates: [[ ... ]],
+# id: "mpa_x", ... authority: "...", ... coordinates: [[ ... ]],
 _FEATURE = re.compile(
-    r'id:\s*"(?P<id>mpa_[a-z_]+)".*?coordinates:\s*\[(?P<ring>\[.*?\])\],',
+    r'id:\s*"(?P<id>mpa_[a-z_]+)".*?'
+    r'authority:\s*"(?P<authority>[^"]*)".*?'
+    r'coordinates:\s*\[(?P<ring>\[.*?\])\],',
     re.DOTALL,
 )
 
 
-def _frontend_rings() -> dict[str, list[list[float]]]:
+def _frontend_features() -> dict[str, dict]:
     source = BOUNDARIES_TS.read_text(encoding="utf-8")
     found = {}
     for m in _FEATURE.finditer(source):
-        found[m.group("id")] = json.loads(m.group("ring"))
+        found[m.group("id")] = {
+            "ring": json.loads(m.group("ring")),
+            "authority": m.group("authority"),
+        }
     return found
 
 
@@ -53,15 +58,15 @@ def _closed(coords) -> list[list[float]]:
 
 
 @pytest.fixture(scope="module")
-def frontend_rings():
+def frontend_features():
     if not BOUNDARIES_TS.exists():
         pytest.skip(f"{BOUNDARIES_TS} not present")
-    return _frontend_rings()
+    return _frontend_features()
 
 
-def test_every_backend_mpa_is_present_in_the_bundle(frontend_rings):
+def test_every_backend_mpa_is_present_in_the_bundle(frontend_features):
     backend_ids = {a["id"] for a in INDIAN_MARINE_PROTECTED_AREAS}
-    missing = backend_ids - set(frontend_rings)
+    missing = backend_ids - set(frontend_features)
     assert not missing, (
         f"the frontend geofence bundle is missing {sorted(missing)}; a zone the "
         "backend enforces would not be flagged offline"
@@ -69,14 +74,14 @@ def test_every_backend_mpa_is_present_in_the_bundle(frontend_rings):
 
 
 @pytest.mark.parametrize("area", INDIAN_MARINE_PROTECTED_AREAS, ids=lambda a: a["id"])
-def test_bundled_polygon_matches_the_backend(area, frontend_rings):
+def test_bundled_polygon_matches_the_backend(area, frontend_features):
     """The regression. A frontend ring that outgrew the backend's flags ports
     and anchorages as protected water."""
     mid = area["id"]
-    assert mid in frontend_rings, f"{mid} absent from the frontend bundle"
+    assert mid in frontend_features, f"{mid} absent from the frontend bundle"
 
     expected = _closed(area["polygon_coords"])
-    actual = frontend_rings[mid]
+    actual = frontend_features[mid]["ring"]
 
     assert actual == expected, (
         f"{mid}: frontend geometry has drifted from "
@@ -84,4 +89,26 @@ def test_bundled_polygon_matches_the_backend(area, frontend_rings):
         f"  backend:  {expected}\n"
         f"  frontend: {actual}\n"
         "Resync the bundle. A larger frontend ring puts harbours inside an MPA."
+    )
+
+
+@pytest.mark.parametrize("area", INDIAN_MARINE_PROTECTED_AREAS, ids=lambda a: a["id"])
+def test_bundled_authority_matches_the_backend(area, frontend_features):
+    """The bundle names an authority beside each zone -- MoEFCC, a state forest
+    department. The honesty rule forbids an agency name the UI made up, and
+    scripts/honesty-allowlist.mjs exempts this file on the grounds that the
+    names are the backend's own. That justification is only true while this
+    passes.
+    """
+    mid = area["id"]
+    assert mid in frontend_features, f"{mid} absent from the frontend bundle"
+
+    expected = area["authority"]
+    actual = frontend_features[mid]["authority"]
+
+    assert actual == expected, (
+        f"{mid}: the frontend bundle attributes this zone to an authority the "
+        f"backend does not.\n  backend:  {expected!r}\n  frontend: {actual!r}\n"
+        "The honesty allowlist exempts boundaries.ts because these names are "
+        "copied from the backend. Resync them, or the exemption is a lie."
     )

@@ -320,6 +320,27 @@ function localizeLabel(text: string | undefined | null, lang: string): string {
   return text;
 }
 
+/**
+ * Colour for a PFZ suitability cell. Reads the band the backend assigned in
+ * `advisory_status`; it never re-derives one from the score. An unrecognised
+ * or absent status gets neutral text rather than a guess.
+ */
+function pfzTone(withinMpa: boolean, advisoryStatus?: string): string {
+  if (withinMpa) return "text-rose-400";
+  switch ((advisoryStatus || "").trim().toLowerCase()) {
+    case "highly favorable":
+    case "highly favourable":
+      return "text-emerald-400";
+    case "moderate potential":
+      return "text-amber-400";
+    case "marginal / restricted":
+    case "marginal/restricted":
+      return "text-rose-400";
+    default:
+      return "text-slate-300";
+  }
+}
+
 export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLanguage }) => {
   if (!analysis || analysis.needs_clarification) return null;
 
@@ -631,13 +652,14 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({ analysis, selectedLa
                   <td className="py-2 px-3 font-mono tabular-nums text-slate-300">{zone.distance_km} km</td>
                   <td className="py-2 px-3 font-mono tabular-nums font-semibold">
                     <span
-                      className={
-                        zone.within_mpa
-                          ? "text-rose-400"
-                          : zone.suitability_score >= 70
-                          ? "text-emerald-400"
-                          : "text-amber-400"
-                      }
+                      /* This used to read `zone.suitability_score >= 70`, so
+                         the browser banded a score against its own cut point --
+                         and got a different answer from the backend, which bands
+                         the same score at 75 into advisory_status. A zone
+                         scoring 72 was coloured "good" beside the label
+                         "Moderate Potential". The colour now follows the band
+                         the backend actually assigned. */
+                      className={pfzTone(zone.within_mpa, zone.advisory_status)}
                     >
                       {zone.suitability_score}/100
                     </span>

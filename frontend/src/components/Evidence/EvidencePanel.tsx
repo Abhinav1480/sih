@@ -45,11 +45,13 @@ export const TierBadge: React.FC<{ tier?: string; className?: string }> = ({ tie
   const t = (tier || "").trim();
   const base = `inline-flex items-center px-1.5 py-px rounded text-[10px] ${NUM} tracking-wider ${className}`;
   if (!t) return <span className={`${base} text-[#7a94a3] italic`}>source unavailable</span>;
+  // Render `t`, never a matching literal. The badge text is the tier the
+  // response actually carried; the comparison only picks the styling.
   if (t === "ISRO") {
-    return <span className={`${base} border border-[#38e8d0] text-[#38e8d0] font-semibold`}>ISRO</span>;
+    return <span className={`${base} border border-[#38e8d0] text-[#38e8d0] font-semibold`}>{t}</span>;
   }
   if (t === "NATIONAL") {
-    return <span className={`${base} border border-[#7a94a3]/60 text-[#7a94a3]`}>NATIONAL</span>;
+    return <span className={`${base} border border-[#7a94a3]/60 text-[#7a94a3]`}>{t}</span>;
   }
   // FALLBACK or any other literal value: plain muted text, verbatim.
   return <span className={`${base} text-[#7a94a3]`}>{t}</span>;

@@ -50,7 +50,16 @@ export const RiskIntelligenceModule: React.FC<RiskIntelligenceModuleProps> = ({
   }
 
   const r = risk as Record<string, any>;
-  const score: number = typeof r.score === "number" ? r.score : r.overall_score ?? 0;
+  // `?? 0` used to close this line, so a response carrying no score handed
+  // RiskGauge a 0 and its ARIA meter announced "score 0 out of 100" -- the
+  // safest possible reading of a number the engine never produced. Null now
+  // travels through, and RiskGauge withholds the figure.
+  const score: number | null =
+    typeof r.score === "number"
+      ? r.score
+      : typeof r.overall_score === "number"
+      ? r.overall_score
+      : null;
   const band: string = r.band || r.category || "";
   const factors = r.factors || r.contributing_factors || [];
   const confidence: number | undefined =

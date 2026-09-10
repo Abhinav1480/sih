@@ -1,3 +1,12 @@
+/**
+ * Component gallery. Sample values here are placeholders, not observations.
+ *
+ * They used to carry agency names -- "Authoritative INCOIS OSF & IMD Calibrated
+ * Marine Telemetry" among them, the same label P0-5 deleted along with
+ * src/mocks/. A styleguide is still shipped code, and a screenshot of it is
+ * indistinguishable from a screenshot of the product, so the placeholders name
+ * no agency. See docs/HONESTY_RULE.md.
+ */
 "use client";
 
 import React, { useState } from "react";
@@ -298,7 +307,7 @@ export default function StyleguidePage() {
                   <TableCell mono className="text-accent-base">caption</TableCell>
                   <TableCell>Inter 500</TableCell>
                   <TableCell mono>11px / 14px</TableCell>
-                  <TableCell><span className="orca-caption text-text-secondary uppercase tracking-wider">MoEFCC RESTRICTION</span></TableCell>
+                  <TableCell><span className="orca-caption text-text-secondary uppercase tracking-wider">PROTECTED-AREA RESTRICTION</span></TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell mono className="text-accent-base">monoValue</TableCell>
@@ -439,7 +448,7 @@ export default function StyleguidePage() {
               <Input
                 label="Disabled Sensor Feed"
                 disabled
-                defaultValue="INCOIS Buoy BD10 (Maintenance)"
+                defaultValue="Coastal Buoy BD10 (Maintenance)"
                 helperText="Sensor temporarily offline"
               />
             </div>
@@ -467,7 +476,7 @@ export default function StyleguidePage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <Badge variant="default">DEFAULT</Badge>
               <Badge variant="accent" dot>ORCA AGENT</Badge>
-              <Badge variant="success" dot>INCOIS OSF</Badge>
+              <Badge variant="success" dot>OCEAN STATE FORECAST</Badge>
               <Badge variant="warning" dot>SWELL ADVISORY</Badge>
               <Badge variant="danger" dot>NO-TAKE MPA</Badge>
               <Badge variant="info" dot>COPERNICUS</Badge>
@@ -558,25 +567,25 @@ export default function StyleguidePage() {
                   name: "Significant Wave Height (SWH)",
                   value: "3.2 m",
                   points_added: 32,
-                  description: "SWH above 3.0 m: INCOIS high wave alert threshold for small-craft restriction",
+                  description: "SWH above 3.0 m: high wave alert threshold for small-craft restriction",
                   weight: 0.4,
                 },
                 {
                   name: "Surface Wind Velocity",
                   value: "24.5 kt (45.4 km/h)",
                   points_added: 22,
-                  description: "IMD Squally Wind Advisory: Surface winds exceed safe offshore operational limits",
+                  description: "Squally Wind Advisory: Surface winds exceed safe offshore operational limits",
                   weight: 0.3,
                 },
                 {
                   name: "Swell Wave Surge",
                   value: "2.4 m (Period: 9.5s)",
                   points_added: 12,
-                  description: "INCOIS Swell Surge Alert: High swell creates hazardous coastal surf breaking",
+                  description: "Swell Surge Alert: High swell creates hazardous coastal surf breaking",
                   weight: 0.15,
                 },
                 {
-                  name: "MoEFCC Geofence Sanctuary Proximity",
+                  name: "Geofence Sanctuary Proximity",
                   value: "Buffer Clearance 3.2 km",
                   points_added: 8,
                   description: "Proximity caution: within 5 km of protected marine sanctuary boundary",
@@ -584,10 +593,10 @@ export default function StyleguidePage() {
                 },
               ]}
               triggeredRules={[
-                "INCOIS High Wave Alert: SWH 3.2m exceeds 3.0m threshold",
-                "IMD Squally Wind Advisory: 24.5 kt surface wind warning active",
+                "High Wave Alert: SWH 3.2m exceeds 3.0m threshold",
+                "Squally Wind Advisory: 24.5 kt surface wind warning active",
               ]}
-              dataQualityLabel="Authoritative INCOIS OSF & IMD Calibrated Marine Telemetry"
+              dataQualityLabel="Full factor coverage (sample)"
               showTotalCheck={true}
               defaultExpanded={true}
             />
@@ -812,12 +821,12 @@ export default function StyleguidePage() {
                 description="Select origin and destination harbors on the interactive chart to compute route."
               />
               <LoadingState
-                message="Querying Copernicus Altimetry"
+                message="Querying altimetry provider"
                 subtext="Synthesizing ocean current anomalies"
               />
               <ErrorState
                 title="Telemetry Timeout"
-                message="IMD Mausam radar stream unreachable. Falling back to cached forecast."
+                message="Radar stream unreachable. Falling back to cached forecast."
                 onRetry={() => alert("Retrying telemetry sync...")}
               />
             </div>

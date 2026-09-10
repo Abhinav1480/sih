@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ORCA — Marine Operations Console",
   description:
-    "Marine EcOsystem Reasoning with Collaborative Agents. Decision support for Indian coastal waters — SIH 2026 PS 26176 (MoES / INCOIS / IMD).",
+    "Marine EcOsystem Reasoning with Collaborative Agents. Decision support for Indian coastal waters — SIH 2026 PS 26176.",
 };
 
 export const viewport: Viewport = {

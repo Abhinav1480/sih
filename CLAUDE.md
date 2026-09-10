@@ -72,7 +72,31 @@ npm run dev
 docker compose up --build
 ```
 
-### 5. Coding & Safety Conventions
+### 5. The Honesty Rule (enforced, not advisory)
+
+> **No user-visible value may originate from a `||` default or an equivalent
+> fallback, and no agency name may appear beside a value that agency did not
+> produce.**
+
+Read **`docs/HONESTY_RULE.md`** before changing anything that renders a value
+or reports a source. It is enforced mechanically on every build and in CI:
+
+```bash
+cd frontend && npm run check:honesty     # also runs as prebuild
+pytest -m honesty                        # backend half
+```
+
+In short: a value ORCA did not measure must say so (fall back to `unavailable`,
+never to a plausible number); the browser never bands a value or decides safe
+versus unsafe; `calculate_marine_risk` is the only risk formula; and an agency
+name arrives from the response or not at all. Every check has a proof test that
+has been watched to fail — `npm run check:honesty:proof`, `pytest -m honesty_proof`.
+
+Genuine exceptions go in `frontend/scripts/honesty-allowlist.mjs` with a
+one-line justification. There are four. Fixing the code or sharpening the rule
+is nearly always better than adding a fifth.
+
+### 6. Coding & Safety Conventions
 - **No Secrets in Repo**: Never commit API keys or private credentials. Use `.env` and `.env.example`.
 - **Type Safety**: Use Pydantic v2 schemas for all backend endpoints and TypeScript interfaces for frontend props.
 - **Fail-Soft Architecture**: If an external provider is unreachable, fall back to cached data or inform the user cleanly with partial results. Never crash or silently hallucinate fake live data.

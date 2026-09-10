@@ -1,0 +1,140 @@
+name: CI
+
+# Required to merge into main (Settings -> Branches -> branch protection).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: pytest
+        run: pytest -q
+
+      - name: Honesty rule (backend)
+        run: pytest -m honesty -q
+
+      - name: Honesty proofs (backend)
+        # Each proof reintroduces a real violation, confirms the gate fails on
+        # it, then removes it. A gate nobody has seen fail is not a gate.
+        run: pytest -m honesty_proof -q
+
+  frontend:
+    name: build and typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Honesty rule (frontend)
+        run: npm run check:honesty
+
+      - name: Honesty proofs (frontend)
+        run: npm run check:honesty:proof
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        # `prebuild` runs the honesty gate again, so a build can never ship
+        # past it even if the explicit step above were removed.
+        run: npm run build
+
+  authorship:
+    name: no AI attribution in git history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Blame the commits this push or PR actually adds, not just the tip.
+          fetch-depth: 0
+
+      - name: Check commit authorship and trailers
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${BASE:-}" ]; then
+            RANGE="$BASE..$HEAD"
+          else
+            # A push (or a manual run): check everything reachable. The history
+            # is small and this is the only way to catch a rewrite.
+            RANGE="$HEAD"
+          fi
+          echo "Range: $RANGE"
+
+          PATTERN='claude|anthropic|copilot|chatgpt|openai|gpt-4|gpt-5|cursor\.so|codeium|noreply@anthropic'
+
+          fail=0
+
+          # 1. Co-author / generated-by trailers anywhere in a commit message.
+          if bad=$(git log "$RANGE" --format='%H%n%B%n---END---' \
+                   | grep -iE "^(co-authored-by|signed-off-by|generated-with|assisted-by):.*($PATTERN)" || true); then
+            if [ -n "$bad" ]; then
+              echo "::error::AI attribution trailer found in a commit message:"
+              echo "$bad"
+              fail=1
+            fi
+          fi
+
+          # 2. "Generated with <assistant>" lines, however they are phrased.
+          if bad=$(git log "$RANGE" --format='%H %B' \
+                   | grep -iE "generated with.*($PATTERN)|created by.*($PATTERN)" || true); then
+            if [ -n "$bad" ]; then
+              echo "::error::AI attribution line found in a commit message:"
+              echo "$bad"
+              fail=1
+            fi
+          fi
+
+          # 3. Author and committer identity.
+          if bad=$(git log "$RANGE" --format='%H %an <%ae> / %cn <%ce>' \
+                   | grep -iE "$PATTERN" || true); then
+            if [ -n "$bad" ]; then
+              echo "::error::AI assistant named as commit author or committer:"
+              echo "$bad"
+              fail=1
+            fi
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "ORCA's git history carries no AI tooling attribution."
+            echo "Rewrite the offending commits (git rebase -i / git commit --amend)"
+            echo "and force-push the branch."
+            exit 1
+          fi
+
+          echo "No AI attribution found in $(git rev-list --count "$RANGE") commit(s)."

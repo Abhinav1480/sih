@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "prebuild": "node scripts/check-no-mocks.mjs && node scripts/check-no-manufactured-data.mjs",
-    "check:no-mocks": "node scripts/check-no-mocks.mjs",
-    "check:no-manufactured-data": "node scripts/check-no-manufactured-data.mjs"
+    "prebuild": "node scripts/check-honesty.mjs",
+    "check:honesty": "node scripts/check-honesty.mjs",
+    "check:honesty:report": "node scripts/check-honesty.mjs --report",
+    "check:honesty:proof": "node scripts/honesty.proof.mjs"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "7.0.1",

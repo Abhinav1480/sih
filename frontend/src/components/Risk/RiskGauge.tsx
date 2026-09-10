@@ -7,7 +7,12 @@ import { NUM, PALETTE, bandTone, verdictTone } from "@/components/ui/tone";
 import { EvidenceTrigger } from "@/components/Evidence/EvidenceTrigger";
 
 export interface RiskGaugeProps {
-  score: number;
+  /**
+   * The score the deterministic engine computed, or null when it computed
+   * none. Null is a real state: RouteAnalysisCard passes it because P0-7
+   * stopped that card inventing a corridor score.
+   */
+  score: number | null | undefined;
   band: RiskCategory | string;
   verdict?: "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE" | string;
   label?: string;
@@ -72,18 +77,37 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
   const normBand = (band || "").toUpperCase();
   const tone = bandTone(normBand);
   const Icon = ICONS[normBand] || HelpCircle;
-  const clamped = Math.min(100, Math.max(0, Math.round(Number(score) || 0)));
-  const animated = useOnceAnimated(clamped);
+  // `Math.round(Number(score) || 0)` used to sit here, so a null score -- the
+  // very thing P0-7 taught RouteAnalysisCard to pass -- was announced on the
+  // ARIA meter below as "score 0 out of 100": the safest possible reading of a
+  // value the engine never produced. A score ORCA did not compute is not shown.
+  const clamped =
+    typeof score === "number" && Number.isFinite(score)
+      ? Math.min(100, Math.max(0, Math.round(score)))
+      : null;
+  const animated = useOnceAnimated(clamped ?? 0);
   const vt = verdict ? verdictTone(verdict) : null;
 
-  const meter = {
-    role: "meter" as const,
-    "aria-label": `${label}: ${tone.word} (${clamped}/100)`,
-    "aria-valuenow": clamped,
-    "aria-valuemin": 0,
-    "aria-valuemax": 100,
-    "aria-valuetext": `${tone.word} risk, score ${clamped} out of 100`,
-  };
+  // With no score there is nothing to meter: role="meter" without a real
+  // aria-valuenow would have a screen reader read out a number ORCA never
+  // produced, so the element degrades to a plain labelled status instead.
+  const meter =
+    clamped === null
+      ? {
+          role: "status" as const,
+          "aria-label": `${label}: ${tone.word}, score unavailable`,
+        }
+      : {
+          role: "meter" as const,
+          "aria-label": `${label}: ${tone.word} (${clamped}/100)`,
+          "aria-valuenow": clamped,
+          "aria-valuemin": 0,
+          "aria-valuemax": 100,
+          "aria-valuetext": `${tone.word} risk, score ${clamped} out of 100`,
+        };
+
+  /** The band still reads; only the number is withheld. */
+  const scoreText = clamped === null ? "score unavailable" : `${clamped}/100`;
 
   if (compact) {
     return (
@@ -93,7 +117,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
           style={{ color: tone.hex, borderColor: tone.hex }}
         >
           <Icon className="w-3 h-3 flex-shrink-0" />
-          {tone.word} · {clamped}/100
+          {tone.word} · {scoreText}
         </span>
         {vt && (
           <span className={`px-2 py-0.5 rounded border text-[10.5px] ${NUM} font-semibold`} style={{ color: vt.hex, borderColor: vt.hex }}>
@@ -115,7 +139,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
           stroke={tone.hex}
           strokeWidth="9"
           strokeLinecap="butt"
-          strokeDasharray={`${(animated / 100) * ARC_LEN} ${ARC_LEN}`}
+          strokeDasharray={`${clamped === null ? 0 : (animated / 100) * ARC_LEN} ${ARC_LEN}`}
         />
         {/* band boundaries at 30 / 55 / 75 */}
         {[30, 55, 75].map((b) => {
@@ -126,7 +150,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
           return <line key={b} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={PALETTE.base} strokeWidth="1.5" />;
         })}
         <text x="60" y="58" textAnchor="middle" fill={PALETTE.text} fontSize="28" fontWeight="700" fontFamily="JetBrains Mono, ui-monospace, monospace">
-          {Math.round(animated)}
+          {clamped === null ? "—" : Math.round(animated)}
         </text>
         <text x="60" y="74" textAnchor="middle" fill={PALETTE.muted} fontSize="9" fontFamily="JetBrains Mono, ui-monospace, monospace">
           / 100
@@ -143,7 +167,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({
         </div>
         <div className={`text-[12px] ${NUM} text-[#e8f4f8] flex items-center gap-2`}>
           <span>
-            {tone.word} · {clamped}/100
+            {tone.word} · {scoreText}
           </span>
           <EvidenceTrigger kind="calc" label="Σ how" />
         </div>

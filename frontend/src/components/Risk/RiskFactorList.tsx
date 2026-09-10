@@ -8,7 +8,8 @@ import { EvidenceTrigger } from "@/components/Evidence/EvidenceTrigger";
 
 export interface RiskFactorListProps {
   factors: RiskFactor[];
-  overallScore: number;
+  /** The engine's score, or null when it produced none. See RiskGauge. */
+  overallScore: number | null;
   band?: string;
   triggeredRules?: string[];
   missingInputs?: string[];
@@ -34,10 +35,15 @@ export const RiskFactorList: React.FC<RiskFactorListProps> = ({
 }) => {
   const tone = bandTone(band);
   const sum = factors.reduce((a, f) => a + pts(f), 0);
-  const verified = sum === overallScore;
+  // With no score there is nothing to reconcile the factor points against, so
+  // the total check is withheld rather than reported as a mismatch against a
+  // stand-in zero.
+  const hasScore = typeof overallScore === "number";
+  const verified = hasScore && sum === overallScore;
   // Bars are sized against the score (so the stack visibly fills to the score),
-  // falling back to the sum when the score is 0 to avoid divide-by-zero.
-  const denom = Math.max(overallScore, sum, 1);
+  // falling back to the sum when the score is 0 or absent, to avoid
+  // divide-by-zero.
+  const denom = Math.max(hasScore ? (overallScore as number) : 0, sum, 1);
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -96,10 +102,23 @@ export const RiskFactorList: React.FC<RiskFactorListProps> = ({
           {showTotalCheck && (
             <div
               className={`pt-2 border-t border-[#12384a] text-[11.5px] ${NUM} font-semibold`}
-              style={{ color: verified ? PALETTE.calm : PALETTE.severe }}
+              style={{
+                color: !hasScore
+                  ? PALETTE.muted
+                  : verified
+                  ? PALETTE.calm
+                  : PALETTE.severe,
+              }}
               role="status"
             >
-              Σ {sum} {verified ? "=" : "≠"} score {overallScore} {verified ? "✓" : "✗ MISMATCH"}
+              {hasScore ? (
+                <>
+                  Σ {sum} {verified ? "=" : "≠"} score {overallScore}{" "}
+                  {verified ? "✓" : "✗ MISMATCH"}
+                </>
+              ) : (
+                <>Σ {sum} · no score to reconcile against</>
+              )}
             </div>
           )}
         </>
