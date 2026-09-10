@@ -113,7 +113,15 @@ async def test_five_turn_conversation_sequence():
     assert t3_res.route_comparison is not None
     # Must produce true comparison narrative, not single evaluation
     assert "Route Corridor Comparison" in t3_res.executive_summary
-    assert "Trade-Off" in t3_res.recommendation
+    # The recommendation must be comparative in substance, not because it
+    # contains a particular word. It used to be asserted by the literal string
+    # "Trade-Off", which a fixed prefix satisfied without comparing anything.
+    rec3 = t3_res.recommendation
+    assert "recommended corridor" in rec3.lower(), rec3
+    assert "protected area" in rec3.lower(), rec3
+    assert any(token in rec3 for token in ("km", "mins")), rec3
+    # And it still leads with the safety advisory, never an operational aside.
+    assert rec3.split(":")[0].strip().upper() in ("LOW", "MODERATE", "CAUTION", "HIGH", "SEVERE"), rec3
     metric_names = [m.metric_name for m in t3_res.route_comparison.metrics]
     assert "Distance" in metric_names
     assert "Marine Risk" in metric_names

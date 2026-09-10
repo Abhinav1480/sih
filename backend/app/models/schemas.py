@@ -414,11 +414,22 @@ class RegionalComparisonData(BaseModel):
 
 
 class TimeSeriesPoint(BaseModel):
+    """One point that was actually observed and actually scored.
+
+    `source` and `status` are per point because a series can legitimately span
+    providers: an ISRO granule covers some of the window and the labelled
+    synthetic model covers the rest. Rendering both as one line without saying
+    which is which would hide the difference that matters most.
+    """
+
     timestamp: str
     wave_height_m: float
     wind_knots: float
     sst_c: Optional[float] = None
     risk_score: int
+    offset_hours: int = 0
+    source: str = ""
+    status: DataFreshness = DataFreshness.DEMO
 
 
 class HistoricalTrendData(BaseModel):

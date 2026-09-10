@@ -698,3 +698,59 @@ def localize_summary_and_recommendation(
     )
     return localized_summary, rec_text
 
+
+
+def operational_recommendation(
+    lang: str,
+    risk,
+    wave,
+    wind,
+    horizon: str = "",
+    context_note: str = "",
+) -> str:
+    """The one place an operational recommendation is built.
+
+    Every intent used to end in its own hand-written advisory line -- "Monitor
+    INCOIS satellite passes for updated chlorophyll/thermal front formation",
+    "Prioritize operations in the calmer sector", "Verify whether modern wave
+    subsidence continues" -- none of which looked at the risk band, the rules
+    the engine actually triggered, or the factors that produced the score. They
+    read the same whether the sea was flat or a gale was blowing.
+
+    This derives the recommendation from what the deterministic engine found,
+    in this order:
+
+      1. the band advisory, from `advisory_for_band`, which is the same
+         resolver every language uses so English and vernacular cannot diverge
+      2. the rules the engine actually triggered, verbatim -- these are already
+         phrased against real thresholds in app/risk/thresholds.py
+      3. the single largest contributing factor, named with its own points
+
+    `context_note` is where an intent adds what is specific to it (which zone,
+    which corridor). It is appended, never substituted, so the safety advisory
+    can never be displaced by an operational aside -- the ordering P0-1
+    established when a fisherman inside a sanctuary in severe conditions was
+    told about trawling regulations instead of being told not to sail.
+    """
+    band = getattr(risk, "category", None)
+    band = getattr(band, "value", band) or "UNKNOWN"
+
+    parts = [advisory_for_band(lang, band, wave, wind, horizon)]
+
+    rules = list(getattr(risk, "triggered_rules", None) or [])
+    if rules:
+        parts.append(" ".join(rules))
+
+    factors = list(getattr(risk, "contributing_factors", None) or [])
+    scored = [f for f in factors if getattr(f, "points_added", 0) > 0]
+    if scored:
+        top = max(scored, key=lambda f: f.points_added)
+        parts.append(
+            f"Largest contributor: {top.name} at {top.value} "
+            f"(+{top.points_added} of {getattr(risk, 'overall_score', 0)})."
+        )
+
+    if context_note:
+        parts.append(context_note.strip())
+
+    return " ".join(p for p in parts if p).strip()

@@ -1,4 +1,5 @@
-from typing import Dict, Any, List, Optional
+from datetime import timezone
+from typing import Dict, Any, List, Optional, Tuple
 from app.risk.engine import calculate_marine_risk
 from app.models.schemas import (
     RegionalComparisonData,
@@ -11,6 +12,23 @@ from app.models.schemas import (
     RankedConditionChange,
     SpatialWhatIfAnalysisData,
 )
+
+def _hours_between(observed_at) -> float:
+    """Hours from now to an observation's own timestamp, as a signed offset.
+
+    Lets a sampled offset be compared against when the observation was really
+    taken, so the point kept for a cached granule is the one nearest its own
+    acquisition rather than an arbitrary one inside its validity window.
+    """
+    from app.utils import clock
+
+    if observed_at is None:
+        return 0.0
+    when = observed_at
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return (when - clock.now()).total_seconds() / 3600.0
+
 
 class CorrelationEngine:
     """
@@ -473,7 +491,8 @@ class CorrelationEngine:
         current_weather: WeatherObservation,
         past_ocean: OceanObservation,
         past_weather: WeatherObservation,
-        period_label: str = "Last 24 Hours"
+        period_label: str = "Last 24 Hours",
+        samples: Optional[List[Tuple[int, OceanObservation, WeatherObservation]]] = None,
     ) -> HistoricalTrendData:
         # Two observations exist: the orchestrator fetches offset_hours=-24 and
         # the current hour. Nothing else was ever queried from any provider.
@@ -491,27 +510,91 @@ class CorrelationEngine:
         #
         # Now: only the two points that are observations, each scored by the
         # deterministic engine.
-        w_start = past_ocean.significant_wave_height_m
-        w_end = current_ocean.significant_wave_height_m
-        wind_start = past_weather.wind_speed_knots
-        wind_end = current_weather.wind_speed_knots
+        # `samples` is every point the orchestrator actually fetched, oldest
+        # first, each one a real provider call at a real offset. When it is
+        # absent this falls back to the two-point form for callers that still
+        # pass past + current directly.
+        #
+        # The window sampled must be the window described. A 24-hour lookback
+        # labelled "Past 7 Days" was the defect here: `temporal.offset_hours`
+        # said -168 and the orchestrator asked for -24.
+        series = list(samples or [])
+        if not series:
+            series = [(-24, past_ocean, past_weather), (0, current_ocean, current_weather)]
 
-        points: List[TimeSeriesPoint] = [
-            TimeSeriesPoint(
-                timestamp="T - 24h",
-                wave_height_m=round(w_start, 2),
-                wind_knots=round(wind_start, 1),
-                sst_c=past_ocean.sea_surface_temp_c,
-                risk_score=calculate_marine_risk(past_ocean, past_weather).overall_score,
-            ),
-            TimeSeriesPoint(
+        # One observation is one point. A cached granule answers for every hour
+        # inside its validity window, so sampling eight offsets against a single
+        # SARAL pass returned that pass eight times -- eight dots on a chart
+        # drawn from one measurement, which reads as eight measurements. Where
+        # several offsets resolve to the same observation, only the offset
+        # closest to when that observation was actually taken keeps it.
+        # Keyed on the GRANULE, not on the source string or the timestamp. Only
+        # a cached file can be reused across offsets, and only then is the
+        # duplication real; two synthetic observations at different hours are
+        # different observations even when they happen to carry the same source
+        # and the same wall-clock stamp.
+        seen: Dict[Any, Tuple[int, float]] = {}
+        for offset, obs_ocean, obs_weather in series:
+            if obs_ocean is None or obs_weather is None:
+                continue
+            provenance = (getattr(obs_ocean, "field_provenance", None) or {}).get(
+                "significant_wave_height_m"
+            )
+            if provenance is None or not provenance.granule:
+                continue  # not granule-backed; nothing to collapse
+            key = (obs_ocean.source, provenance.granule)
+            gap = abs(offset - _hours_between(obs_ocean.timestamp))
+            if key not in seen or gap < seen[key][1]:
+                seen[key] = (offset, gap)
+        # Every offset is kept unless a granule answered more than one of them.
+        granule_offsets = {
+            offset
+            for offset, obs_ocean, _w in series
+            if obs_ocean is not None
+            and (getattr(obs_ocean, "field_provenance", None) or {}).get(
+                "significant_wave_height_m"
+            )
+        }
+        keep_offsets = (
+            {o for o, _g in seen.values()}
+            | {o for o, _ocean, _w in series if o not in granule_offsets}
+        )
+
+        points: List[TimeSeriesPoint] = []
+        for offset, obs_ocean, obs_weather in series:
+            if obs_ocean is None or obs_weather is None:
+                # A provider had nothing for this hour. The point is omitted
+                # rather than interpolated: an invented point on a chart is
+                # indistinguishable from an observed one.
+                continue
+            if offset not in keep_offsets:
+                continue
+            points.append(TimeSeriesPoint(
+                timestamp="Current" if offset == 0 else f"T - {abs(offset)}h",
+                offset_hours=offset,
+                wave_height_m=round(obs_ocean.significant_wave_height_m, 2),
+                wind_knots=round(obs_weather.wind_speed_knots, 1),
+                sst_c=obs_ocean.sea_surface_temp_c,
+                risk_score=calculate_marine_risk(obs_ocean, obs_weather).overall_score,
+                source=obs_ocean.source,
+                status=obs_ocean.status,
+            ))
+
+        if not points:
+            points = [TimeSeriesPoint(
                 timestamp="Current",
-                wave_height_m=round(w_end, 2),
-                wind_knots=round(wind_end, 1),
+                wave_height_m=round(current_ocean.significant_wave_height_m, 2),
+                wind_knots=round(current_weather.wind_speed_knots, 1),
                 sst_c=current_ocean.sea_surface_temp_c,
                 risk_score=calculate_marine_risk(current_ocean, current_weather).overall_score,
-            ),
-        ]
+                source=current_ocean.source,
+                status=current_ocean.status,
+            )]
+
+        w_start = points[0].wave_height_m
+        w_end = points[-1].wave_height_m
+        wind_start = points[0].wind_knots
+        wind_end = points[-1].wind_knots
 
         wave_delta = round(w_end - w_start, 2)
         wind_delta = round(wind_end - wind_start, 1)
@@ -533,10 +616,24 @@ class CorrelationEngine:
             movement = "moderated favorably"
         else:
             movement = "seen no measurable change in wave height"
-        summary = (
-            f"Conditions near {location.name} have {movement} "
-            f"over the {period_label.lower()} ({w_start}m → {w_end}m SWH)."
-        )
+
+        if len(points) < 2:
+            # One observation is not a trend, and must not be described as
+            # "no measurable change" -- that states a finding about the period
+            # when what actually happened is that the period holds one reading.
+            summary = (
+                f"Only one observation is available for {location.name} over the "
+                f"{period_label.lower()}: {w_end}m SWH. That is not enough to "
+                f"describe a trend, and no intermediate points were invented to "
+                f"make one."
+            )
+            change_reasons = []
+        else:
+            summary = (
+                f"Conditions near {location.name} have {movement} "
+                f"over the {period_label.lower()} ({w_start}m → {w_end}m SWH), "
+                f"across {len(points)} observations."
+            )
 
         return HistoricalTrendData(
             location_name=location.name,

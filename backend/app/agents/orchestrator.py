@@ -27,6 +27,20 @@ from app.agents.report_agent import ReportAgent
 from app.agents.correlation_engine import CorrelationEngine
 from app.providers.registry import registry
 
+# How many points a trend series carries, and how they are spaced. A window is
+# sampled at most this many times so a 30-day query does not make 720 provider
+# calls; both endpoints are always included, so the series spans what it claims.
+MAX_TREND_POINTS = 8
+
+
+def _trend_offsets(span_hours: int) -> List[int]:
+    """Evenly spaced negative hour offsets across `span_hours`, ending at now."""
+    span = max(1, int(span_hours))
+    steps = min(MAX_TREND_POINTS, max(2, span // 6 + 1))
+    stride = span / (steps - 1)
+    return [int(round(-span + i * stride)) for i in range(steps)]
+
+
 class AgentOrchestrator:
     """
     Collaborative Agent Pipeline Coordinator.
@@ -87,6 +101,7 @@ class AgentOrchestrator:
 
         # Check if clarification is required before launching specialist agents
         if plan_context.get("needs_clarification"):
+            _t_clar = time.time()
             clarif_q = plan_context.get("clarification_question") or "Please specify a coastal port, harbor, or coordinates."
             missing = plan_context.get("missing_information", [])
 
@@ -94,7 +109,7 @@ class AgentOrchestrator:
                 agent="Report Synthesis Agent",
                 action="Generated clarification advisory for missing parameters",
                 tool="clarification_handler",
-                duration_ms=5,
+                duration_ms=int((time.time() - _t_clar) * 1000),
                 details=f"Prompted user for: {', '.join(missing)}"
             ))
 
@@ -188,6 +203,7 @@ class AgentOrchestrator:
                     prior_ra = VesselRouteAnalysis(**prior_ra)
 
                 if target_route in ["alternative", "recommended"] or plan_context["intent"] in [QueryIntent.ROUTE_FOLLOW_UP, QueryIntent.ROUTE_COMPARISON]:
+                    _t_sel = time.time()
                     sel_id = target_route or "alternative"
                     prior_ra.selected_route_id = sel_id
 
@@ -212,7 +228,7 @@ class AgentOrchestrator:
                         agent="Vessel & Navigation Agent",
                         action=f"Switched corridor focus to {sel_id.upper()} route candidate from session memory",
                         tool="select_route_candidate",
-                        duration_ms=10,
+                        duration_ms=int((time.time() - _t_sel) * 1000),
                         details=f"Active Corridor: {sel_id} ({prior_ra.total_distance_km} km, Risk: {prior_ra.overall_route_risk.value})"
                     ))
                 else:
@@ -238,6 +254,7 @@ class AgentOrchestrator:
             ocean_b = await p_ocean.get_ocean_conditions(loc_b.latitude, loc_b.longitude, plan_context["temporal"].offset_hours)
             weather_b = await p_weather.get_weather_conditions(loc_b.latitude, loc_b.longitude, plan_context["temporal"].offset_hours)
             
+            _t_cmp = time.time()
             comp_data = self.correlation_engine.compare_regions(
                 loc_a=plan_context["location"],
                 ocean_a=context["ocean_observation"],
@@ -251,7 +268,7 @@ class AgentOrchestrator:
                 agent="Cross-Domain Correlation Engine",
                 action=f"Correlated marine parameters between {plan_context['location'].name} and {loc_b.name}",
                 tool="compare_regions",
-                duration_ms=35,
+                duration_ms=int((time.time() - _t_cmp) * 1000),
                 details=comp_data.overall_verdict
             ))
 
@@ -262,30 +279,53 @@ class AgentOrchestrator:
             direction = plan_context.get("displacement_direction", "north")
             bearing = plan_context.get("displacement_bearing_deg", 0.0)
 
-            # 1. Telemetry step for geodesic destination point calculation
-            steps.append(AgentStepRecord(
-                agent="Geospatial Navigation Agent",
-                action=f"Computed geodesic destination coordinates for displacement: {dist_km:.1f} km {direction} (bearing {bearing:.1f}°)",
-                tool="destination_point",
-                duration_ms=8,
-                details=f"Origin: {loc_a.name} ({loc_a.latitude:.4f}°N, {loc_a.longitude:.4f}°E) -> Target: {loc_b.name} ({loc_b.latitude:.4f}°N, {loc_b.longitude:.4f}°E)"
-            ))
+            # There was a "Geospatial Navigation Agent / destination_point" step
+            # here claiming to compute the displaced coordinates. It computed
+            # nothing: the planner had already resolved displaced_location
+            # before this branch ran, and the step existed only to appear in
+            # the trace. A step that does no work is a claim about work that did
+            # not happen, so it is gone. The planner's own step covers the
+            # parsing, and the geodesic maths is exercised by the geospatial
+            # tests.
 
-            # 2. Fetch displaced target marine & weather conditions for the exact same temporal horizon
-            p_ocean = registry.get_ocean_provider()
-            p_weather = registry.get_weather_provider()
-            ocean_b = await p_ocean.get_ocean_conditions(loc_b.latitude, loc_b.longitude, plan_context["temporal"].offset_hours)
-            weather_b = await p_weather.get_weather_conditions(loc_b.latitude, loc_b.longitude, plan_context["temporal"].offset_hours)
+            # Fetch displaced target conditions for the same temporal horizon,
+            # through the same chain the origin used. This used to call the
+            # legacy single-provider accessors, which skip the ISRO tier
+            # entirely -- so the origin could be a real granule while the
+            # displaced point was synthetic, and the difference between them
+            # would have been read as a difference between two places.
+            _t_dual = time.time()
+            offset_b = plan_context["temporal"].offset_hours
+            ocean_b_res = await registry.ocean_chain.fetch(
+                lambda p: p.get_ocean_conditions(
+                    lat=loc_b.latitude, lon=loc_b.longitude, offset_hours=offset_b
+                )
+            )
+            weather_b_res = await registry.weather_chain.fetch(
+                lambda p: p.get_weather_conditions(
+                    lat=loc_b.latitude, lon=loc_b.longitude, offset_hours=offset_b
+                )
+            )
+            ocean_b, weather_b = ocean_b_res.value, weather_b_res.value
+            if ocean_b is None or weather_b is None:
+                p_ocean = registry.get_fallback_provider()
+                ocean_b = ocean_b or await p_ocean.get_ocean_conditions(
+                    loc_b.latitude, loc_b.longitude, offset_b
+                )
+                weather_b = weather_b or await p_ocean.get_weather_conditions(
+                    loc_b.latitude, loc_b.longitude, offset_b
+                )
 
             steps.append(AgentStepRecord(
                 agent="Multi-Grid Environmental Ingestion",
                 action=f"Retrieved concurrent marine & weather telemetry at displaced target ({loc_b.latitude:.3f}°N, {loc_b.longitude:.3f}°E)",
                 tool="get_conditions_dual_point",
-                duration_ms=42,
+                duration_ms=int((time.time() - _t_dual) * 1000),
                 details=f"Displaced SWH: {ocean_b.significant_wave_height_m}m, Wind: {weather_b.wind_speed_knots} kt, SST: {ocean_b.sea_surface_temp_c}°C"
             ))
 
             # 3. Analyze spatial displacement differential and rank condition changes
+            _t_wif = time.time()
             what_if_data = self.correlation_engine.analyze_spatial_displacement(
                 loc_a=loc_a,
                 ocean_a=context["ocean_observation"],
@@ -306,31 +346,55 @@ class AgentOrchestrator:
                 agent="Cross-Domain Correlation Engine",
                 action=f"Ranked environmental condition variations for {dist_km:.0f} km {direction} displacement",
                 tool="analyze_spatial_displacement",
-                duration_ms=25,
+                duration_ms=int((time.time() - _t_wif) * 1000),
                 details=f"Top Change: {what_if_data.top_changed_condition}"
             ))
 
         elif intent == QueryIntent.HISTORICAL_TREND:
-            # Historical comparison 24 hours prior
-            p_ocean = registry.get_ocean_provider()
-            p_weather = registry.get_weather_provider()
-            past_ocean = await p_ocean.get_ocean_conditions(plan_context["location"].latitude, plan_context["location"].longitude, -24)
-            past_weather = await p_weather.get_weather_conditions(plan_context["location"].latitude, plan_context["location"].longitude, -24)
+            # Sample the window the query actually asked about. This used to
+            # fetch a single point at -24h no matter what, so "past week"
+            # (offset_hours -168) was answered with a 24-hour lookback and
+            # labelled "Past 7 Days (Historical Baseline)".
+            trend_start = time.time()
+            loc = plan_context["location"]
+            span_hours = abs(plan_context["temporal"].offset_hours) or 24
+            offsets = _trend_offsets(span_hours)
+
+            samples = []
+            for offset in offsets:
+                o_res = await registry.ocean_chain.fetch(
+                    lambda p, _o=offset: p.get_ocean_conditions(
+                        lat=loc.latitude, lon=loc.longitude, offset_hours=_o
+                    )
+                )
+                w_res = await registry.weather_chain.fetch(
+                    lambda p, _o=offset: p.get_weather_conditions(
+                        lat=loc.latitude, lon=loc.longitude, offset_hours=_o
+                    )
+                )
+                # A point no provider could serve is dropped, not interpolated.
+                samples.append((offset, o_res.value, w_res.value))
+
             trend_data = self.correlation_engine.generate_historical_trend(
-                location=plan_context["location"],
+                location=loc,
                 current_ocean=context["ocean_observation"],
                 current_weather=context["weather_observation"],
-                past_ocean=past_ocean,
-                past_weather=past_weather,
-                period_label=plan_context["temporal"].label
+                past_ocean=samples[0][1] if samples else context["ocean_observation"],
+                past_weather=samples[0][2] if samples else context["weather_observation"],
+                period_label=plan_context["temporal"].label,
+                samples=samples,
             )
             context["historical_trend"] = trend_data
+            served = len(trend_data.points)
             steps.append(AgentStepRecord(
                 agent="Cross-Domain Correlation Engine",
-                action=f"Calculated 24h temporal wave/wind anomalies for {plan_context['location'].name}",
+                action=(
+                    f"Sampled {served} of {len(offsets)} points across the last "
+                    f"{span_hours}h for {loc.name}"
+                ),
                 tool="generate_historical_trend",
-                duration_ms=40,
-                details=trend_data.trend_summary
+                duration_ms=int((time.time() - trend_start) * 1000),
+                details=trend_data.trend_summary,
             ))
 
         # 7. Deterministic Marine Risk Agent

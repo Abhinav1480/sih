@@ -1,3 +1,4 @@
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
@@ -15,13 +16,18 @@ from app.models.schemas import (
 )
 from app.geospatial.protected_areas import GEOMETRY_NOTE, INDIAN_MARINE_PROTECTED_AREAS
 from app.providers.provenance import classify_tier, reliability_note
-from app.utils.multilingual import advisory_for_band, localize_summary_and_recommendation
+from app.utils.multilingual import (
+    advisory_for_band,
+    localize_summary_and_recommendation,
+    operational_recommendation,
+)
 
 class ReportAgent(BaseSpecialistAgent):
     def __init__(self):
         super().__init__(name="Synthesis & Visualization Planner", role="Multilingual report synthesis, adaptive layout planning, and evidence compiler")
 
     async def run(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        _t_report = time.time()
         intent: QueryIntent = context["intent"]
         loc = context["location"]
         temporal = context["temporal"]
@@ -113,7 +119,7 @@ class ReportAgent(BaseSpecialistAgent):
         step = self.record_step(
             action="Synthesized adaptive result layout, dynamic map layers, and multilingual evidence trail",
             tool="generate_visualization_plan",
-            duration_ms=45,
+            duration_ms=int((time.time() - _t_report) * 1000),
             details=f"Plan: {vis_plan.result_type} ({len(vis_plan.components_to_render)} components, {len(map_layers)} GIS layers, {len(evidence)} evidence records)"
         )
 
@@ -697,6 +703,17 @@ class ReportAgent(BaseSpecialistAgent):
         mpa_info: Any,
         spatial_what_if: Optional[SpatialWhatIfAnalysisData] = None
     ) -> tuple[str, str]:
+        # Every branch below builds its recommendation from this, adding only
+        # what is specific to the intent. The safety advisory is never replaced
+        # by an operational aside.
+        _wave = ocean.significant_wave_height_m if ocean else None
+        _wind = weather.wind_speed_knots if weather else None
+
+        def advise(context_note: str = "") -> str:
+            return operational_recommendation(
+                "en", risk, _wave, _wind, temporal.label, context_note
+            )
+
         # Spatial What-If / Displacement
         if intent == QueryIntent.SPATIAL_WHAT_IF and spatial_what_if:
             computed_fact = spatial_what_if.computed_fact
@@ -719,13 +736,17 @@ class ReportAgent(BaseSpecialistAgent):
                     f"Identified {len(pfz_list)} Potential Fishing Zones within {loc.radius_km} km of {loc.name} for {temporal.label}. "
                     f"Top zone is {top_z.name} (Suitability: {top_z.suitability_score}/100) at {top_z.distance_km:.1f} km offshore bearing {top_z.bearing_deg}°."
                 )
-                rec = (
-                    f"Target {top_z.name} featuring strong chlorophyll-a enrichment ({top_z.chlorophyll_mg_m3} mg/m³) and stable thermal front ({top_z.sst_c}°C). "
-                    f"Local wave conditions are {top_z.wave_height_m}m. Exercise standard safety precautions."
+                rec = advise(
+                    f"Best-ranked zone is {top_z.name} at {top_z.distance_km:.1f} km bearing "
+                    f"{top_z.bearing_deg}°, suitability {top_z.suitability_score}/100 "
+                    f"(chlorophyll-a {top_z.chlorophyll_mg_m3} mg/m³, SST {top_z.sst_c}°C)."
                 )
             else:
                 summary = f"No active PFZ advisory features detected within {loc.radius_km} km of {loc.name}."
-                rec = "Monitor INCOIS satellite passes for updated chlorophyll/thermal front formation."
+                rec = advise(
+                    f"No zone ranked inside {loc.radius_km:.0f} km, so there is no "
+                    f"recommended ground to steam to on this query."
+                )
             return summary, rec
 
         if (intent in [QueryIntent.ROUTE_ANALYSIS, QueryIntent.ROUTE_FOLLOW_UP, QueryIntent.ROUTE_COMPARISON]) and route:
@@ -747,10 +768,24 @@ class ReportAgent(BaseSpecialistAgent):
                         f"Recommended Safe corridor spans {rec_cand.distance_km} km ({rec_cand.estimated_transit_hours}h transit at 10 kt, "
                         f"Wave: {rec_cand.wave_exposure_m} m, Wind: {rec_cand.wind_exposure_knots} kt) with {rec_cand.marine_risk.value} risk, safely clearing all sanctuary boundaries."
                     )
-                    rec = (
-                        f"Trade-Off Verdict: The alternative passage is {dist_desc} ({time_desc}), but introduces {alt_cand.marine_risk.value} risk "
-                        f"and breaches {alt_cand.protected_area_exposure} (Wildlife Protection Act 1972 violation). "
-                        f"Recommended offshore corridor is 100% compliant with zero sanctuary exposure."
+                    # The statute used to be asserted here unconditionally:
+                    # "(Wildlife Protection Act 1972 violation)" printed whether
+                    # or not the corridor crossed anything. Now that the
+                    # crossing flag is a real geometry test, that line would
+                    # have claimed a violation on a corridor reported as clear.
+                    # Law is stated only when the geometry says the corridor
+                    # actually enters a protected area.
+                    if alt_cand.crosses_protected_waters and alt_cand.protected_areas:
+                        breach = (
+                            f" It enters {', '.join(alt_cand.protected_areas)}, which is a "
+                            f"regulatory violation; the recommended corridor does not."
+                        )
+                    else:
+                        breach = " Neither corridor enters a protected area."
+                    rec = advise(
+                        f"The alternative passage is {dist_desc} ({time_desc}) and carries "
+                        f"{alt_cand.marine_risk.value} risk against {rec_cand.marine_risk.value} "
+                        f"on the recommended corridor.{breach}"
                     )
                     return summary, rec
 
@@ -762,12 +797,14 @@ class ReportAgent(BaseSpecialistAgent):
                     f"Recomputed environmental conditions: Significant wave height is {alt_cand.wave_exposure_m} m, sustained surface winds {alt_cand.wind_exposure_knots} kt. "
                     f"Overall route hazard level is {alt_cand.marine_risk.value} (Exposure: {alt_cand.protected_area_exposure})."
                 )
-                rec = (
-                    f"Alternative Corridor Advisory: Transit is {alt_cand.distance_km} km. "
-                    f"CRITICAL REGULATORY VIOLATION: Route intersects {alt_cand.protected_area_exposure}. "
-                    f"Vessel master advised to reconsider or switch to the Recommended Safe Corridor."
-                    if alt_cand.crosses_protected_waters else
-                    f"Alternative Corridor Advisory: Transit is {alt_cand.distance_km} km with safe environmental clearances."
+                rec = advise(
+                    f"Selected alternative corridor, {alt_cand.distance_km} km. "
+                    + (
+                        f"It intersects {', '.join(alt_cand.protected_areas)}; switching to the "
+                        f"recommended corridor avoids that."
+                        if alt_cand.crosses_protected_waters
+                        else f"It enters no protected area ({alt_cand.protected_area_exposure})."
+                    )
                 )
                 return summary, rec
 
@@ -776,7 +813,7 @@ class ReportAgent(BaseSpecialistAgent):
                 f"Vessel passage corridor from {route.origin.name} to {route.destination.name} for {temporal.label} spans {route.total_distance_km:.1f} km "
                 f"({route.estimated_transit_hours:.1f}h transit at 10 kt). Overall route hazard level is {route.overall_route_risk.value}."
             )
-            rec = route.recommended_action
+            rec = advise(route.recommended_action)
             return summary, rec
 
         if intent == QueryIntent.REGIONAL_COMPARISON and comparison:
@@ -784,12 +821,12 @@ class ReportAgent(BaseSpecialistAgent):
                 f"Comparative marine analysis between {comparison.location_a.name} and {comparison.location_b.name} for {temporal.label}. "
                 f"{comparison.overall_verdict}"
             )
-            rec = "Prioritize operations in the calmer sector where wave and wind shear remain well below threshold boundaries."
+            rec = advise(comparison.overall_verdict)
             return summary, rec
 
         if intent == QueryIntent.HISTORICAL_TREND and trend:
             summary = trend.trend_summary
-            rec = "Verify whether modern wave subsidence continues before expanding offshore operations."
+            rec = advise(trend.trend_summary)
             return summary, rec
 
         # Default Marine Safety
@@ -822,7 +859,10 @@ class ReportAgent(BaseSpecialistAgent):
         #
         # The advisory comes from the same resolver every other language uses,
         # so English and vernacular cannot diverge.
-        rec = advisory_for_band("en", risk_cat, wh, ws, temporal.label)
+        # Through the same derivation every other intent uses, so the safety
+        # advisory, the rules the engine triggered and the largest contributing
+        # factor appear in one order everywhere.
+        rec = advise()
 
         if is_mpa and mpa_info:
             rec = (

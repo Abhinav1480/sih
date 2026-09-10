@@ -137,18 +137,34 @@ async def test_regression_5_historical_trend():
     assert res.visualization_plan.result_type == "historical_trend"
     assert res.historical_trend is not None
 
-    # Two observations exist for a trend: the orchestrator fetches
-    # offset_hours=-24 and the current hour. This assertion used to require
-    # >= 3 points, which was only ever satisfied because three of the five
-    # emitted points were straight-line interpolation between the two real
-    # ones, labelled T-18h / T-12h / T-6h and rendered as a time series.
-    # Asserting on a count that only invented data could reach is how the
-    # defect survived a passing suite.
-    assert len(res.historical_trend.points) == 2
-    assert [p.timestamp for p in res.historical_trend.points] == ["T - 24h", "Current"]
+    # Every emitted point is a distinct observation. The count is not fixed and
+    # must not be: it depends on how many of the sampled hours a provider could
+    # actually serve.
+    #
+    # This assertion has been wrong twice, in opposite directions. It first
+    # required >= 3 points, which only invented data could reach -- three of the
+    # five emitted were straight-line interpolation labelled T-18h / T-12h /
+    # T-6h. It was then pinned to exactly 2, which held only while both points
+    # came from the synthetic model. A cached granule answers for every hour
+    # inside its validity window, so a 24-hour lookback can legitimately resolve
+    # to one observation, and drawing it twice would be the original defect
+    # again in miniature.
+    points = res.historical_trend.points
+    assert points, "a trend with no points at all"
 
-    # Note for a later phase: the query asks for 7 days and this is a 24-hour
-    # lookback. The period label and the fetch window still disagree.
+    identities = [(p.source, p.timestamp) for p in points]
+    assert len(identities) == len(set(identities)), (
+        f"the same observation is emitted more than once: {identities}"
+    )
+    for p in points:
+        assert p.timestamp == "Current" or p.timestamp.startswith("T - "), p.timestamp
+        # Scores come from calculate_marine_risk; that this is the only formula
+        # is asserted by test_trend_uses_one_risk_formula and the honesty suite.
+        assert 0 <= p.risk_score <= 100
+    if len(points) == 1:
+        assert "not enough to describe a trend" in res.historical_trend.trend_summary, (
+            "a single observation is being described as a trend"
+        )
 
 @pytest.mark.asyncio
 async def test_regression_6_multilingual_telugu():

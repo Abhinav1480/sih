@@ -329,7 +329,15 @@ class ISROFixtureStore:
                 f"from {when_utc.date()}; limit is {MAX_DAYS_FROM_REQUEST} days"
             )
 
+        # `in_window` is ordered by how close each pass is to the requested
+        # time, and the FIRST acceptable one wins. Ordering by distance instead
+        # meant one pass answered for every hour inside the window, so a
+        # week-long trend drew six points from a single observation and showed a
+        # flat line. The question is "what were conditions at time T", so the
+        # pass nearest T is the answer, provided it is close enough in space to
+        # be worth reporting at all.
         best: Optional[Tuple[float, float, Dict, int, int]] = None  # dist, swh, entry, kept, total
+        nearest_rejected: Optional[float] = None
         for entry in in_window:
             track = _load_track(str(self.root / entry["file"]))
             keep = (
@@ -343,22 +351,27 @@ class ISROFixtureStore:
             lat_k, lon_k, swh_k = track.lat[keep], track.lon[keep], track.swh[keep]
             dists = np.array([haversine_distance(lat, lon, la, lo) for la, lo in zip(lat_k, lon_k)])
             i = int(np.argmin(dists))
-            if best is None or dists[i] < best[0]:
-                best = (float(dists[i]), float(swh_k[i]), entry, int(keep.sum()), int(keep.size))
+            if dists[i] > MAX_TRACK_DISTANCE_KM:
+                if nearest_rejected is None or dists[i] < nearest_rejected:
+                    nearest_rejected = float(dists[i])
+                continue
+            best = (float(dists[i]), float(swh_k[i]), entry, int(keep.sum()), int(keep.size))
+            break
 
         if best is None:
+            if nearest_rejected is not None:
+                raise ProviderUnavailable(
+                    f"nearest quality-passing SARAL point is {nearest_rejected:.0f} km from "
+                    f"({lat:.3f}N, {lon:.3f}E); limit is {MAX_TRACK_DISTANCE_KM:.0f} km. Nadir "
+                    f"tracks are ~300 km apart, so this position has no altimeter coverage in "
+                    f"the granules held"
+                )
             raise ProviderUnavailable(
                 f"no SARAL 1 Hz point within {MAX_DAYS_FROM_REQUEST} days of {when_utc.date()} "
                 f"passes the quality filter ({SARAL_QUALITY_FILTER})"
             )
 
         distance_km, swh, entry, kept, total = best
-        if distance_km > MAX_TRACK_DISTANCE_KM:
-            raise ProviderUnavailable(
-                f"nearest quality-passing SARAL point is {distance_km:.0f} km from "
-                f"({lat:.3f}N, {lon:.3f}E); limit is {MAX_TRACK_DISTANCE_KM:.0f} km. Nadir tracks "
-                f"are ~300 km apart, so this position has no altimeter coverage in the granules held"
-            )
 
         acquired = self._acquired(entry)
         days_off = self._age_days(entry, when_utc)
