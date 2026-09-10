@@ -344,14 +344,16 @@ export const MapView: React.FC<MapViewProps> = ({
         const isActive = activeLayerIds.includes(layerId);
 
         if (isActive && !activeWmsMap.has(layerId)) {
-          if (!layer.url || !layer.layer_name) {
+          // Contract 1.3.0 carries the WMS layer name inside wms_params.layers.
+          const wmsLayerName = layer.layer_name || (layer.wms_params && layer.wms_params.layers);
+          if (!layer.url || !wmsLayerName) {
             setLayerStatuses((prev) => ({ ...prev, [layerId]: "unavailable" }));
             return;
           }
 
           try {
             const wmsTileLayer = L.tileLayer.wms(layer.url, {
-              layers: layer.layer_name,
+              layers: wmsLayerName,
               format: "image/png",
               transparent: true,
               opacity: 0.75,

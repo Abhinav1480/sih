@@ -515,7 +515,7 @@ export default function Home() {
                   }
                 >
                   <MapView
-                    layers={currentAnalysis?.map_layers || []}
+                    layers={(currentAnalysis as any)?.layers || currentAnalysis?.map_layers || []}
                     visualizationPlan={currentAnalysis?.visualization_plan}
                     onCoordinateSelect={handleCoordinateSelect}
                     resizeSignal={resizeSignal}
