@@ -392,10 +392,16 @@ export default function Home() {
                   {/* Live Agent Trace Stream while processing (Mission-Control Reasoning View) */}
                   {isLoading && (
                     <div className="space-y-3 pt-1">
+                      {fishermanMode && (
+                        <div className="text-[13px] text-slate-300 font-medium flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orca-cyan animate-pulse" />
+                          {t("loading.analyzing", selectedLanguage)}
+                        </div>
+                      )}
                       <AgentTraceTimeline
                         items={activeTraceItems}
                         isRunning={true}
-                        defaultCollapsed={false}
+                        defaultCollapsed={fishermanMode}
                         onRetry={() => handleQuerySubmit(lastQueryRef.current)}
                       />
                     </div>
@@ -435,11 +441,12 @@ export default function Home() {
                   )}
 
                   {/* Evidence & Provenance — consolidated registry summary that
-                      opens the shared drawer (FE-04). */}
-                  {currentAnalysis && <EvidenceRegistry />}
+                      opens the shared drawer (FE-04). Fisherman Mode renders its
+                      own registry inside FishermanPanel, so skip it here. */}
+                  {currentAnalysis && !fishermanMode && <EvidenceRegistry />}
 
                   {/* Final Decision Summary Table (End of Result) */}
-                  {currentAnalysis && (
+                  {currentAnalysis && !fishermanMode && (
                     <SummaryTable
                       analysis={currentAnalysis}
                       selectedLanguage={selectedLanguage}
@@ -463,6 +470,8 @@ export default function Home() {
                       isLoading={isLoading}
                       onFollowUp={(f) => handleQuerySubmit(f)}
                       suggestions={followUpSuggestions}
+                      enableVoice={fishermanMode}
+                      voiceLang={selectedLanguage}
                     />
                   </div>
                 )}
