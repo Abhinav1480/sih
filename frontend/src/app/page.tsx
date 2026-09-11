@@ -55,7 +55,7 @@ const TAB_ICONS = ["mic", "map", "list", "boat"] as const;
 
 export default function AppPage() {
   const { lang, setLang, t, native, hasVoice: designVoice } = useLang();
-  const { state, ask, reset } = useAnalysis();
+  const { state, ask, showOffer, reset } = useAnalysis();
   const net = useNetworkStatus();
   const [tab, setTab] = useState(0);
   const [stack, setStack] = useState<Overlay[]>([]);
@@ -227,11 +227,28 @@ export default function AppPage() {
   else if (top === "emergency") overlay = <EmergencyScreen position={geo.position} profile={profile} harbours={HARBOURS} lang={lang} t={t} onBack={pop} />;
   else if (top === "error" && state.phase === "error") overlay = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: color.page }}>
-      <EmptyState icon={<Icon name="alert" size={44} color={color.cautionChip} />} title={t("errorTitle")} body={`${t("errorBody")} (${state.reason})`}
-        action={<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {state.retryable && <BigButton variant="sea" onClick={() => runQuery(state.query)}>{t("retry")}</BigButton>}
-          <BigButton onClick={() => { reset(); setStack([]); }}>{t("goHome")}</BigButton>
-        </div>} />
+      <div style={{ flex: "none", background: color.header, padding: "13px 16px", minHeight: 56, display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={() => { reset(); setStack([]); }} aria-label="back" style={{ ...btnReset, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", margin: "-8px 0 -8px -8px" }}><Icon name="back" size={26} color={color.headerText} stroke={2.4} /></button>
+        <span style={{ ...sans(15, 500, 1.2), color: color.headerMuted, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{state.query}</span>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "24px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <Icon name="alert" size={44} color={color.cautionChip} />
+        <div style={{ ...sans(22, 600, 1.3), color: color.ink }}>{t(state.kind === "cached_mode" ? "errorCachedMode" : "errorTitle")}</div>
+        <div style={{ ...sans(15, 400, 1.45), color: color.inkMuted }}>
+          {t({ timeout: "errorTimeout", network: "errorNetwork", http: "errorHttp", no_backend: "errorNoBackend", cached_mode: "errorCachedModeBody" }[state.kind])}
+          {state.detail ? <span className="num"> ({state.detail})</span> : null}
+        </div>
+        {state.kind !== "cached_mode" && <BigButton variant="sea" minHeight={touch.answerAction} onClick={() => runQuery(state.query)}>{t("retry")}</BigButton>}
+        {/* What the phone holds, offered by name. Nothing below is this question's answer. */}
+        {state.offers.length > 0 && <div style={{ ...sans(13, 600, 1, ".06em"), color: color.inkFaint, textTransform: "uppercase", marginTop: 10 }}>{t("offersTitle")}</div>}
+        {state.offers.map((o) => (
+          <button key={o.source} onClick={() => showOffer(o)} style={{ ...btnReset, textAlign: "left", border: `1px solid ${color.cautionBorder}`, background: color.cautionBg, borderRadius: 16, padding: "12px 14px", minHeight: touch.min, display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ ...sans(13, 600, 1), color: color.cautionText }}>{t(o.source === "cached" ? "offerSaved" : "offerExample")} · <span className="num">{localiseDigits(formatAge(o.savedAt, lang), lang)}</span></span>
+            <span style={{ ...sans(16, 500, 1.35), color: color.ink, fontStyle: "italic" }}>&ldquo;{o.query}&rdquo;</span>
+          </button>
+        ))}
+        <BigButton onClick={() => { reset(); setStack([]); }}>{t("goHome")}</BigButton>
+      </div>
     </div>
   );
   else if (top === "type") overlay = (
