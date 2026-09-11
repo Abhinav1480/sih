@@ -76,10 +76,11 @@ export function MyBoatScreen({ profile, lang, langNative, t, onSave, onLanguage,
               </div>
             ) : (
               <button onClick={() => setEditing(true)} style={{ ...btnReset, width: "100%", textAlign: "left" }}>
-                <div style={{ ...sans(21, 700, 1), color: color.ink, textTransform: "uppercase" }}>{profile?.name}</div>
+                <div style={{ ...sans(21, 700, 1), color: profile?.name ? color.ink : color.inkFaint, textTransform: "uppercase" }}>{profile?.name || t("boatName")}</div>
                 <div style={{ ...sans(14, 400, 1.2), color: color.inkMuted, marginTop: 5 }}>{[profile?.type, profile?.registration].filter(Boolean).join(" · ")}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 10px", marginTop: 14 }}>
-                  {[{ v: formatNumber(profile?.length_m ?? null, lang, 1), u: "m", l: t("boatLength") }, { v: formatNumber(profile?.crew ?? null, lang, 0), u: "", l: t("boatCrew") }].map((s, i) => (
+                  {/* Typed by the fisherman, not measured: an empty field says "none yet", not "Not measured". */}
+                  {[{ v: profile?.length_m != null ? formatNumber(profile.length_m, lang, 1) : t("none"), u: profile?.length_m != null ? "m" : "", l: t("boatLength") }, { v: profile?.crew != null ? formatNumber(profile.crew, lang, 0) : t("none"), u: "", l: t("boatCrew") }].map((s, i) => (
                     <div key={i} style={{ width: "calc(33.33% - 7px)", borderLeft: `3px solid ${color.lineStrong}`, paddingLeft: 10 }}>
                       <Num size={18} weight={700} color={color.ink}>{s.v}</Num> <Num size={11} weight={500} color={color.inkGhost}>{s.u}</Num>
                       <div style={{ ...sans(12, 400, 1.25), color: color.inkMuted, marginTop: 5 }}>{s.l}</div>

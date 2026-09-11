@@ -66,7 +66,8 @@ export function AnswerScreen({ envelope, lang, t, onWhy, onEvidence, onReplay, s
     ? localiseDigits(`${String(windowEnd.getUTCHours()).padStart(2, "0")}:${String(windowEnd.getUTCMinutes()).padStart(2, "0")}`, lang)
     : null;
 
-  const heroInk = verdict?.icon === "stop" ? color.headerText : color.cautionHeaderInk;
+  // White on the green and red stops, dark ink on the amber/orange ones (design contrast).
+  const heroInk = verdict?.icon === "alert" ? color.cautionHeaderInk : color.headerText;
 
   return (
     <Screen>

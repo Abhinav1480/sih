@@ -339,3 +339,10 @@ body.orca-app .mono {
 @keyframes orca-wv { 0%, 100% { transform: scaleY(.22); } 50% { transform: scaleY(1); } }
 @keyframes orca-soft { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 @keyframes orca-up { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Scrolling screen bodies: children keep their content height. */
+.orca-body > * { flex: none; }
+
+/* An app, not a document: a long press must never start text selection. */
+body.orca-app, body.orca-app * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.orca-app input, body.orca-app textarea { -webkit-user-select: text; user-select: text; }

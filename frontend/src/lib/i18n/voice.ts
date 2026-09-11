@@ -41,7 +41,7 @@ export const voice: LangDicts = {
     "voice.spoken.waves": "Waves {w} metres.",
     "voice.spoken.wind": "Wind {k} knots.",
     "voice.spoken.wavesWind": "Waves {w} metres, wind {k} knots.",
-    "voice.spoken.returnBy": "Return before {h}.",
+    "voice.spoken.returnBy": "This advice is valid until {h}.",
   },
   te: {
     "voice.speak": "మీ ప్రశ్న చెప్పండి",
@@ -77,7 +77,7 @@ export const voice: LangDicts = {
     "voice.spoken.waves": "అలలు {w} మీటర్లు.",
     "voice.spoken.wind": "గాలి {k} నాట్లు.",
     "voice.spoken.wavesWind": "అలలు {w} మీటర్లు, గాలి {k} నాట్లు.",
-    "voice.spoken.returnBy": "{h} గంటల లోపు తిరిగి రండి.",
+    "voice.spoken.returnBy": "ఈ సలహా {h} గంటల వరకు చెల్లుతుంది.",
   },
   hi: {
     "voice.speak": "अपना सवाल बोलें",
@@ -113,7 +113,7 @@ export const voice: LangDicts = {
     "voice.spoken.waves": "लहरें {w} मीटर।",
     "voice.spoken.wind": "हवा {k} नॉट।",
     "voice.spoken.wavesWind": "लहरें {w} मीटर, हवा {k} नॉट।",
-    "voice.spoken.returnBy": "{h} बजे से पहले लौटें।",
+    "voice.spoken.returnBy": "यह सलाह {h} बजे तक मान्य है।",
   },
   ta: {
     "voice.speak": "உங்கள் கேள்வியைச் சொல்லுங்கள்",
@@ -149,6 +149,6 @@ export const voice: LangDicts = {
     "voice.spoken.waves": "அலைகள் {w} மீட்டர்.",
     "voice.spoken.wind": "காற்று {k} நாட்ஸ்.",
     "voice.spoken.wavesWind": "அலைகள் {w} மீட்டர், காற்று {k} நாட்ஸ்.",
-    "voice.spoken.returnBy": "{h} மணிக்கு முன் திரும்புங்கள்.",
+    "voice.spoken.returnBy": "இந்த அறிவுரை {h} மணி வரை செல்லும்.",
   },
 };

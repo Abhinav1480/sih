@@ -194,8 +194,8 @@ export function Screen({ children, style }: { children: React.ReactNode; style?:
 
 /** Scrollable body with the design's 18px gutter. */
 export function Body({ children, pad = 18, style }: { children: React.ReactNode; pad?: number; style?: React.CSSProperties }) {
-  // Grid, not flex column: flex children shrink to fit a scrolling parent and clip cards.
-  return <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `${pad}px ${pad}px 24px`, display: "grid", alignContent: "start", gap: 12, ...style }}>{children}</div>;
+  // .orca-body > * { flex: none } in globals.css: flex children otherwise shrink to fit a scrolling parent and clip cards.
+  return <div className="orca-body" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `${pad}px ${pad}px 24px`, display: "flex", flexDirection: "column", gap: 12, ...style }}>{children}</div>;
 }
 
 /** "Not measured" in the reader's language, styled as a value that is absent. */

@@ -11,6 +11,9 @@ const config: CapacitorConfig = {
     backgroundColor: "#04141d",
   },
   plugins: {
+    // Native HTTP: requests leave the WebView origin (https://localhost), so the API
+    // sees a normal client and CORS does not apply. The backend allowlist is untouched.
+    CapacitorHttp: { enabled: true },
     SplashScreen: {
       launchShowDuration: 800,
       backgroundColor: "#04141d",

@@ -94,8 +94,11 @@ export function HomeScreen({ envelope, cachedNote, online, syncLabel, stale, str
           ))}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onPointerDown={onHoldStart} onPointerUp={onHoldEnd} onPointerCancel={onHoldEnd} onContextMenu={(e) => e.preventDefault()}
-            style={{ ...btnReset, flex: 1, minHeight: touch.voice, borderRadius: 18, background: color.sea, color: color.headerText, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, touchAction: "none", userSelect: "none" }}>
+          {/* pointercancel is deliberately not a release: the WebView fires it ~500 ms into a
+              long press, which would end the recording before a word is said. The recogniser
+              finishes on its own at end of speech; the Listening screen's button also releases. */}
+          <button onPointerDown={onHoldStart} onPointerUp={onHoldEnd} onContextMenu={(e) => e.preventDefault()}
+            style={{ ...btnReset, flex: 1, minHeight: touch.voice, borderRadius: 18, background: color.sea, color: color.headerText, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, touchAction: "none", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}>
             <Icon name="mic" size={26} color={color.headerText} />
             <span style={{ ...sans(19, 700, 1) }}>{t("hold")}</span>
           </button>

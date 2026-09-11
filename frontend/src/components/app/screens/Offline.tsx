@@ -3,15 +3,16 @@
 /**
  * 11 OFFLINE + SAVE TRIP.
  *
- * Connectivity, the saved map, the trip card, and one button to save the
- * current answer for the trip. Age is shown to the minute and turns red past
- * the stale threshold in lib/offline/store; a stale card is never a silent
- * pass.
+ * Connectivity, then what is actually on the phone: the last answer and its
+ * age, the trip card, the bundled map, the bundled contacts and harbours. The
+ * design lists sample items with sample sizes ("Sea border lines 1 MB"); those
+ * are not rendered because the phone holds no such thing (deviations #19).
+ * Age turns red past the stale threshold in lib/offline/store.
  */
 
 import React from "react";
 import { color, touch } from "@/lib/design/tokens";
-import { CACHE_ITEMS, type LangCode } from "@/lib/i18n/app";
+import { type LangCode } from "@/lib/i18n/app";
 import { formatNumber, localiseDigits } from "@/lib/i18n/digits";
 import { formatAge, isStale } from "@/lib/offline/store";
 import type { TripCard } from "@/lib/offline/tripCard";
@@ -24,16 +25,28 @@ interface Props {
 
 export function OfflineScreen({ online, lastSyncAt, trip, canSave, lang, t, onSave, onBack }: Props) {
   const stale = lastSyncAt ? isStale(lastSyncAt) : false;
-  const items = ((CACHE_ITEMS as unknown as Record<string, string[]>)[lang] ?? (CACHE_ITEMS as unknown as Record<string, string[]>).en) ?? [];
+  const age = (iso: string) => localiseDigits(formatAge(iso, lang), lang);
+  // What the phone really holds. Nothing here is a sample.
+  const items: { label: string; value: string; have: boolean }[] = [
+    { label: t("cacheAnswer"), value: lastSyncAt ? age(lastSyncAt) : t("none"), have: !!lastSyncAt },
+    { label: t("cacheTrip"), value: trip ? age(trip.savedAt) : t("none"), have: !!trip },
+    { label: t("cacheTiles"), value: t("bundled"), have: true },
+    { label: t("cacheContacts"), value: t("bundled"), have: true },
+  ];
+  const tone = stale ? "danger" : online ? "online" : "caution";
+  const stripBg = { danger: color.dangerBg, online: color.onlineBg, caution: color.cautionBg }[tone];
+  const stripBorder = { danger: color.dangerBorder, online: color.onlineBorder, caution: color.cautionBorder }[tone];
+  const stripFg = { danger: color.dangerText, online: color.onlineText, caution: color.cautionText }[tone];
+  const stripLabel = stale ? t("offline.stale") : online ? t("online") : t("offline");
 
   return (
     <Screen>
       <Header title={t("tripCache")} onBack={onBack} />
-      <div role="status" style={{ flex: "none", minHeight: 44, display: "flex", alignItems: "center", gap: 9, padding: "0 16px", background: online ? color.onlineBg : stale ? color.dangerBg : color.cautionBg, borderBottom: `1px solid ${online ? color.onlineBorder : stale ? color.dangerBorder : color.cautionBorder}` }}>
-        <Icon name={online ? "check" : "alert"} size={16} color={online ? color.onlineText : stale ? color.dangerText : color.cautionText} stroke={2.4} />
-        <span style={{ ...sans(14, 600, 1), color: online ? color.onlineText : stale ? color.dangerText : color.cautionText }}>{online ? t("online") : t("offline")}</span>
-        <span style={{ marginLeft: "auto", ...sans(13, 500, 1), color: online ? color.onlineMuted : stale ? color.dangerMuted : color.cautionSoft }}>
-          {lastSyncAt ? <span className="num">{localiseDigits(formatAge(lastSyncAt, lang), lang)}</span> : t("offline.neverSynced")}
+      <div role="status" style={{ flex: "none", minHeight: 44, display: "flex", alignItems: "center", gap: 9, padding: "0 16px", background: stripBg, borderBottom: `1px solid ${stripBorder}` }}>
+        <Icon name={tone === "online" ? "check" : "alert"} size={16} color={stripFg} stroke={2.4} />
+        <span style={{ ...sans(14, 600, 1), color: stripFg }}>{stripLabel}</span>
+        <span style={{ marginLeft: "auto", ...sans(13, 500, 1), color: stripFg, opacity: 0.85 }}>
+          {lastSyncAt ? <span className="num">{age(lastSyncAt)}</span> : t("offline.neverSynced")}
         </span>
       </div>
       <Body pad={14}>
@@ -44,10 +57,11 @@ export function OfflineScreen({ online, lastSyncAt, trip, canSave, lang, t, onSa
 
         <Card>
           <div style={{ ...sans(13, 600, 1, ".06em"), color: color.inkFaint, marginBottom: 12, textTransform: "uppercase" }}>{t("tripCache")}</div>
-          {items.map((label, i) => (
+          {items.map((it, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: i < items.length - 1 ? `1px solid ${color.lineFaint}` : "none" }}>
-              <Icon name={trip ? "check" : "unknown"} size={18} color={trip ? color.onlineText : color.inkGhost} stroke={2.4} />
-              <span style={{ ...sans(15, 500, 1.2), color: trip ? color.ink : color.inkFaint }}>{label}</span>
+              <Icon name={it.have ? "check" : "unknown"} size={18} color={it.have ? color.onlineText : color.inkGhost} stroke={2.4} />
+              <span style={{ ...sans(15, 500, 1.2), color: it.have ? color.ink : color.inkFaint, flex: 1, minWidth: 0 }}>{it.label}</span>
+              <Num size={12} weight={500} color={it.have ? color.inkMuted : color.inkFaint}>{it.value}</Num>
             </div>
           ))}
           {trip && (

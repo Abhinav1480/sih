@@ -135,8 +135,13 @@ export default function AppPage() {
     if (stt.state === "requesting") return;
     stt.stop(); setStack([]);
   }, [stt]);
+  // Only a state the recogniser reached *during this hold* may close the screen; the
+  // terminal state left over from the previous hold (e.g. "nomatch") must not.
+  const holdStartState = useRef<string | null>(null);
   useEffect(() => {
     if (top !== "listening") return;
+    if (stt.state === holdStartState.current) return;
+    holdStartState.current = null;
     if (stt.state === "denied") { setMicNote(t("micDenied")); setStack([]); }
     else if (stt.state === "unavailable" || stt.state === "error") { setMicNote(t("micUnavailable")); setStack([]); }
     else if (stt.state === "nomatch") { setMicNote(t("micNoMatch")); setStack([]); }
@@ -182,7 +187,7 @@ export default function AppPage() {
   const tabScreen = [
     <HomeScreen key="h" envelope={env} cachedNote={cachedNote} online={net.online} syncLabel={syncLabel} stale={stale} stripLabel={stale ? t("offline.stale") : net.online ? t("online") : t("offline")}
       lang={lang} langNative={native} t={t} asks={asks}
-      onAsk={runQuery} onHoldStart={() => { setMicNote(null); setListenStart(Date.now()); push("listening"); stt.start(); }} onHoldEnd={holdEnd} onType={() => push("type")}
+      onAsk={runQuery} onHoldStart={() => { setMicNote(null); setListenStart(Date.now()); holdStartState.current = stt.state; push("listening"); stt.start(); }} onHoldEnd={holdEnd} onType={() => push("type")}
       onLanguage={() => push("language")} onOpenAnswer={() => push("answer")}
       map={<MapScreenLite envelope={env} position={position} lang={lang} t={t} />} />,
     <MapScreen key="m" envelope={env} position={position} center={position ?? DEFAULT_LOCATION} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,

@@ -52,7 +52,7 @@ export function buildSpokenText(analysis: OrcaAnalysisResponse, lang: string): S
   else if (w) out.push(t("voice.spoken.waves", code, { w }));
   else if (k) out.push(t("voice.spoken.wind", code, { k }));
 
-  // 3. One instruction: return before the end of the temporal window.
+  // 3. The validity window end, said as what it is -- the backend gives no return time.
   const end = analysis.meta?.temporal?.end_time ?? analysis.temporal?.end_time;
   const d = end ? new Date(end) : null;
   // ponytail: backend stamps IST wall-clock as Z (label "05:00 - 11:00" <-> end_time 11:00Z),
