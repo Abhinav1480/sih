@@ -32,7 +32,7 @@ export function SplashScreen({ ms = 900, onDone }: { ms?: number; onDone: () => 
 
 export function WelcomeScreen({ t, onGuest, onSignIn, onSignUp }: { t: T; onGuest: () => void; onSignIn: () => void; onSignUp: () => void }) {
   return (
-    <Screen style={{ background: color.header }}>
+    <Screen style={{ background: color.header, maxWidth: 560, margin: "0 auto", width: "100%" }}>
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 24px", gap: 12 }}>
         <Icon name="wave" size={48} color={color.headerMuted} stroke={2} />
         <div style={{ ...sans(40, 700, 1, ".16em"), color: color.headerText }}>ORCA</div>
@@ -68,7 +68,7 @@ export function errorKey(err: unknown): string {
 function AuthFrame({ title, t, onBack, children }: { title: string; t: T; onBack: () => void; children: React.ReactNode }) {
   void t;
   return (
-    <Screen>
+    <Screen style={{ maxWidth: 560, margin: "0 auto", width: "100%" }}>
       <div style={{ flex: "none", background: color.header, padding: "13px 16px", minHeight: 56, display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={onBack} aria-label="back" style={{ ...btnReset, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", margin: "-8px 0 -8px -8px" }}><Icon name="back" size={26} color={color.headerText} stroke={2.4} /></button>
         <span style={{ ...sans(18, 600, 1), color: color.headerText }}>{title}</span>

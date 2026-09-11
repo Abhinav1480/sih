@@ -62,12 +62,25 @@ type VoiceMode = null | "listening" | "checking" | "answer";
 const MS_PER_WORD = 430;
 const TAB_ICONS = ["wave", "map", "mic", "list", "boat"] as const;
 const TAB_TODAY = 0, TAB_MAP = 1, TAB_ASK = 2, TAB_TRIPS = 3, TAB_BOAT = 4;
+/** Desktop from 1024 px: a sidebar instead of the bar, conversation and map side by side. */
+const WIDE_QUERY = "(min-width: 1024px)";
+function useWide(): boolean {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE_QUERY);
+    const on = () => setWide(mq.matches);
+    on(); mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
 
 export default function AppPage() {
   const { lang, setLang, t, native, hasVoice: designVoice } = useLang();
   const { state, ask, reset } = useAnalysis();
   const session = useSession();
   const net = useNetworkStatus();
+  const wide = useWide();
   const [mounted, setMounted] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
   const [authScreen, setAuthScreen] = useState<AuthScreen>("welcome");
@@ -394,6 +407,48 @@ export default function AppPage() {
   );
 
   const covered = voiceView ?? overlay;
+  const navItems = [t("tabToday"), tabs[1], tabs[0], tabs[2], tabs[3]];
+
+  if (wide) {
+    const mapPane = <MapScreen key="m-side" envelope={mapEnv} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />;
+    return (
+      <div style={{ position: "fixed", inset: 0, display: "flex", background: color.page, fontFamily: "var(--font-sans), sans-serif" }}>
+        {/* Sidebar */}
+        <nav style={{ flex: "none", width: 232, background: color.header, display: "flex", flexDirection: "column", padding: "18px 12px", gap: 6 }}>
+          <div style={{ ...sans(22, 700, 1, ".14em"), color: color.headerText, padding: "6px 10px 18px" }}>ORCA</div>
+          {navItems.map((label, i) => {
+            const on = tab === i;
+            return (
+              <button key={label} onClick={() => setTab(i)} aria-current={on} style={{ ...btnReset, minHeight: touch.min, borderRadius: 14, display: "flex", alignItems: "center", gap: 12, padding: "0 14px", background: on ? "rgba(255,255,255,.14)" : i === TAB_ASK ? color.sea : "transparent", color: color.headerText, ...sans(16, i === TAB_ASK || on ? 700 : 500, 1), textAlign: "left" }}>
+                <Icon name={TAB_ICONS[i]} size={22} color={color.headerText} />{label}
+              </button>
+            );
+          })}
+          <div style={{ flex: 1 }} />
+          <button onClick={() => push("emergency")} style={{ ...btnReset, minHeight: touch.min, borderRadius: 14, border: "1px solid rgba(255,255,255,.35)", color: color.headerText, ...sans(15, 700, 1), display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}><Icon name="alert" size={20} color={color.headerText} />{t("emergency")}</button>
+          <button onClick={() => push("profile")} style={{ ...btnReset, minHeight: touch.min, borderRadius: 14, display: "flex", alignItems: "center", gap: 12, padding: "0 14px", color: color.headerText, ...sans(15, 600, 1), textAlign: "left" }}>
+            <span style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.10)", display: "flex", alignItems: "center", justifyContent: "center", ...sans(15, 700, 1) }}>{avatar ?? "?"}</span>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user?.name ?? t("guestAccount")}</span>
+          </button>
+        </nav>
+        {/* Conversation / current tab (or a voice / overlay screen) */}
+        <main style={{ flex: tab === TAB_MAP ? 1 : "0 0 560px", minWidth: 0, position: "relative", borderRight: `1px solid ${color.line}` }}>
+          <div style={{ position: "absolute", inset: 0, visibility: covered ? "hidden" : "visible" }}>{tabScreen}</div>
+          {covered && <div style={{ position: "absolute", inset: 0, zIndex: 20 }}>{covered}</div>}
+          {micNote && !covered && (
+            <div role="status" style={{ position: "absolute", left: 14, right: 14, bottom: 14, background: color.ink, color: color.headerText, borderRadius: 14, padding: "12px 14px", ...sans(15, 500, 1.35), zIndex: 30, display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={{ flex: 1 }}>{micNote}</span>
+              <button onClick={() => setMicNote(null)} style={{ ...btnReset, color: color.headerMuted, minWidth: 44, minHeight: 44 }}>✕</button>
+            </div>
+          )}
+        </main>
+        {/* The map, always present beside the conversation */}
+        {tab !== TAB_MAP && <aside style={{ flex: 1, minWidth: 0, position: "relative" }}><div style={{ position: "absolute", inset: 0 }}>{mapPane}</div></aside>}
+        {severe && geo.status && <BorderWarningOverlay status={geo.status} position={position} lang={lang} t={t} onAck={() => setWarnAcked(true)} />}
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: color.page, fontFamily: "var(--font-sans), sans-serif", boxSizing: "border-box", paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", background: color.header }} />
@@ -410,7 +465,7 @@ export default function AppPage() {
       </div>
       {!voiceView && (
         <nav style={{ flex: "none", height: 70, display: "flex", background: color.card, borderTop: `1px solid ${color.line}`, position: "relative" }}>
-          {[t("tabToday"), tabs[1], tabs[0], tabs[2], tabs[3]].map((label, i) => {
+          {navItems.map((label, i) => {
             const on = tab === i;
             if (i === TAB_ASK) return (
               <button key="ask" onClick={() => setTab(TAB_ASK)} aria-current={on} aria-label={label} style={{ ...btnReset, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: 6, gap: 4 }}>
