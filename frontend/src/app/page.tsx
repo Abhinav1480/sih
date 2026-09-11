@@ -51,13 +51,16 @@ import { isLangCode } from "@/lib/i18n/useLang";
 import { SplashScreen, WelcomeScreen, SignUpScreen, SignInScreen, ForgotScreen } from "@/components/app/screens/Auth";
 import { OnboardingScreen } from "@/components/app/screens/Onboarding";
 import { ProfileScreen } from "@/components/app/screens/Profile";
+import { DashboardScreen, type MarineAlert } from "@/components/app/screens/Dashboard";
+import { useDashboard } from "@/lib/data/useDashboard";
 
 type Overlay = "listening" | "checking" | "answer" | "why" | "evidence" | "language" | "offline" | "emergency" | "type" | "error" | "profile" | "onboarding" | "needAccount";
 type AuthScreen = "welcome" | "signup" | "signin" | "forgot";
 
 /** ponytail: the TTS plugin gives no word boundaries on Android, so the highlight runs on a clock at ~2.3 words/s (rate 0.9). */
 const MS_PER_WORD = 430;
-const TAB_ICONS = ["mic", "map", "list", "boat"] as const;
+const TAB_ICONS = ["wave", "map", "mic", "list", "boat"] as const;
+const ASK_TAB = 2;
 
 export default function AppPage() {
   const { lang, setLang, t, native, hasVoice: designVoice } = useLang();
@@ -139,8 +142,8 @@ export default function AppPage() {
   const runQuery = useCallback((q: string) => {
     const loc = position ?? DEFAULT_LOCATION;
     setStack(["checking"]);
-    ask(q, { latitude: loc.lat, longitude: loc.lon });
-  }, [ask, position]);
+    ask(q, { latitude: loc.lat, longitude: loc.lon }, undefined, lang);
+  }, [ask, position, lang]);
 
   const stt = useSpeechInput({ lang, onFinal: (text) => { if (text.trim()) runQuery(text.trim()); else { setMicNote(t("micNoMatch")); setStack([]); } } });
   /** Finger lifted: hand over what was heard; if nothing was started, just close. Permission asks stay up. */
@@ -184,6 +187,12 @@ export default function AppPage() {
   void now;
 
   const unknownCards = env?.cards?.filter((c) => !KNOWN_CARD_TYPES.has(c.type)) ?? [];
+  const homeHarbour = (session.user?.profile as { home_harbour?: { name?: string; lat?: number; lon?: number } } | undefined)?.home_harbour;
+  const home = useMemo(() => (homeHarbour && Number.isFinite(homeHarbour.lat) && Number.isFinite(homeHarbour.lon)
+    ? { name: homeHarbour.name ?? "", lat: homeHarbour.lat as number, lon: homeHarbour.lon as number }
+    : { name: HARBOURS[1].name, lat: DEFAULT_LOCATION.lat, lon: DEFAULT_LOCATION.lon }), [homeHarbour]);
+  const [dashNonce, setDashNonce] = useState(0);
+  const dash = useDashboard({ conditionsQuery: t("condQuery").replace("{place}", home.name), location: { latitude: home.lat, longitude: home.lon }, preferredLanguage: lang, nonce: dashNonce });
   // The map opens on the sea the answer is about (or the bundled coast), with the phone's fix as a
   // marker. Centring on the fix put an inland tester on a blank, unbundled view.
   const mapCenter = useMemo(() => {
@@ -191,6 +200,7 @@ export default function AppPage() {
     return loc && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude) ? { lat: loc.latitude, lon: loc.longitude } : DEFAULT_LOCATION;
   }, [env]);
   const asks = ((ASKS as Record<string, readonly string[]>)[lang] ?? ASKS.en).slice();
+  const tabs = (TABS as Record<string, readonly string[]>)[lang] ?? TABS.en;
 
   const saveForTrip = useCallback(async () => {
     if (!env) return;
@@ -236,16 +246,20 @@ export default function AppPage() {
     return frame(<WelcomeScreen t={t} onGuest={() => session.continueAsGuest()} onSignIn={() => setAuthScreen("signin")} onSignUp={() => setAuthScreen("signup")} />);
   }
   const tabScreen = [
+    <DashboardScreen key="d" t={t} lang={lang} langNative={native} avatar={session.user ? session.user.name.trim().charAt(0).toUpperCase() : null} online={net.online}
+      homeName={home.name} conditions={dash.conditions} alerts={dash.alerts as never} trip={trip} quickAsks={asks} lastSyncAt={lastSavedAt}
+      onReload={() => setDashNonce((n) => n + 1)} onOpenConditions={(e) => { setLastEnvelope(e); setLastSavedAt(new Date().toISOString()); push("answer"); }}
+      onAsk={(q) => { setTab(ASK_TAB); runQuery(q); }} onTrip={() => setTab(3)} onProfile={() => push("profile")} onLanguage={() => push("language")} onEmergency={() => push("emergency")} />,
+    <MapScreen key="m" envelope={env} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
     <HomeScreen key="h" envelope={env} cachedNote={cachedNote} online={net.online} syncLabel={syncLabel} stale={stale} stripLabel={stale ? t("offline.stale") : net.online ? t("online") : t("offline")}
       lang={lang} langNative={native} t={t} asks={asks}
       onAsk={runQuery} onHoldStart={() => { setMicNote(null); setListenStart(Date.now()); holdStartState.current = stt.state; push("listening"); stt.start(); }} onHoldEnd={holdEnd} onType={() => push("type")}
       onLanguage={() => push("language")} onProfile={() => push("profile")} avatar={session.user ? session.user.name.trim().charAt(0).toUpperCase() : null} onOpenAnswer={() => push("answer")}
       map={<MapScreenLite envelope={env} position={position} center={mapCenter} lang={lang} t={t} />} />,
-    <MapScreen key="m" envelope={env} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
     <TripsScreen key="t" trips={trips} canAdd={!!env} lang={lang} t={t} onAdd={canPersist ? saveForTrip : needsAccount} />,
     <MyBoatScreen key="b" profile={profile} lang={lang} langNative={native} t={t}
       onSave={async (p) => { if (!canPersist) { needsAccount(); return; } await saveVesselProfile(p); setProfile(p); try { await session.updateProfile({ profile: { vessel: p } }); } catch { /* kept locally */ } }}
-      onLanguage={() => push("language")} onTrips={() => setTab(2)} onOffline={() => push("offline")} onEmergency={() => push("emergency")}
+      onLanguage={() => push("language")} onTrips={() => setTab(3)} onOffline={() => push("offline")} onEmergency={() => push("emergency")}
       demoActive={demo !== null} onDemo={() => { setDemo((d) => (d === null ? 0 : null)); setWarnAcked(false); }} />,
   ][tab];
 
@@ -304,7 +318,7 @@ export default function AppPage() {
   );
   else if (top === "profile") overlay = (
     <ProfileScreen t={t} lang={lang} langNative={native} user={session.user} isGuest={isGuest} onboardingPending={session.onboardingPending} storageKind={session.storageKind}
-      onBack={pop} onLanguage={() => push("language")} onBoat={() => { setStack([]); setTab(3); }} onEmergency={() => push("emergency")} onOffline={() => push("offline")}
+      onBack={pop} onLanguage={() => push("language")} onBoat={() => { setStack([]); setTab(4); }} onEmergency={() => push("emergency")} onOffline={() => push("offline")}
       onResumeOnboarding={() => push("onboarding")} onCreateAccount={async () => { await session.signOut(); setAuthScreen("signup"); setStack([]); }}
       onSignOut={async () => { tts.stop(); reset(); setStack([]); setTab(0); setLastEnvelope(null); setLastSavedAt(null); await session.signOut(); setAuthScreen("welcome"); }} />
   );
@@ -351,9 +365,17 @@ export default function AppPage() {
         {severe && geo.status && <BorderWarningOverlay status={geo.status} position={position} lang={lang} t={t} onAck={() => setWarnAcked(true)} />}
       </div>
       {!overlay && (
-        <nav style={{ flex: "none", height: 70, display: "flex", background: color.card, borderTop: `1px solid ${color.line}` }}>
-          {((TABS as Record<string, readonly string[]>)[lang] ?? TABS.en).map((label, i) => {
+        <nav style={{ flex: "none", height: 70, display: "flex", background: color.card, borderTop: `1px solid ${color.line}`, position: "relative" }}>
+          {[t("tabToday"), tabs[1], tabs[0], tabs[2], tabs[3]].map((label, i) => {
             const on = tab === i;
+            if (i === ASK_TAB) return (
+              <button key="ask" onClick={() => setTab(ASK_TAB)} aria-current={on} aria-label={label} style={{ ...btnReset, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: 6, gap: 4 }}>
+                <span style={{ width: 62, height: 62, borderRadius: "50%", background: color.sea, boxShadow: "0 4px 14px rgba(11,107,125,.35)", display: "flex", alignItems: "center", justifyContent: "center", marginTop: -28, border: `4px solid ${color.card}` }}>
+                  <Icon name="mic" size={28} color={color.headerText} stroke={2.4} />
+                </span>
+                <span style={{ ...sans(12, 700, 1), color: color.sea }}>{label}</span>
+              </button>
+            );
             return (
               <button key={label} onClick={() => setTab(i)} aria-current={on} style={{ ...btnReset, flex: 1, minHeight: touch.tab, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, background: on ? "#e6f2f4" : "transparent", color: on ? color.sea : color.inkFaint }}>
                 <Icon name={TAB_ICONS[i]} size={22} color={on ? color.sea : color.inkFaint} />

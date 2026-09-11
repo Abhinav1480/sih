@@ -97,7 +97,7 @@ export function useAnalysis() {
   }, []);
 
   const ask = useCallback(
-    async (query: string, location: { latitude: number; longitude: number }, conversationId?: string) => {
+    async (query: string, location: { latitude: number; longitude: number }, conversationId?: string, preferredLanguage?: string) => {
       abort.current?.abort();
       const controller = new AbortController();
       abort.current = controller;
@@ -112,7 +112,7 @@ export function useAnalysis() {
       const timer = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
       console.info("[query] request", JSON.stringify({ query, user_location: location }));
       try {
-        const envelope = await fetchLive({ query, user_location: location, conversation_id: conversationId }, controller.signal);
+        const envelope = await fetchLive({ query, user_location: location, conversation_id: conversationId, preferred_language: preferredLanguage }, controller.signal);
         clearTimeout(timer);
         console.info("[query] response", JSON.stringify({ query_text: envelope.meta?.query_text, intent: envelope.intent, verdict: envelope.answer?.verdict, band: envelope.risk?.band, score: envelope.risk?.score, request_id: envelope.request_id }));
         await saveLastResponse(envelope as never);
