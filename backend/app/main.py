@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,8 +10,13 @@ from app.database.session import engine, init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not settings.DEBUG and settings.JWT_SECRET.startswith("orca-dev-secret-change-me"):
-        raise RuntimeError("JWT_SECRET must be set when DEBUG is off")
+    if settings.JWT_SECRET.startswith("orca-dev-secret-change-me") and not settings.DEBUG:
+        # No secret configured on a non-debug server: sign with a per-process random secret
+        # rather than the published default. Access tokens die on restart; refresh tokens are
+        # opaque and DB-backed, so the app re-authenticates silently. Set JWT_SECRET to stop this.
+        import secrets
+        settings.JWT_SECRET = secrets.token_urlsafe(48)
+        logging.getLogger("orca.auth").warning("JWT_SECRET is not set; using a per-process secret (set JWT_SECRET in the environment)")
     # Initialize SQLite / PostgreSQL tables on startup
     await init_db()
     yield
