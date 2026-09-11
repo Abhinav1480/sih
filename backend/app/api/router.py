@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import query, conversations, layers, alerts, export
+from app.api.endpoints import query, conversations, layers, alerts, export, auth
 
 api_router = APIRouter()
 
@@ -8,3 +8,4 @@ api_router.include_router(conversations.router, tags=["Conversations & Context"]
 api_router.include_router(layers.router, tags=["Geospatial Layers"])
 api_router.include_router(alerts.router, tags=["Marine Hazard Bulletins"])
 api_router.include_router(export.router, tags=["Advisory Reports"])
+api_router.include_router(auth.router, tags=["Auth"])

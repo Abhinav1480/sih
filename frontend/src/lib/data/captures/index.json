@@ -1,51 +1,51 @@
 [
   {
     "file": "canonical-01-nearest-pfz.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Where is the nearest Potential Fishing Zone today?"
   },
   {
     "file": "canonical-02-safe-to-venture.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Is it safe to venture into the sea tomorrow morning?"
   },
   {
     "file": "canonical-03-tide-weather-sea.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "What are the tide, weather and sea conditions near my fishing location?"
   },
   {
     "file": "canonical-04-lightning-cyclone.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Are there any lightning or cyclone alerts in my area?"
   },
   {
     "file": "canonical-05-chlorophyll-sst.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Which regions show high chlorophyll concentration and favourable sea surface temperature?"
   },
   {
     "file": "canonical-06-safest-route.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "What is the safest route for a fishing vessel considering weather and sea state conditions?"
   },
   {
     "file": "canonical-07-productivity-decline.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Why has fish productivity declined in a particular coastal region?"
   },
   {
     "file": "canonical-08-zones-to-avoid.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": "Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?"
   },
   {
     "file": "alerts.json",
-    "contract": "1.4.0",
+    "contract": "1.5.0",
     "query": null
   },
   {
     "file": "conversation.json",
-    "contract": "1.4.0"
+    "contract": "1.5.0"
   }
 ]

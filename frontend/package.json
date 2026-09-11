@@ -14,6 +14,7 @@
     "check:verdict": "node src/lib/design/verdict.test.mjs"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "8.0.0",
     "@capacitor-community/speech-recognition": "7.0.1",
     "@capacitor-community/text-to-speech": "8.0.2",
     "@capacitor/android": "8.5.1",

@@ -35,7 +35,7 @@ from app.models.schemas import (
     VisualizationPlan,
 )
 
-CONTRACT_VERSION = "1.4.0"
+CONTRACT_VERSION = "1.5.0"
 
 __all__ = [
     "CONTRACT_VERSION",

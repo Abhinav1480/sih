@@ -1,5 +1,5 @@
 {
-  "_contract_version": "1.4.0",
+  "_contract_version": "1.5.0",
   "_request": {
     "query": "What is the safest route for a fishing vessel considering weather and sea state conditions?",
     "user_location": {
@@ -1241,7 +1241,7 @@
         "action": "Response envelope assembled",
         "tool": null,
         "duration_ms": 0,
-        "detail": "4 evidence records, contract v1.4.0",
+        "detail": "4 evidence records, contract v1.5.0",
         "status": "COMPLETED",
         "timestamp": "2026-09-09T06:00:00Z"
       }
@@ -1249,7 +1249,7 @@
     "meta": {
       "mode": "DEMO",
       "query_text": "What is the safest route for a fishing vessel considering weather and sea state conditions?",
-      "contract_version": "1.4.0",
+      "contract_version": "1.5.0",
       "generated_at": "2026-09-09T06:00:00Z",
       "location": {
         "name": "Your position (16.9891°N, 82.2475°E)",

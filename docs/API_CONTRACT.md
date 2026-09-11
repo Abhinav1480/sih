@@ -1,12 +1,12 @@
 # ORCA API Contract
 
-**Contract version: 1.4.0** — frozen
+**Contract version: 1.5.0** — frozen response shapes; 1.5.0 adds endpoints only
 Machine-readable definition: [`backend/app/models/envelope.py`](../backend/app/models/envelope.py)
 Reference responses: [`docs/examples/`](examples/) — the real body ORCA returned
 for all eight canonical queries, the alerts endpoint and a three-turn
 conversation, captured verbatim, not hand-written.
 
-**This contract is frozen at 1.4.0.** `backend/tests/test_api_contract_frozen.py`
+**The response shapes are frozen (since 1.4.0).** `backend/tests/test_api_contract_frozen.py`
 re-validates every captured response against the live model *and* compares the
 live response field-for-field against the capture, so a field that quietly
 leaves the response fails the build even though the old capture would still
@@ -346,7 +346,7 @@ printable report can never disagree with the screen.
 
 ---
 
-## 11. Known gaps at contract 1.4.0
+## 11. Known gaps at contract 1.5.0
 
 Declared here so nothing in this document overclaims:
 
@@ -364,10 +364,57 @@ Declared here so nothing in this document overclaims:
 
 ---
 
+## 12. Auth (added in 1.5.0)
+
+Identity is a phone number or an email address plus a password. No biometrics:
+a face embedding is reversible biometric data under the DPDP Act and is not
+something this project can hold safely. Passwords are bcrypt-hashed (cost 12);
+access tokens are HS256 JWTs signed with `JWT_SECRET` (the server refuses to
+start without one when `DEBUG` is off); refresh tokens are opaque, stored as
+SHA-256 hashes, rotated on every use and revocable. **Guest use of every other
+endpoint is unchanged** -- nothing in §1-§10 requires a token.
+
+| Endpoint | Body | Returns |
+| :--- | :--- | :--- |
+| `POST /api/auth/register` | `{ identifier, password, name, preferred_language }` | `201` token response |
+| `POST /api/auth/login` | `{ identifier, password }` | token response |
+| `POST /api/auth/refresh` | `{ refresh_token }` | token response; the used refresh token is revoked |
+| `POST /api/auth/logout` | `{ refresh_token }` | `204`, always |
+| `GET /api/auth/me` | `Authorization: Bearer <access_token>` | user |
+| `PATCH /api/auth/me` | `{ name?, preferred_language?, profile? }` (bearer) | user; `profile` is merged, not replaced |
+
+Token response:
+
+```json
+{
+  "user": { "id": "uuid", "identifier": "+919848011223", "name": "Lakshmi",
+            "preferred_language": "te", "profile": { "home_harbour": { "name": "Kakinada" } },
+            "created_at": "2026-09-11T07:30:00Z" },
+  "access_token": "<jwt>", "refresh_token": "<opaque>", "token_type": "bearer", "expires_in": 3600
+}
+```
+
+`identifier` is normalised: phone numbers lose spaces, dashes and brackets and
+must be 10-15 digits with an optional `+`; emails are lower-cased. `password`
+is 8-128 characters. `preferred_language` is one of the ten supported codes.
+`profile` is free-form onboarding data the user typed (home harbour, vessel);
+it is never a measurement and is never used by the risk engine.
+
+Errors are `{ "detail": <code> }` with a stable code the client localises:
+`identifier_invalid` (422), `identifier_taken` (409), `credentials_invalid`
+(401 -- the same answer whether the identifier is unknown, malformed, or the
+password is wrong), `token_missing` / `token_invalid` (401), `refresh_invalid`
+(401). Field validation failures are FastAPI's standard 422 list.
+
+Tests: `backend/tests/test_auth.py`.
+
+---
+
 ## Changelog
 
 | Version | Change |
 | :--- | :--- |
+| 1.5.0 | Non-breaking. Adds the `/api/auth/*` endpoints (§12): register, login, refresh, logout, me. No existing response shape changes; the reference captures were re-taken at 1.5.0 and are byte-for-byte the same shapes as 1.4.0. |
 | 1.4.0 | Non-breaking, and the version at which the contract is **frozen**. Real ISRO measurements now reach the response: `evidence[]` records may carry `provider_tier: "ISRO"` with `status: "CACHED"`, naming the granule, the satellite and the real acquisition time. Two records in one response may come from different satellites -- wave height from a SARAL/AltiKa pass, sea surface temperature from an INSAT-3DR scene -- so `evidence[].provider` is per record and must not be assumed uniform. `OceanObservation.swell_height_m`, `swell_period_sec` and `swell_direction_deg` are now nullable: an altimeter measures total significant wave height and does not decompose it, so an ISRO-tier observation has no swell and the engine renormalises. `TimeSeriesPoint` gains `offset_hours`, `source` and `status`, because a series can legitimately span an ISRO granule and the synthetic model and the reader must be able to tell which point is which; the number of points is **not** fixed and depends on how many sampled hours a provider could serve. `route_plan.crosses_protected_waters` is now computed from a real Shapely intersection against the MPA polygons rather than asserted, and `protected_areas_intersected` is empty unless the corridor actually enters one. Canonical query 6 returns `intent: "route_analysis"` instead of `needs_clarification`; when no destination is named one is inferred and `meta.limitations` says so. |
 | 1.3.0 | Non-breaking. Deprecated top-level aliases `executive_summary`, `visualization_plan` and `agent_activity` are emitted for one release, computed from the envelope (see §1). `intent` may be `needs_clarification`, in which case `answer.headline` is the question and `risk` is `null`; `user_location` on the request is honoured as the spatial fallback. `RouteWaypoint.wave_height_m` and `wind_knots` inside `route_plan` are nullable: a missing feed is `null`, never a stand-in number. |
 | 1.2.0 | Non-breaking. `layers[]` now includes `kind="wms"` descriptors for four ISRO Bhuvan layers, tier `ISRO`. `trace[]` gains `status: "SKIPPED"` events naming every provider the chain tried and why it was not used. `meta.limitations` names tide and lightning/cyclone gaps explicitly. |

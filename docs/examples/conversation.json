@@ -1,5 +1,5 @@
 {
-  "_contract_version": "1.4.0",
+  "_contract_version": "1.5.0",
   "turns": [
     {
       "_request": {
@@ -1241,7 +1241,7 @@
             "action": "Response envelope assembled",
             "tool": null,
             "duration_ms": 0,
-            "detail": "4 evidence records, contract v1.4.0",
+            "detail": "4 evidence records, contract v1.5.0",
             "status": "COMPLETED",
             "timestamp": "2026-09-09T06:00:00Z"
           }
@@ -1249,7 +1249,7 @@
         "meta": {
           "mode": "DEMO",
           "query_text": "Find a lower-risk route from Kakinada to Visakhapatnam that avoids protected waters tomorrow morning.",
-          "contract_version": "1.4.0",
+          "contract_version": "1.5.0",
           "generated_at": "2026-09-09T06:00:00Z",
           "location": {
             "name": "Kakinada",
@@ -3405,7 +3405,7 @@
             "action": "Response envelope assembled",
             "tool": null,
             "duration_ms": 0,
-            "detail": "4 evidence records, contract v1.4.0",
+            "detail": "4 evidence records, contract v1.5.0",
             "status": "COMPLETED",
             "timestamp": "2026-09-09T06:00:00Z"
           }
@@ -3413,7 +3413,7 @@
         "meta": {
           "mode": "DEMO",
           "query_text": "What happens if I choose the alternative route instead?",
-          "contract_version": "1.4.0",
+          "contract_version": "1.5.0",
           "generated_at": "2026-09-09T06:00:00Z",
           "location": {
             "name": "Kakinada",
@@ -5569,7 +5569,7 @@
             "action": "Response envelope assembled",
             "tool": null,
             "duration_ms": 0,
-            "detail": "4 evidence records, contract v1.4.0",
+            "detail": "4 evidence records, contract v1.5.0",
             "status": "COMPLETED",
             "timestamp": "2026-09-09T06:00:00Z"
           }
@@ -5577,7 +5577,7 @@
         "meta": {
           "mode": "DEMO",
           "query_text": "Compare it with the recommended route.",
-          "contract_version": "1.4.0",
+          "contract_version": "1.5.0",
           "generated_at": "2026-09-09T06:00:00Z",
           "location": {
             "name": "Kakinada",

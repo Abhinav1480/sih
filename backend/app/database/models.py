@@ -45,3 +45,31 @@ class AnalysisDB(Base):
     created_at = Column(DateTime, default=get_utc_now)
 
     conversation = relationship("ConversationDB", back_populates="analyses")
+
+
+# --- Auth (P3-1) -------------------------------------------------------------
+
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(String(64), primary_key=True, index=True)
+    # Phone number or email, normalised (trimmed, lower-cased). One account per identifier.
+    identifier = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
+    preferred_language = Column(String(8), default="en", nullable=False)
+    # Onboarding answers, as JSON: {"home_harbour": {...}, "vessel": {...}}. Optional, skippable.
+    profile_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)
+    updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now)
+
+
+class RefreshTokenDB(Base):
+    __tablename__ = "refresh_tokens"
+
+    # SHA-256 of the opaque token; the token itself is never stored.
+    token_hash = Column(String(64), primary_key=True, index=True)
+    user_id = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)

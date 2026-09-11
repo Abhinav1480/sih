@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     PORT: int = int(os.getenv("PORT", "8000"))
     DEBUG: bool = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
     
+    # Auth (P3-1). JWT_SECRET must be set in production; the default only exists so a
+    # fresh checkout starts, and it is rejected when DEBUG is off.
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "orca-dev-secret-change-me-before-any-deployment-0000")
+    ACCESS_TOKEN_MINUTES: int = int(os.getenv("ACCESS_TOKEN_MINUTES", "60"))
+    REFRESH_TOKEN_DAYS: int = int(os.getenv("REFRESH_TOKEN_DAYS", "30"))
+
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",

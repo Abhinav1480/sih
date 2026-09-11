@@ -24,7 +24,7 @@ interface Props {
   envelope: Envelope | null; cachedNote: string | null;
   online: boolean; syncLabel: string; stale: boolean; stripLabel: string;
   lang: LangCode; langNative: string; t: (k: string) => string;
-  asks: string[]; onAsk: (q: string) => void; onHoldStart: () => void; onHoldEnd: () => void; onType: () => void; onLanguage: () => void;
+  asks: string[]; onAsk: (q: string) => void; onHoldStart: () => void; onHoldEnd: () => void; onType: () => void; onLanguage: () => void; onProfile: () => void; avatar: string | null;
   onOpenAnswer: () => void; map: React.ReactNode;
 }
 
@@ -34,7 +34,7 @@ function firstNumber(evidence: EvidenceRecord[], needle: string): { n: number | 
   return { n: Number.isFinite(n) ? n : null, unit: rec?.unit ?? "" };
 }
 
-export function HomeScreen({ envelope, cachedNote, online, syncLabel, stale, stripLabel, lang, langNative, t, asks, onAsk, onHoldStart, onHoldEnd, onType, onLanguage, onOpenAnswer, map }: Props) {
+export function HomeScreen({ envelope, cachedNote, online, syncLabel, stale, stripLabel, lang, langNative, t, asks, onAsk, onHoldStart, onHoldEnd, onType, onLanguage, onProfile, avatar, onOpenAnswer, map }: Props) {
   const verdict = envelope ? verdictPresentation(envelope.answer?.verdict, envelope.risk?.band, lang) : null;
   const wave = envelope ? firstNumber(envelope.evidence, "wave") : null;
   const wind = envelope ? firstNumber(envelope.evidence, "wind") : null;
@@ -47,6 +47,9 @@ export function HomeScreen({ envelope, cachedNote, online, syncLabel, stale, str
         <span style={{ ...sans(19, 700, 1, ".12em"), color: color.headerText }}>ORCA</span>
         <span style={{ ...sans(13, 400, 1.2), color: color.headerMuted, borderLeft: "1px solid rgba(255,255,255,.25)", paddingLeft: 12, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t("tagline")}</span>
         <button onClick={onLanguage} style={{ ...btnReset, minWidth: touch.min, minHeight: 44, borderRadius: 8, border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.10)", color: color.headerText, ...sans(14, 600, 1), padding: "0 12px" }}>{langNative}</button>
+        <button onClick={onProfile} aria-label="profile" style={{ ...btnReset, width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.10)", color: color.headerText, ...sans(16, 700, 1), display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {avatar ?? <Icon name="help" size={20} color={color.headerText} />}
+        </button>
       </div>
       <ConnectivityStrip online={online} stale={stale} label={stripLabel} right={syncLabel} />
 

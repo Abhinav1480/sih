@@ -46,8 +46,14 @@ import { BorderWarningOverlay } from "@/components/app/screens/BorderWarning";
 import { EmptyState, BigButton } from "@/components/app/primitives";
 import { AppMap } from "@/components/app/AppMap";
 import { StaleWarning } from "@/components/Offline/StaleWarning";
+import { useSession } from "@/lib/auth/session";
+import { isLangCode } from "@/lib/i18n/useLang";
+import { SplashScreen, WelcomeScreen, SignUpScreen, SignInScreen, ForgotScreen } from "@/components/app/screens/Auth";
+import { OnboardingScreen } from "@/components/app/screens/Onboarding";
+import { ProfileScreen } from "@/components/app/screens/Profile";
 
-type Overlay = "listening" | "checking" | "answer" | "why" | "evidence" | "language" | "offline" | "emergency" | "type" | "error";
+type Overlay = "listening" | "checking" | "answer" | "why" | "evidence" | "language" | "offline" | "emergency" | "type" | "error" | "profile" | "onboarding" | "needAccount";
+type AuthScreen = "welcome" | "signup" | "signin" | "forgot";
 
 /** ponytail: the TTS plugin gives no word boundaries on Android, so the highlight runs on a clock at ~2.3 words/s (rate 0.9). */
 const MS_PER_WORD = 430;
@@ -56,6 +62,9 @@ const TAB_ICONS = ["mic", "map", "list", "boat"] as const;
 export default function AppPage() {
   const { lang, setLang, t, native, hasVoice: designVoice } = useLang();
   const { state, ask, showOffer, reset } = useAnalysis();
+  const session = useSession();
+  const [splashDone, setSplashDone] = useState(false);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>("welcome");
   const net = useNetworkStatus();
   const [tab, setTab] = useState(0);
   const [stack, setStack] = useState<Overlay[]>([]);
@@ -87,11 +96,16 @@ export default function AppPage() {
     return () => clearInterval(id);
   }, []);
   useEffect(() => registerBackHandler(() => {
+    if (session.status === "signed_out") {
+      if (authScreen === "welcome") return false;
+      setAuthScreen("welcome");
+      return true;
+    }
     if (stack.length === 0) return false;
     if (top === "checking") reset();
     pop();
     return true;
-  }), [stack.length, top, pop, reset]);
+  }), [stack.length, top, pop, reset, session.status, authScreen]);
 
   // --- GPS and the geofence; the demo drive replaces the fix when running -----
   const demoPos = demo !== null ? DEMO_TRACK[Math.min(demo, DEMO_TRACK.length - 1)] : null;
@@ -188,18 +202,45 @@ export default function AppPage() {
 
   const voiceNote = !designVoice || !tts.hasVoice ? t("listenNoVoice") : null;
 
+  // --- entrance -----------------------------------------------------------------
+  const isGuest = session.status === "guest";
+  const canPersist = session.status === "signed_in";
+  const needsAccount = useCallback(() => push("needAccount"), [push]);
+
+  const finishOnboarding = useCallback(async (r: { language: string; harbour: { name: string; lat: number; lon: number } | null; vessel: VesselProfile | null }) => {
+    if (r.vessel) { await saveVesselProfile(r.vessel); setProfile(r.vessel); }
+    if (canPersist) {
+      const profilePatch: Record<string, unknown> = {};
+      if (r.harbour) profilePatch.home_harbour = r.harbour;
+      if (r.vessel) profilePatch.vessel = r.vessel;
+      try { await session.updateProfile({ preferred_language: r.language, ...(Object.keys(profilePatch).length ? { profile: profilePatch } : {}) }); } catch { /* offline: kept locally, synced when the profile is next saved */ }
+    }
+    await session.finishOnboarding();
+    setStack([]);
+  }, [canPersist, session]);
+
   // --- render -------------------------------------------------------------------
-  if (!mounted) return <div style={{ position: "fixed", inset: 0, background: color.header }} />;
+  if (!mounted || !splashDone || session.status === "loading") {
+    return <SplashScreen onDone={() => setSplashDone(true)} />;
+  }
+  if (session.status === "signed_out") {
+    if (authScreen === "signup") return <SignUpScreen t={t} lang={lang} onBack={() => setAuthScreen("welcome")} onSignIn={() => setAuthScreen("signin")}
+      onSubmit={async (id, pw, name, language) => { await session.signUp(id, pw, name, language); if (isLangCode(language)) setLang(language); setStack(["onboarding"]); }} />;
+    if (authScreen === "signin") return <SignInScreen t={t} onBack={() => setAuthScreen("welcome")} onForgot={() => setAuthScreen("forgot")} onSignUp={() => setAuthScreen("signup")}
+      onSubmit={async (id, pw) => { const u = await session.signIn(id, pw); if (isLangCode(u.preferred_language)) setLang(u.preferred_language); setStack([]); }} />;
+    if (authScreen === "forgot") return <ForgotScreen t={t} onBack={() => setAuthScreen("signin")} onGuest={() => session.continueAsGuest()} />;
+    return <WelcomeScreen t={t} onGuest={() => session.continueAsGuest()} onSignIn={() => setAuthScreen("signin")} onSignUp={() => setAuthScreen("signup")} />;
+  }
   const tabScreen = [
     <HomeScreen key="h" envelope={env} cachedNote={cachedNote} online={net.online} syncLabel={syncLabel} stale={stale} stripLabel={stale ? t("offline.stale") : net.online ? t("online") : t("offline")}
       lang={lang} langNative={native} t={t} asks={asks}
       onAsk={runQuery} onHoldStart={() => { setMicNote(null); setListenStart(Date.now()); holdStartState.current = stt.state; push("listening"); stt.start(); }} onHoldEnd={holdEnd} onType={() => push("type")}
-      onLanguage={() => push("language")} onOpenAnswer={() => push("answer")}
+      onLanguage={() => push("language")} onProfile={() => push("profile")} avatar={session.user ? session.user.name.trim().charAt(0).toUpperCase() : null} onOpenAnswer={() => push("answer")}
       map={<MapScreenLite envelope={env} position={position} center={mapCenter} lang={lang} t={t} />} />,
     <MapScreen key="m" envelope={env} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
-    <TripsScreen key="t" trips={trips} canAdd={!!env} lang={lang} t={t} onAdd={saveForTrip} />,
+    <TripsScreen key="t" trips={trips} canAdd={!!env} lang={lang} t={t} onAdd={canPersist ? saveForTrip : needsAccount} />,
     <MyBoatScreen key="b" profile={profile} lang={lang} langNative={native} t={t}
-      onSave={async (p) => { await saveVesselProfile(p); setProfile(p); }}
+      onSave={async (p) => { if (!canPersist) { needsAccount(); return; } await saveVesselProfile(p); setProfile(p); try { await session.updateProfile({ profile: { vessel: p } }); } catch { /* kept locally */ } }}
       onLanguage={() => push("language")} onTrips={() => setTab(2)} onOffline={() => push("offline")} onEmergency={() => push("emergency")}
       demoActive={demo !== null} onDemo={() => { setDemo((d) => (d === null ? 0 : null)); setWarnAcked(false); }} />,
   ][tab];
@@ -255,6 +296,24 @@ export default function AppPage() {
         ))}
         <BigButton onClick={() => { reset(); setStack([]); }}>{t("goHome")}</BigButton>
       </div>
+    </div>
+  );
+  else if (top === "profile") overlay = (
+    <ProfileScreen t={t} lang={lang} langNative={native} user={session.user} isGuest={isGuest} onboardingPending={session.onboardingPending} storageKind={session.storageKind}
+      onBack={pop} onLanguage={() => push("language")} onBoat={() => { setStack([]); setTab(3); }} onEmergency={() => push("emergency")} onOffline={() => push("offline")}
+      onResumeOnboarding={() => push("onboarding")} onCreateAccount={async () => { await session.signOut(); setAuthScreen("signup"); setStack([]); }}
+      onSignOut={async () => { tts.stop(); reset(); setStack([]); setTab(0); setLastEnvelope(null); setLastSavedAt(null); await session.signOut(); setAuthScreen("welcome"); }} />
+  );
+  else if (top === "onboarding") overlay = (
+    <OnboardingScreen t={t} lang={lang} position={position} initialVessel={profile} onLanguage={(l) => setLang(l)} onDone={finishOnboarding} />
+  );
+  else if (top === "needAccount") overlay = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: color.page }}>
+      <EmptyState icon={<Icon name="boat" size={44} color={color.inkGhost} />} title={t("needAccount")} body={t("needAccountBody")}
+        action={<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <BigButton variant="sea" onClick={async () => { await session.signOut(); setAuthScreen("signup"); setStack([]); }}>{t("createAccount")}</BigButton>
+          <BigButton onClick={pop}>{t("cancel")}</BigButton>
+        </div>} />
     </div>
   );
   else if (top === "type") overlay = (

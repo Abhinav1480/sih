@@ -1,5 +1,5 @@
 {
-  "_contract_version": "1.4.0",
+  "_contract_version": "1.5.0",
   "_request": {
     "method": "GET",
     "path": "/api/alerts",

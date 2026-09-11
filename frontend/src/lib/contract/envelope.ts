@@ -11,7 +11,7 @@
  * an absent value as unavailable and never fills it in.
  */
 
-export const CONTRACT_VERSION = "1.4.0";
+export const CONTRACT_VERSION = "1.5.0";
 
 export type Verdict = "GO" | "CAUTION" | "NO_GO" | "NOT_APPLICABLE";
 export type Band = "LOW" | "MODERATE" | "HIGH" | "SEVERE";

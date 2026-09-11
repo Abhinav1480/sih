@@ -9,6 +9,8 @@ from app.database.session import engine, init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.DEBUG and settings.JWT_SECRET.startswith("orca-dev-secret-change-me"):
+        raise RuntimeError("JWT_SECRET must be set when DEBUG is off")
     # Initialize SQLite / PostgreSQL tables on startup
     await init_db()
     yield
