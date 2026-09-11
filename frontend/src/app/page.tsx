@@ -51,8 +51,9 @@ import { SplashScreen, WelcomeScreen, SignUpScreen, SignInScreen, ForgotScreen }
 import { OnboardingScreen } from "@/components/app/screens/Onboarding";
 import { ProfileScreen } from "@/components/app/screens/Profile";
 import { DashboardScreen } from "@/components/app/screens/Dashboard";
+import { AlertsScreen } from "@/components/app/screens/Alerts";
 
-type Overlay = "answer" | "why" | "evidence" | "language" | "offline" | "emergency" | "profile" | "onboarding" | "needAccount" | "history";
+type Overlay = "answer" | "why" | "evidence" | "language" | "offline" | "emergency" | "profile" | "onboarding" | "needAccount" | "history" | "alerts";
 type AuthScreen = "welcome" | "signup" | "signin" | "forgot";
 /** Voice mode is a full-screen state machine, not an overlay on a stack. */
 type VoiceMode = null | "listening" | "checking" | "answer";
@@ -289,7 +290,7 @@ export default function AppPage() {
     <DashboardScreen key="d" t={t} lang={lang} langNative={native} avatar={avatar} online={net.online}
       homeName={home.name} conditions={dash.conditions} alerts={dash.alerts as never} trip={trip} quickAsks={asks} lastSyncAt={lastSavedAt}
       onReload={() => setDashNonce((n) => n + 1)} onOpenConditions={openAnswer}
-      onAsk={(q) => { setTab(TAB_ASK); askInThread(q); }} onTrip={() => setTab(TAB_TRIPS)} onProfile={() => push("profile")} onLanguage={() => push("language")} onEmergency={() => push("emergency")} />,
+      onAsk={(q) => { setTab(TAB_ASK); askInThread(q); }} onTrip={() => setTab(TAB_TRIPS)} onProfile={() => push("profile")} onLanguage={() => push("language")} onEmergency={() => push("emergency")} onAlerts={() => push("alerts")} />,
     <MapScreen key="m" envelope={mapEnv} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
     <AskScreen key="a" thread={thread} lang={lang} t={t} asks={asks} speakingTurnId={spoken && tts.speaking ? spoken.turnId : null}
       onSend={(q) => askInThread(q)} onVoice={startListening} onRetry={retryTurn} onOffer={(o) => { const failed = [...thread.turns].reverse().find((tu) => tu.state === "error"); if (failed) acceptOffer(failed.id, o); }}
@@ -371,6 +372,7 @@ export default function AppPage() {
   );
   else if (top === "why" && viewEnv) overlay = <WhyScreen envelope={viewEnv} lang={lang} t={t} onBack={pop} />;
   else if (top === "evidence" && viewEnv) overlay = <EvidenceScreen envelope={viewEnv} lang={lang} t={t} onBack={pop} />;
+  else if (top === "alerts") overlay = <AlertsScreen alerts={dash.alerts as never} lang={lang} t={t} onReload={() => setDashNonce((n) => n + 1)} onBack={pop} />;
   else if (top === "history") overlay = <HistoryScreen threads={threads} currentId={thread.id} lang={lang} t={t} onBack={pop} onOpen={(th) => { reset(); stopSpeaking(); setThread(th); pop(); }} onDelete={async (id) => { const next = await deleteThread(id); setThreads(next); if (id === thread.id) setThread(newThread()); }} />;
   else if (top === "language") overlay = <LanguageScreen lang={lang} t={t} deviceVoices={tts.supported ? new Set(tts.supported) : null} onBack={pop} onPick={(l) => { setLang(l); pop(); }} />;
   else if (top === "offline") overlay = <OfflineScreen online={net.online} lastSyncAt={lastSavedAt} trip={trip} canSave={!!(env ?? mapEnv)} lang={lang} t={t} onSave={saveForTrip} onBack={pop} />;

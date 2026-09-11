@@ -20,6 +20,7 @@ import { color } from "@/lib/design/tokens";
 import { type LangCode } from "@/lib/i18n/app";
 import { formatNumber, localiseDigits } from "@/lib/i18n/digits";
 import { cardOfType, evidenceFor, type Envelope, type FishingZone } from "@/lib/contract/envelope";
+import { BAND_RAMP, type Band } from "@/lib/design/verdict";
 import { AppMap, type MapFocus } from "../AppMap";
 import { Icon, Num, Screen, btnReset, sans } from "../primitives";
 
@@ -28,11 +29,17 @@ interface Props {
   lang: LangCode; t: (k: string) => string; onSpeak: (text: string) => void;
 }
 
+/** Marker colour by the API's own `advisory_status` label -- a keyed lookup, never a number compared. */
+const ZONE_TONE: Record<string, string> = { "Highly Favorable": "#1f7a4c", "Favorable": "#0b6b7d", "Moderate Potential": "#d9931b", "Marginal": "#d4541f", "Avoid": "#c62828" };
+const zoneColor = (z: FishingZone): string => (z.within_mpa ? "#c62828" : ZONE_TONE[z.advisory_status] ?? "#5a7480");
+
 const hourLabel = (iso: string, lang: LangCode) => localiseDigits(String(new Date(iso).getUTCHours()).padStart(2, "0"), lang);
 
 export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Props) {
   const layers = useMemo(() => envelope?.layers ?? [], [envelope]);
   const [visible, setVisible] = useState<boolean[]>(() => layers.map((l) => l.visible_by_default !== false));
+  const [opacity, setOpacity] = useState<number[]>(() => layers.map(() => 1));
+  const [legend, setLegend] = useState(false);
   const [open, setOpen] = useState(true);
   const [zone, setZone] = useState<FishingZone | null>(null);
   const [lineTo, setLineTo] = useState<FishingZone | null>(null);
@@ -43,9 +50,11 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
 
   // Toggle state follows the answer: a new answer resets to its defaults.
   const lastEnvelope = useRef(envelope);
-  if (lastEnvelope.current !== envelope) { lastEnvelope.current = envelope; setVisible(layers.map((l) => l.visible_by_default !== false)); setZone(null); setLineTo(null); setHour(0); }
+  if (lastEnvelope.current !== envelope) { lastEnvelope.current = envelope; setVisible(layers.map((l) => l.visible_by_default !== false)); setOpacity(layers.map(() => 1)); setZone(null); setLineTo(null); setHour(0); }
 
   const pfz = envelope ? cardOfType(envelope, "pfz_ranking") : null;
+  const routeCard = envelope ? cardOfType(envelope, "route_plan") : null;
+  const route = routeCard?.waypoints ?? null;
   const zones = pfz?.zones ?? [];
   const ts = envelope ? cardOfType(envelope, "timeseries_chart") : null;
   const points = ts?.points ?? [];
@@ -63,7 +72,7 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
 
       <div style={{ flex: 1, position: "relative", minHeight: 250, background: color.mapTint }}>
         <AppMap center={center} layers={layers} visible={visible} zones={zones} position={position} focus={focus} lineTo={lineTo}
-          onZoneTap={(z) => { setZone(z); setFocus({ lat: z.latitude, lon: z.longitude, nonce: Date.now() }); }} onReady={(a) => { api.current = a; }} onCoverage={setNoCoverage} />
+          opacity={opacity} zoneColor={zoneColor} route={route} onZoneTap={(z) => { setZone(z); setFocus({ lat: z.latitude, lon: z.longitude, nonce: Date.now() }); }} onReady={(a) => { api.current = a; }} onCoverage={setNoCoverage} />
         {noCoverage && (
           <div role="status" style={{ position: "absolute", left: 12, right: 12, bottom: 12, zIndex: 550, background: color.cautionBg, border: `1px solid ${color.cautionBorder}`, color: color.cautionText, borderRadius: 12, padding: "10px 12px", ...sans(14, 500, 1.35), display: "flex", gap: 10, alignItems: "center" }}>
             <Icon name="alert" size={18} color={color.cautionText} />
@@ -94,6 +103,18 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
                     </span>
                   </button>
                 );
+              }).flatMap((row, i) => {
+                const l = layers[i];
+                if (!visible[i] || l.kind === "wms") return [row];
+                return [row, (
+                  <div key={`op-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 13px 8px 37px", borderBottom: `1px solid ${color.lineFaint}` }}>
+                    <span style={{ ...sans(11, 500, 1), color: color.inkFaint }}>{t("opacity")}</span>
+                    <input type="range" min={10} max={100} value={Math.round((opacity[i] ?? 1) * 100)} aria-label={t("opacity")}
+                      onChange={(e) => { const v = Number(e.target.value) / 100; setOpacity((o) => o.map((x, j) => (j === i ? v : x))); }}
+                      style={{ flex: 1, minHeight: 32, accentColor: color.sea }} />
+                    <Num size={11} weight={500} color={color.inkFaint}>{localiseDigits(String(Math.round((opacity[i] ?? 1) * 100)), lang)}%</Num>
+                  </div>
+                )];
               }))}
               {open && wmsCount > 0 && <div style={{ ...sans(12, 400, 1.3), color: color.inkFaint, padding: "8px 13px" }}>{t("wmsNote")}</div>}
             </div>
@@ -103,6 +124,9 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
                 <Num size={10} weight={700} color={color.sea} style={{ marginTop: 2 }}>N</Num>
               </button>
               <button onClick={() => api.current?.zoomIn()} style={{ ...btnReset, height: 52, borderRadius: 12, border: `1px solid ${color.lineSoft}`, background: "rgba(255,255,255,.97)", boxShadow: "0 4px 14px rgba(18,48,58,.10)", ...sans(17, 700, 1), color: color.sea }}>+</button>
+              <button onClick={() => setLegend((v) => !v)} aria-pressed={legend} aria-label={t("legend")} style={{ ...btnReset, height: 52, borderRadius: 12, border: `1px solid ${legend ? color.sea : color.lineSoft}`, background: "rgba(255,255,255,.97)", boxShadow: "0 4px 14px rgba(18,48,58,.10)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="list" size={22} color={color.sea} />
+              </button>
               <button onClick={() => position && api.current?.flyTo(position)} disabled={!position} aria-label={t("locateMe")} style={{ ...btnReset, height: 52, borderRadius: 12, border: `1px solid ${color.lineSoft}`, background: "rgba(255,255,255,.97)", boxShadow: "0 4px 14px rgba(18,48,58,.10)", display: "flex", alignItems: "center", justifyContent: "center", opacity: position ? 1 : 0.4 }}>
                 <Icon name="pin" size={22} color={color.sea} />
               </button>
@@ -110,10 +134,34 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
           </div>
         )}
 
+        {legend && !zone && (
+          <div style={{ position: "absolute", left: 12, right: 76, bottom: 36, zIndex: 540, background: "rgba(255,255,255,.97)", border: `1px solid ${color.lineSoft}`, borderRadius: 14, padding: "10px 12px", boxShadow: "0 4px 14px rgba(18,48,58,.10)", maxHeight: "45%", overflowY: "auto" }}>
+            <div style={{ ...sans(12, 600, 1, ".06em"), color: color.inkFaint, textTransform: "uppercase", marginBottom: 8 }}>{t("legend")}</div>
+            {layers.filter((l, i) => visible[i] && l.kind !== "wms").map((l, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <i style={{ width: 12, height: 12, borderRadius: 3, background: typeof l.color === "string" && l.color ? l.color : color.sea, flex: "none" }} />
+                <span style={{ ...sans(13, 500, 1.2), color: color.ink, flex: 1, minWidth: 0 }}>{l.legend_title ?? l.name}{l.legend_unit ? <Num size={11} weight={500} color={color.inkFaint}> ({l.legend_unit})</Num> : null}</span>
+              </div>
+            ))}
+            {zones.length > 0 && Object.entries(ZONE_TONE).map(([label, hex]) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <i style={{ width: 12, height: 12, borderRadius: "50%", background: hex, flex: "none" }} />
+                <span style={{ ...sans(13, 500, 1.2), color: color.ink }}>{label}</span>
+              </div>
+            ))}
+            {route && (Object.keys(BAND_RAMP) as Band[]).map((b) => (
+              <div key={b} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <i style={{ width: 18, height: 5, borderRadius: 3, background: BAND_RAMP[b].hex, flex: "none" }} />
+                <span style={{ ...sans(13, 500, 1.2), color: color.ink }}>{t("routeSegment")} · {BAND_RAMP[b].word}</span>
+              </div>
+            ))}
+            {layers.filter((l, i) => visible[i] && l.kind !== "wms").length === 0 && zones.length === 0 && !route && <div style={{ ...sans(13, 400, 1.3), color: color.inkFaint }}>{t("noLayers")}</div>}
+          </div>
+        )}
         {zone && (
           <div style={{ position: "absolute", left: 10, right: 10, bottom: 10, borderRadius: 20, border: `1px solid ${color.lineStrong}`, background: color.card, padding: 18, animation: "orca-up .3s ease-out", zIndex: 600, maxHeight: "80%", overflowY: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-              <div style={{ width: 52, height: 52, flex: "none", borderRadius: "50%", background: zone.within_mpa ? "#c62828" : "#1f7a4c", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 52, height: 52, flex: "none", borderRadius: "50%", background: zoneColor(zone), display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Num size={22} weight={700} color={color.headerText}>{localiseDigits(String(zone.rank), lang)}</Num>
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>

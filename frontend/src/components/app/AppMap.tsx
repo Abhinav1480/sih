@@ -11,7 +11,8 @@
  */
 
 import React, { useEffect, useRef } from "react";
-import type { FishingZone, Layer } from "@/lib/contract/envelope";
+import type { FishingZone, Layer, RouteWaypoint } from "@/lib/contract/envelope";
+import { BAND_RAMP, type Band } from "@/lib/design/verdict";
 import { color } from "@/lib/design/tokens";
 
 // public/tiles/{z}/{x}/{y}.png ships in the APK (see scripts/fetch-tiles.mjs).
@@ -28,7 +29,13 @@ interface Props {
   center: { lat: number; lon: number };
   layers: Layer[];
   visible: boolean[];
+  /** 0-1 per layer; a drawing choice, never data. */
+  opacity: number[];
   zones: FishingZone[];
+  /** Colour for a zone marker, from a keyed lookup on the API's own labels. */
+  zoneColor: (z: FishingZone) => string;
+  /** The route_plan waypoints; each segment coloured by its own `segment_risk` band. */
+  route: RouteWaypoint[] | null;
   position: { lat: number; lon: number } | null;
   focus?: MapFocus | null;
   /** A straight line from `position` to this zone, for the "show the way" action. */
@@ -64,7 +71,7 @@ function basemap(L: any, onCoverage?: (missing: boolean) => void) {
   return layer;
 }
 
-export function AppMap({ center, layers, visible, zones, position, focus, lineTo, onZoneTap, onReady, onCoverage }: Props) {
+export function AppMap({ center, layers, visible, opacity, zones, zoneColor, route, position, focus, lineTo, onZoneTap, onReady, onCoverage }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const Lref = useRef<any>(null);
@@ -86,6 +93,7 @@ export function AppMap({ center, layers, visible, zones, position, focus, lineTo
       m.setView([center.lat, center.lon], 9);
       basemap(L, (missing) => coverage.current?.(missing)).addTo(m);
       overlays.current = L.layerGroup().addTo(m);
+      L.control.scale({ imperial: false, position: "bottomleft" }).addTo(m);
       map.current = m;
       onReady?.({ zoomIn: () => m.zoomIn(), north: () => m.setView([center.lat, center.lon], 9), flyTo: (p) => m.flyTo([p.lat, p.lon], 10, { duration: 0.6 }) });
       setTimeout(() => m.invalidateSize(), 50);
@@ -101,20 +109,33 @@ export function AppMap({ center, layers, visible, zones, position, focus, lineTo
     layers.forEach((layer, i) => {
       if (!visible[i] || layer.kind !== "geojson" || !layer.features?.length) return;
       const hex = typeof layer.color === "string" && layer.color ? layer.color : color.sea;
+      const a = Math.max(0, Math.min(1, opacity[i] ?? 1));
       L.geoJSON({ type: "FeatureCollection", features: layer.features }, {
-        style: () => ({ color: hex, weight: 1.6, dashArray: "6 5", fillColor: hex, fillOpacity: 0.10 }),
-        pointToLayer: (_f: any, latlng: any) => L.circleMarker(latlng, { radius: 5, color: hex, weight: 1.5, fillColor: hex, fillOpacity: 0.6 }),
+        style: () => ({ color: hex, weight: 1.6, dashArray: "6 5", opacity: a, fillColor: hex, fillOpacity: 0.10 * a }),
+        pointToLayer: (_f: any, latlng: any) => L.circleMarker(latlng, { radius: 5, color: hex, weight: 1.5, opacity: a, fillColor: hex, fillOpacity: 0.6 * a }),
       }).addTo(g);
     });
     zones.forEach((z) => {
       const icon = L.divIcon({
         className: "",
         iconSize: [34, 34], iconAnchor: [17, 17],
-        html: `<div style="width:34px;height:34px;border-radius:50%;background:${z.within_mpa ? "#c62828" : "#1f7a4c"};color:#fff;display:flex;align-items:center;justify-content:center;font:700 15px 'JetBrains Mono',monospace;border:2px solid #fff;box-shadow:0 2px 6px rgba(18,48,58,.3)">${z.rank}</div>`,
+        html: `<div style="width:34px;height:34px;border-radius:50%;background:${zoneColor(z)};color:#fff;display:flex;align-items:center;justify-content:center;font:700 15px 'JetBrains Mono',monospace;border:2px solid #fff;box-shadow:0 2px 6px rgba(18,48,58,.3)">${z.rank}</div>`,
       });
       L.marker([z.latitude, z.longitude], { icon }).on("click", () => zoneTap.current?.(z)).addTo(g);
     });
-  }, [layers, visible, zones]);
+    // The route: one polyline per segment, in the band colour the API gave that segment.
+    if (route && route.length > 1) {
+      for (let k = 1; k < route.length; k++) {
+        const a = route[k - 1], b = route[k];
+        const band = (b.segment_risk in BAND_RAMP ? BAND_RAMP[b.segment_risk as Band].hex : color.inkGhost);
+        L.polyline([[a.latitude, a.longitude], [b.latitude, b.longitude]], { color: band, weight: 5, opacity: 0.9 }).addTo(g);
+      }
+      route.forEach((w, k) => {
+        if (k !== 0 && k !== route.length - 1 && !w.inside_restricted_zone) return;
+        L.circleMarker([w.latitude, w.longitude], { radius: 6, color: "#fff", weight: 2, fillColor: w.inside_restricted_zone ? "#c62828" : color.seaDark, fillOpacity: 1 }).bindTooltip(w.name).addTo(g);
+      });
+    }
+  }, [layers, visible, opacity, zones, zoneColor, route]);
 
   useEffect(() => {
     const L = Lref.current, m = map.current;

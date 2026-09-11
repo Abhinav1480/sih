@@ -34,7 +34,7 @@ export interface MarineAlert {
 interface Props {
   t: T; lang: LangCode; langNative: string; avatar: string | null; online: boolean;
   homeName: string; conditions: Part<Envelope>; alerts: Part<MarineAlert[]>; trip: TripCard | null; quickAsks: string[]; lastSyncAt: string | null;
-  onReload: () => void; onOpenConditions: (env: Envelope) => void; onAsk: (q: string) => void; onTrip: () => void; onProfile: () => void; onLanguage: () => void; onEmergency: () => void;
+  onReload: () => void; onOpenConditions: (env: Envelope) => void; onAsk: (q: string) => void; onTrip: () => void; onProfile: () => void; onLanguage: () => void; onEmergency: () => void; onAlerts: () => void;
 }
 
 const SEVERITY_TONE: Record<string, { bg: string; border: string; fg: string }> = {
@@ -79,7 +79,7 @@ function SectionTitle({ children, right }: { children: React.ReactNode; right?: 
   );
 }
 
-export function DashboardScreen({ t, lang, langNative, avatar, online, homeName, conditions, alerts, trip, quickAsks, lastSyncAt, onReload, onOpenConditions, onAsk, onTrip, onProfile, onLanguage, onEmergency }: Props) {
+export function DashboardScreen({ t, lang, langNative, avatar, online, homeName, conditions, alerts, trip, quickAsks, lastSyncAt, onReload, onOpenConditions, onAsk, onTrip, onProfile, onLanguage, onEmergency, onAlerts }: Props) {
   const env = conditions.status === "ready" ? conditions.data : null;
   const fetchedAt = conditions.status === "ready" ? conditions.fetchedAt : null;
   const verdict = env ? verdictPresentation(env.answer?.verdict, env.risk?.band, lang) : null;
@@ -129,7 +129,7 @@ export function DashboardScreen({ t, lang, langNative, avatar, online, homeName,
         )}
 
         {/* 2. Alerts */}
-        <SectionTitle>{t("alertsTitle")}</SectionTitle>
+        <SectionTitle right={<button onClick={onAlerts} style={{ ...btnReset, minHeight: 32, ...sans(13, 600, 1), color: color.sea }}>{t("seeAll")}</button>}>{t("alertsTitle")}</SectionTitle>
         {alerts.status === "loading" && <Card><Pending label={t("alertsLoading")} /></Card>}
         {alerts.status === "error" && <Card><Failed t={t} kind={alerts.kind} detail={alerts.detail} onRetry={onReload} /></Card>}
         {alerts.status === "ready" && alerts.data.length === 0 && (
