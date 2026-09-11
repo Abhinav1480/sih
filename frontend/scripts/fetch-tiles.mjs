@@ -1,9 +1,9 @@
-// Bundle Esri dark-gray basemap tiles for offline use. Node 22, no deps.
+// Bundle Esri World Ocean Base tiles (nautical-style, bathymetry) for offline use. Node 22, no deps.
 // Usage: node scripts/fetch-tiles.mjs   (idempotent: existing files are skipped)
 import fs from "node:fs";
 import path from "node:path";
 
-const URL_T = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const URL_T = "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}";
 const OUT = path.resolve(new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "../public/tiles");
 const BOXES = [
   // Kakinada / Godavari coast, detail zooms

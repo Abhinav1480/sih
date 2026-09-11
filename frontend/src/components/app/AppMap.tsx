@@ -17,7 +17,10 @@ import { color } from "@/lib/design/tokens";
 // public/tiles/{z}/{x}/{y}.png ships in the APK (see scripts/fetch-tiles.mjs).
 const LOCAL_TILE = "/tiles/{z}/{x}/{y}.png";
 const LOCAL_MAX_NATIVE_ZOOM = 12;
-const ONLINE_TILE = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+// Esri World Ocean Base: a nautical-style chart with bathymetry, the same source the bundled
+// tiles come from, so online and offline look the same. The previous Light Gray canvas was a
+// deliberately featureless grey product and read as "nothing loaded" inland.
+const ONLINE_TILE = "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}";
 
 export interface MapFocus { lat: number; lon: number; nonce: number }
 
@@ -31,11 +34,13 @@ interface Props {
   /** A straight line from `position` to this zone, for the "show the way" action. */
   lineTo?: FishingZone | null;
   onZoneTap?: (zone: FishingZone) => void;
-  onReady?: (api: { zoomIn: () => void; north: () => void }) => void;
+  onReady?: (api: { zoomIn: () => void; north: () => void; flyTo: (p: { lat: number; lon: number }) => void }) => void;
+  /** Fires with true when offline and the tiles in view are not in the bundle (the map would be blank). */
+  onCoverage?: (missing: boolean) => void;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function basemap(L: any) {
+function basemap(L: any, onCoverage?: (missing: boolean) => void) {
   const Offline = L.TileLayer.extend({
     getTileUrl(coords: any) {
       if (typeof navigator !== "undefined" && !navigator.onLine) return L.Util.template(LOCAL_TILE, coords);
@@ -43,10 +48,15 @@ function basemap(L: any) {
     },
   });
   const layer = new Offline(ONLINE_TILE, { maxNativeZoom: LOCAL_MAX_NATIVE_ZOOM, maxZoom: 16, attribution: "Tiles © Esri" });
+  let missing = 0;
   layer.on("tileerror", (e: any) => {
     const local = L.Util.template(LOCAL_TILE, e.coords);
-    if (e.tile && !e.tile.src.endsWith(local)) e.tile.src = local;
+    if (e.tile && !e.tile.src.endsWith(local)) { e.tile.src = local; return; }
+    // The bundled tile is missing too: this view has no saved map.
+    missing++;
+    if (missing === 1) onCoverage?.(true);
   });
+  layer.on("loading", () => { missing = 0; onCoverage?.(false); });
   const redraw = () => layer.redraw();
   window.addEventListener("online", redraw);
   window.addEventListener("offline", redraw);
@@ -54,7 +64,7 @@ function basemap(L: any) {
   return layer;
 }
 
-export function AppMap({ center, layers, visible, zones, position, focus, lineTo, onZoneTap, onReady }: Props) {
+export function AppMap({ center, layers, visible, zones, position, focus, lineTo, onZoneTap, onReady, onCoverage }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const Lref = useRef<any>(null);
@@ -63,6 +73,8 @@ export function AppMap({ center, layers, visible, zones, position, focus, lineTo
   const line = useRef<any>(null);
   const zoneTap = useRef(onZoneTap);
   zoneTap.current = onZoneTap;
+  const coverage = useRef(onCoverage);
+  coverage.current = onCoverage;
 
   useEffect(() => {
     let cancelled = false;
@@ -72,10 +84,10 @@ export function AppMap({ center, layers, visible, zones, position, focus, lineTo
       Lref.current = L;
       const m = L.map(el.current, { zoomControl: false, attributionControl: false });
       m.setView([center.lat, center.lon], 9);
-      basemap(L).addTo(m);
+      basemap(L, (missing) => coverage.current?.(missing)).addTo(m);
       overlays.current = L.layerGroup().addTo(m);
       map.current = m;
-      onReady?.({ zoomIn: () => m.zoomIn(), north: () => m.setView([center.lat, center.lon], 9) });
+      onReady?.({ zoomIn: () => m.zoomIn(), north: () => m.setView([center.lat, center.lon], 9), flyTo: (p) => m.flyTo([p.lat, p.lon], 10, { duration: 0.6 }) });
       setTimeout(() => m.invalidateSize(), 50);
     });
     return () => { cancelled = true; map.current?.remove(); map.current = null; };

@@ -346,3 +346,6 @@ body.orca-app .mono {
 /* An app, not a document: a long press must never start text selection. */
 body.orca-app, body.orca-app * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.orca-app input, body.orca-app textarea { -webkit-user-select: text; user-select: text; }
+
+/* The app map is light; the console rule above is dark. */
+body.orca-app .leaflet-container { background: #dfeef3; }

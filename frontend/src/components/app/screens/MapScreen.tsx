@@ -38,7 +38,8 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
   const [lineTo, setLineTo] = useState<FishingZone | null>(null);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [hour, setHour] = useState(0);
-  const api = useRef<{ zoomIn: () => void; north: () => void } | null>(null);
+  const api = useRef<{ zoomIn: () => void; north: () => void; flyTo: (p: { lat: number; lon: number }) => void } | null>(null);
+  const [noCoverage, setNoCoverage] = useState(false);
 
   // Toggle state follows the answer: a new answer resets to its defaults.
   const lastEnvelope = useRef(envelope);
@@ -62,7 +63,13 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
 
       <div style={{ flex: 1, position: "relative", minHeight: 250, background: color.mapTint }}>
         <AppMap center={center} layers={layers} visible={visible} zones={zones} position={position} focus={focus} lineTo={lineTo}
-          onZoneTap={(z) => { setZone(z); setFocus({ lat: z.latitude, lon: z.longitude, nonce: Date.now() }); }} onReady={(a) => { api.current = a; }} />
+          onZoneTap={(z) => { setZone(z); setFocus({ lat: z.latitude, lon: z.longitude, nonce: Date.now() }); }} onReady={(a) => { api.current = a; }} onCoverage={setNoCoverage} />
+        {noCoverage && (
+          <div role="status" style={{ position: "absolute", left: 12, right: 12, bottom: 12, zIndex: 550, background: color.cautionBg, border: `1px solid ${color.cautionBorder}`, color: color.cautionText, borderRadius: 12, padding: "10px 12px", ...sans(14, 500, 1.35), display: "flex", gap: 10, alignItems: "center" }}>
+            <Icon name="alert" size={18} color={color.cautionText} />
+            <span>{t("noOfflineMap")}</span>
+          </div>
+        )}
 
         {!zone && (
           <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 10, alignItems: "flex-start", zIndex: 500 }}>
@@ -96,6 +103,9 @@ export function MapScreen({ envelope, position, center, lang, t, onSpeak }: Prop
                 <Num size={10} weight={700} color={color.sea} style={{ marginTop: 2 }}>N</Num>
               </button>
               <button onClick={() => api.current?.zoomIn()} style={{ ...btnReset, height: 52, borderRadius: 12, border: `1px solid ${color.lineSoft}`, background: "rgba(255,255,255,.97)", boxShadow: "0 4px 14px rgba(18,48,58,.10)", ...sans(17, 700, 1), color: color.sea }}>+</button>
+              <button onClick={() => position && api.current?.flyTo(position)} disabled={!position} aria-label={t("locateMe")} style={{ ...btnReset, height: 52, borderRadius: 12, border: `1px solid ${color.lineSoft}`, background: "rgba(255,255,255,.97)", boxShadow: "0 4px 14px rgba(18,48,58,.10)", display: "flex", alignItems: "center", justifyContent: "center", opacity: position ? 1 : 0.4 }}>
+                <Icon name="pin" size={22} color={color.sea} />
+              </button>
             </div>
           </div>
         )}

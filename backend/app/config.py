@@ -32,6 +32,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        # The Capacitor app: Android serves the bundle from https://localhost,
+        # iOS from capacitor://localhost. Neither is a public web origin.
+        "https://localhost",
+        "capacitor://localhost",
     ]
 
     @field_validator("CORS_ORIGINS", mode="before")

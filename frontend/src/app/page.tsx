@@ -170,6 +170,12 @@ export default function AppPage() {
   void now;
 
   const unknownCards = env?.cards?.filter((c) => !KNOWN_CARD_TYPES.has(c.type)) ?? [];
+  // The map opens on the sea the answer is about (or the bundled coast), with the phone's fix as a
+  // marker. Centring on the fix put an inland tester on a blank, unbundled view.
+  const mapCenter = useMemo(() => {
+    const loc = env?.meta?.location;
+    return loc && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude) ? { lat: loc.latitude, lon: loc.longitude } : DEFAULT_LOCATION;
+  }, [env]);
   const asks = ((ASKS as Record<string, readonly string[]>)[lang] ?? ASKS.en).slice();
 
   const saveForTrip = useCallback(async () => {
@@ -189,8 +195,8 @@ export default function AppPage() {
       lang={lang} langNative={native} t={t} asks={asks}
       onAsk={runQuery} onHoldStart={() => { setMicNote(null); setListenStart(Date.now()); holdStartState.current = stt.state; push("listening"); stt.start(); }} onHoldEnd={holdEnd} onType={() => push("type")}
       onLanguage={() => push("language")} onOpenAnswer={() => push("answer")}
-      map={<MapScreenLite envelope={env} position={position} lang={lang} t={t} />} />,
-    <MapScreen key="m" envelope={env} position={position} center={position ?? DEFAULT_LOCATION} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
+      map={<MapScreenLite envelope={env} position={position} center={mapCenter} lang={lang} t={t} />} />,
+    <MapScreen key="m" envelope={env} position={position} center={mapCenter} lang={lang} t={t} onSpeak={(s) => tts.speak(s)} />,
     <TripsScreen key="t" trips={trips} canAdd={!!env} lang={lang} t={t} onAdd={saveForTrip} />,
     <MyBoatScreen key="b" profile={profile} lang={lang} langNative={native} t={t}
       onSave={async (p) => { await saveVesselProfile(p); setProfile(p); }}
@@ -299,14 +305,14 @@ export default function AppPage() {
 }
 
 /** The Home map: the answer's layers and the phone's position, no controls. Tap goes to the Map tab. */
-function MapScreenLite({ envelope, position, lang, t }: { envelope: Envelope | null; position: { lat: number; lon: number } | null; lang: string; t: (k: string) => string }) {
+function MapScreenLite({ envelope, position, center, lang, t }: { envelope: Envelope | null; position: { lat: number; lon: number } | null; center: { lat: number; lon: number }; lang: string; t: (k: string) => string }) {
   void lang;
   const layers = envelope?.layers ?? [];
   const visible = layers.map((l) => l.visible_by_default !== false);
   const zones: never[] = [];
   return (
     <>
-      <AppMap center={position ?? DEFAULT_LOCATION} layers={layers} visible={visible} zones={zones} position={position} />
+      <AppMap center={center} layers={layers} visible={visible} zones={zones} position={position} />
       {!envelope && <div style={{ position: "absolute", left: 12, bottom: 12, right: 12, ...sans(13, 500, 1.3), color: color.inkMuted, background: "rgba(255,255,255,.9)", borderRadius: 10, padding: "8px 10px", zIndex: 500 }}>{t("layersHint")}</div>}
     </>
   );
