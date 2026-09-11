@@ -224,12 +224,16 @@ export default function AppPage() {
     return <SplashScreen onDone={() => setSplashDone(true)} />;
   }
   if (session.status === "signed_out") {
-    if (authScreen === "signup") return <SignUpScreen t={t} lang={lang} onBack={() => setAuthScreen("welcome")} onSignIn={() => setAuthScreen("signin")}
-      onSubmit={async (id, pw, name, language) => { await session.signUp(id, pw, name, language); if (isLangCode(language)) setLang(language); setStack(["onboarding"]); }} />;
-    if (authScreen === "signin") return <SignInScreen t={t} onBack={() => setAuthScreen("welcome")} onForgot={() => setAuthScreen("forgot")} onSignUp={() => setAuthScreen("signup")}
-      onSubmit={async (id, pw) => { const u = await session.signIn(id, pw); if (isLangCode(u.preferred_language)) setLang(u.preferred_language); setStack([]); }} />;
-    if (authScreen === "forgot") return <ForgotScreen t={t} onBack={() => setAuthScreen("signin")} onGuest={() => session.continueAsGuest()} />;
-    return <WelcomeScreen t={t} onGuest={() => session.continueAsGuest()} onSignIn={() => setAuthScreen("signin")} onSignUp={() => setAuthScreen("signup")} />;
+    // Same edge-to-edge frame as the app: the status bar sits over the header colour.
+    const frame = (child: React.ReactNode) => (
+      <div style={{ position: "fixed", inset: 0, background: color.header, boxSizing: "border-box", paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>{child}</div>
+    );
+    if (authScreen === "signup") return frame(<SignUpScreen t={t} lang={lang} onBack={() => setAuthScreen("welcome")} onSignIn={() => setAuthScreen("signin")}
+      onSubmit={async (id, pw, name, language) => { await session.signUp(id, pw, name, language); if (isLangCode(language)) setLang(language); setStack(["onboarding"]); }} />);
+    if (authScreen === "signin") return frame(<SignInScreen t={t} onBack={() => setAuthScreen("welcome")} onForgot={() => setAuthScreen("forgot")} onSignUp={() => setAuthScreen("signup")}
+      onSubmit={async (id, pw) => { const u = await session.signIn(id, pw); if (isLangCode(u.preferred_language)) setLang(u.preferred_language); setStack([]); }} />);
+    if (authScreen === "forgot") return frame(<ForgotScreen t={t} onBack={() => setAuthScreen("signin")} onGuest={() => session.continueAsGuest()} />);
+    return frame(<WelcomeScreen t={t} onGuest={() => session.continueAsGuest()} onSignIn={() => setAuthScreen("signin")} onSignUp={() => setAuthScreen("signup")} />);
   }
   const tabScreen = [
     <HomeScreen key="h" envelope={env} cachedNote={cachedNote} online={net.online} syncLabel={syncLabel} stale={stale} stripLabel={stale ? t("offline.stale") : net.online ? t("online") : t("offline")}
