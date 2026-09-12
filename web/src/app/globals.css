@@ -1,0 +1,385 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ tokens
+   Light is the default palette; dark redefines the same names. Every colour a
+   component uses is one of these. The risk ramp keeps its meaning in both
+   themes and is always paired with a word and an icon in the markup. */
+:root {
+  color-scheme: light;
+  --bg: #f6f1e8;
+  --bg-2: #ece5d8;
+  --deep: #d9d0c0;
+  --surface: rgba(255, 252, 247, 0.82);
+  --surface-2: rgba(255, 252, 247, 0.62);
+  --surface-solid: #fffdf9;
+  --text: #13212c;
+  --text-2: #4f6070;
+  --text-3: #7d8c99;
+  --hairline: rgba(19, 33, 44, 0.12);
+  --hairline-2: rgba(19, 33, 44, 0.07);
+  --accent: #0d7f78;
+  --accent-2: #0a6862;
+  --accent-ink: #ffffff;
+  --accent-tint: rgba(13, 127, 120, 0.10);
+  --focus: #0d7f78;
+  --nav-tint: rgba(246, 241, 232, 0.72);
+
+  --risk-low: #1d7a3f;
+  --risk-moderate: #a4620a;
+  --risk-high: #b8420f;
+  --risk-severe: #b3261e;
+  --risk-low-bg: rgba(29, 122, 63, 0.12);
+  --risk-moderate-bg: rgba(164, 98, 10, 0.12);
+  --risk-high-bg: rgba(184, 66, 15, 0.12);
+  --risk-severe-bg: rgba(179, 38, 30, 0.12);
+  --risk-none: #5c6b78;
+  --risk-none-bg: rgba(92, 107, 120, 0.12);
+
+  --tier-isro: #0d5fa8;
+  --tier-isro-bg: rgba(13, 95, 168, 0.12);
+  --tier-national: #6a4fb3;
+  --tier-national-bg: rgba(106, 79, 179, 0.12);
+  --tier-fallback: #6b6f73;
+  --tier-fallback-bg: rgba(107, 111, 115, 0.14);
+
+  --ocean-a: rgba(13, 127, 120, 0.16);
+  --ocean-b: rgba(45, 110, 160, 0.14);
+  --ocean-c: rgba(210, 180, 120, 0.16);
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --nav-h: 60px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #061421;
+  --bg-2: #0a1f33;
+  --deep: #03101b;
+  --surface: rgba(10, 31, 51, 0.72);
+  --surface-2: rgba(10, 31, 51, 0.5);
+  --surface-solid: #0d2540;
+  --text: #e6eef5;
+  --text-2: #a3b5c6;
+  --text-3: #6f8497;
+  --hairline: rgba(230, 238, 245, 0.11);
+  --hairline-2: rgba(230, 238, 245, 0.06);
+  --accent: #2ec4b6;
+  --accent-2: #5fd6cb;
+  --accent-ink: #04201e;
+  --accent-tint: rgba(46, 196, 182, 0.12);
+  --focus: #5fd6cb;
+  --nav-tint: rgba(6, 20, 33, 0.62);
+
+  --risk-low: #5ad07f;
+  --risk-moderate: #f2b843;
+  --risk-high: #fb8a45;
+  --risk-severe: #f46b6b;
+  --risk-low-bg: rgba(90, 208, 127, 0.14);
+  --risk-moderate-bg: rgba(242, 184, 67, 0.14);
+  --risk-high-bg: rgba(251, 138, 69, 0.14);
+  --risk-severe-bg: rgba(244, 107, 107, 0.16);
+  --risk-none: #9fb0bf;
+  --risk-none-bg: rgba(159, 176, 191, 0.14);
+
+  --tier-isro: #7fb8ff;
+  --tier-isro-bg: rgba(127, 184, 255, 0.14);
+  --tier-national: #c1aaff;
+  --tier-national-bg: rgba(193, 170, 255, 0.14);
+  --tier-fallback: #aab3ba;
+  --tier-fallback-bg: rgba(170, 179, 186, 0.14);
+
+  --ocean-a: rgba(46, 196, 182, 0.14);
+  --ocean-b: rgba(40, 110, 190, 0.20);
+  --ocean-c: rgba(10, 60, 110, 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-solid: var(--surface-solid);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --font-sans: var(--font-sans), "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Devanagari", "Nirmala UI", system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* ------------------------------------------------------------------ base */
+html {
+  background: var(--bg);
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), "Noto Sans Telugu", "Noto Sans Tamil", "Noto Sans Devanagari", "Nirmala UI", system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+:lang(te), :lang(ta), :lang(hi) {
+  line-height: 1.75;
+}
+.mono, .num {
+  font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+::selection {
+  background: var(--accent-tint);
+}
+a {
+  color: inherit;
+}
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+summary {
+  cursor: pointer;
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ ocean
+   The living background. Three very large soft gradients drift on transform
+   only, so nothing repaints; a wave band scrolls behind them. Nothing here
+   is fast, and under reduced motion the whole thing is still. Content sits
+   on .surface above it and never directly on the moving pixels. */
+.ocean {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% 110%, var(--deep) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  pointer-events: none;
+}
+.ocean > i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(60px);
+  will-change: transform;
+  opacity: 0.9;
+}
+.ocean > i:nth-child(1) {
+  width: 70vw; height: 70vw; left: -15vw; top: -20vw;
+  background: var(--ocean-a);
+  animation: drift-a 95s ease-in-out infinite alternate;
+}
+.ocean > i:nth-child(2) {
+  width: 80vw; height: 80vw; right: -25vw; top: 10vh;
+  background: var(--ocean-b);
+  animation: drift-b 120s ease-in-out infinite alternate;
+}
+.ocean > i:nth-child(3) {
+  width: 90vw; height: 50vw; left: 5vw; bottom: -25vw;
+  background: var(--ocean-c);
+  animation: drift-c 140s ease-in-out infinite alternate;
+}
+.ocean > svg {
+  position: absolute;
+  left: 0;
+  bottom: -2vh;
+  width: 200%;
+  height: 22vh;
+  opacity: 0.35;
+  will-change: transform;
+  animation: wave 70s linear infinite;
+}
+@keyframes drift-a { from { transform: translate3d(0, 0, 0) } to { transform: translate3d(8vw, 6vh, 0) } }
+@keyframes drift-b { from { transform: translate3d(0, 0, 0) } to { transform: translate3d(-9vw, 8vh, 0) } }
+@keyframes drift-c { from { transform: translate3d(0, 0, 0) } to { transform: translate3d(6vw, -5vh, 0) } }
+@keyframes wave { from { transform: translate3d(0, 0, 0) } to { transform: translate3d(-50%, 0, 0) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ocean > i, .ocean > svg { animation: none !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ------------------------------------------------------------------ surfaces */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.surface-2 {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--radius-sm);
+}
+.glass {
+  background: var(--nav-tint);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--hairline);
+}
+.hairline { border-color: var(--hairline); }
+
+/* ------------------------------------------------------------------ chips
+   Colour is keyed on the value the response sent; the text beside it is the
+   value itself, or its localised label. Never colour alone. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip-muted { background: var(--risk-none-bg); color: var(--text-2); }
+.risk-LOW { color: var(--risk-low); background: var(--risk-low-bg); border-color: color-mix(in srgb, var(--risk-low) 30%, transparent); }
+.risk-MODERATE { color: var(--risk-moderate); background: var(--risk-moderate-bg); border-color: color-mix(in srgb, var(--risk-moderate) 30%, transparent); }
+.risk-HIGH { color: var(--risk-high); background: var(--risk-high-bg); border-color: color-mix(in srgb, var(--risk-high) 30%, transparent); }
+.risk-SEVERE { color: var(--risk-severe); background: var(--risk-severe-bg); border-color: color-mix(in srgb, var(--risk-severe) 30%, transparent); }
+.risk-NONE { color: var(--risk-none); background: var(--risk-none-bg); }
+.ink-LOW { color: var(--risk-low); }
+.ink-MODERATE { color: var(--risk-moderate); }
+.ink-HIGH { color: var(--risk-high); }
+.ink-SEVERE { color: var(--risk-severe); }
+.ink-NONE { color: var(--risk-none); }
+.bar-LOW { background: var(--risk-low); }
+.bar-MODERATE { background: var(--risk-moderate); }
+.bar-HIGH { background: var(--risk-high); }
+.bar-SEVERE { background: var(--risk-severe); }
+.bar-NONE { background: var(--risk-none); }
+
+.tier-ISRO { color: var(--tier-isro); background: var(--tier-isro-bg); border-color: color-mix(in srgb, var(--tier-isro) 40%, transparent); }
+.tier-NATIONAL { color: var(--tier-national); background: var(--tier-national-bg); border-color: color-mix(in srgb, var(--tier-national) 40%, transparent); }
+.tier-FALLBACK { color: var(--tier-fallback); background: var(--tier-fallback-bg); border-style: dashed; border-color: color-mix(in srgb, var(--tier-fallback) 60%, transparent); }
+.tier-UNKNOWN { color: var(--text-3); background: transparent; border-style: dotted; border-color: var(--hairline); }
+
+/* ------------------------------------------------------------------ controls */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0.55em 1.05em;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.4;
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: default; transform: none; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn-primary:hover { background: var(--accent-2); border-color: transparent; }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn-quiet:hover { background: var(--accent-tint); color: var(--text); border-color: transparent; }
+.btn-sm { padding: 0.35em 0.8em; font-size: 0.875rem; }
+.field {
+  width: 100%;
+  padding: 0.6em 0.85em;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface-solid);
+  color: var(--text);
+}
+.field:focus { outline: 2px solid var(--focus); outline-offset: 1px; border-color: transparent; }
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 0.3em;
+  letter-spacing: 0.01em;
+}
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.nav-link {
+  padding: 0.4em 0.85em;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 0.925rem;
+  transition: background 160ms ease, color 160ms ease;
+}
+.nav-link:hover { color: var(--text); background: var(--accent-tint); }
+.nav-link[aria-current="page"] { color: var(--accent); background: var(--accent-tint); }
+
+/* ------------------------------------------------------------------ motion
+   Only when data arrives or a panel opens. */
+.arrive { animation: arrive 360ms ease-out both; }
+@keyframes arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+details > .panel-body { animation: arrive 240ms ease-out both; }
+.skeleton {
+  background: linear-gradient(90deg, var(--hairline-2), var(--hairline), var(--hairline-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ------------------------------------------------------------------ fish
+   The thinking state: small fish circling slowly. SVG, one transform each,
+   still under reduced motion. */
+.fish-ring { animation: orbit 14s linear infinite; transform-origin: 50% 50%; }
+.fish-ring-2 { animation: orbit 22s linear infinite reverse; transform-origin: 50% 50%; }
+.fish-body { animation: wiggle 1.4s ease-in-out infinite; transform-origin: 70% 50%; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes wiggle { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+/* ------------------------------------------------------------------ spoken
+   The sentence being spoken is highlighted; the word being spoken, where the
+   engine reports boundaries, a little more. */
+.spoken-sentence { transition: background 200ms ease; border-radius: 4px; padding: 0 0.15em; }
+.spoken-sentence[data-active="true"] { background: var(--accent-tint); }
+.spoken-word[data-active="true"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 0.2em; }
+
+/* ------------------------------------------------------------------ leaflet */
+.leaflet-container { background: var(--bg-2); font: inherit; border-radius: var(--radius); }
+.leaflet-control-attribution { font-size: 0.7rem; background: var(--surface) !important; color: var(--text-2) !important; }
+.leaflet-control-attribution a { color: var(--accent) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface-solid); color: var(--text); }
+.leaflet-bar a { background: var(--surface-solid) !important; color: var(--text) !important; border-color: var(--hairline) !important; }
+
+/* ------------------------------------------------------------------ prose (About the data) */
+.prose-doc { max-width: 76ch; }
+.prose-doc h2 { font-size: 1.35rem; font-weight: 700; margin: 2.2em 0 0.6em; }
+.prose-doc h3 { font-size: 1.1rem; font-weight: 700; margin: 1.6em 0 0.5em; }
+.prose-doc p { margin: 0.8em 0; color: var(--text-2); }
+.prose-doc code { font-family: var(--font-mono), monospace; font-size: 0.85em; background: var(--accent-tint); padding: 0.05em 0.35em; border-radius: 4px; }
+.prose-doc pre { overflow-x: auto; padding: 1em; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); }
+.prose-doc pre code { background: none; padding: 0; }
+.prose-doc table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1em 0; display: block; overflow-x: auto; }
+.prose-doc th, .prose-doc td { text-align: left; vertical-align: top; padding: 0.55em 0.7em; border-bottom: 1px solid var(--hairline); }
+.prose-doc th { color: var(--text-2); font-weight: 600; }
+.prose-doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 0.15em; }
+.prose-doc hr { border: 0; border-top: 1px solid var(--hairline); margin: 2em 0; }
+.prose-doc ul, .prose-doc ol { padding-left: 1.4em; color: var(--text-2); }
+.prose-doc li { margin: 0.3em 0; }
+.prose-doc blockquote { border-left: 3px solid var(--accent); padding-left: 1em; color: var(--text-2); margin: 1em 0; }
+
+/* zone rank labels sit inside their markers */
+.leaflet-tooltip.zone-label { background: transparent; border: 0; box-shadow: none; color: #fff; font-family: var(--font-mono), monospace; font-weight: 700; font-size: 12px; padding: 0; text-shadow: 0 0 3px rgba(0,0,0,0.8); }
+.leaflet-tooltip.zone-label::before { display: none; }

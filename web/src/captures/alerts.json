@@ -1,0 +1,28 @@
+{
+  "_contract_version": "1.5.0",
+  "_request": {
+    "method": "GET",
+    "path": "/api/alerts",
+    "params": {
+      "latitude": 16.9891,
+      "longitude": 82.2475
+    }
+  },
+  "_status": 200,
+  "response": [
+    {
+      "alert_id": "orca-no-alert-provider",
+      "source": "ORCA — no marine hazard feed connected",
+      "sector": "All Indian coastal sectors",
+      "severity": "INFO",
+      "title": "No live hazard bulletins available",
+      "description": "ORCA is not connected to a marine hazard bulletin feed. It holds no INCOIS high-wave alerts, no IMD squall or cyclone advisories and no MoEFCC conservation notices, and it does not generate substitutes for them. The absence of alerts here does not mean no alert is in force.",
+      "issued_at": "2026-09-09T06:00:00Z",
+      "valid_until": null,
+      "recommended_action": "Check IMD cyclone bulletins, INCOIS ocean state forecasts and VHF coastal broadcasts directly before departure.",
+      "status": "DEMO",
+      "provider_tier": "FALLBACK",
+      "is_agency_bulletin": false
+    }
+  ]
+}
