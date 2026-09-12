@@ -6,7 +6,7 @@
  * measurement; it is what the fisherman tells us about themselves.
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { color, touch } from "@/lib/design/tokens";
 import { LANGS, type LangCode } from "@/lib/i18n/app";
 import { formatNumber } from "@/lib/i18n/digits";
@@ -21,6 +21,8 @@ export interface OnboardingResult { language: LangCode; harbour: Harbour | null;
 interface Props {
   t: T; lang: LangCode; position: { lat: number; lon: number } | null; initialVessel: VesselProfile | null;
   onLanguage: (l: LangCode) => void; onDone: (r: OnboardingResult) => void;
+  /** The shell hands hardware Back here. Returns true when consumed. */
+  registerBack?: (fn: () => boolean) => void;
 }
 
 const input = (label: string, value: string, set: (v: string) => void, mono = false, inputMode: "text" | "decimal" | "numeric" = "text") => (
@@ -31,7 +33,7 @@ const input = (label: string, value: string, set: (v: string) => void, mono = fa
   </label>
 );
 
-export function OnboardingScreen({ t, lang, position, initialVessel, onLanguage, onDone }: Props) {
+export function OnboardingScreen({ t, lang, position, initialVessel, onLanguage, onDone, registerBack }: Props) {
   const [step, setStep] = useState(0);
   const [harbour, setHarbour] = useState<Harbour | null>(null);
   const [name, setName] = useState(initialVessel?.name ?? ""); const [type, setType] = useState(initialVessel?.type ?? "");
@@ -52,6 +54,11 @@ export function OnboardingScreen({ t, lang, position, initialVessel, onLanguage,
   };
   const finish = () => onDone({ language: lang, harbour, vessel: vessel() });
   const next = () => (step < 2 ? setStep(step + 1) : finish());
+  // Back never discards: it steps back, and from the first step it finishes with what is chosen.
+  // Registered through a ref so the shell always calls the current render's closure, never a stale one.
+  const backRef = React.useRef<() => boolean>(() => false);
+  backRef.current = () => { console.info("[onb] back at step", step); if (step > 0) setStep(step - 1); else finish(); return true; };
+  useEffect(() => { registerBack?.(() => backRef.current()); }, [registerBack]);
 
   const titles = [t("onbLanguage"), t("onbHarbour"), t("onbBoat")];
   return (

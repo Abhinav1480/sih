@@ -54,6 +54,7 @@ export class AuthError extends Error {
 }
 
 const KEY = "orca.session";
+const PENDING_KEY = "orca.profilePending";
 const REQUEST_TIMEOUT_MS = 20_000;
 
 // --- storage adapter -------------------------------------------------------------
@@ -104,6 +105,7 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
         ...(init.headers ?? {}),
       },
     });
+    console.info("[auth]", init.method ?? "GET", path, "->", res.status);
     if (res.status === 204) return undefined as T;
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -114,7 +116,8 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
     return body as T;
   } catch (err) {
     if (err instanceof AuthError) throw err;
-    if (controller.signal.aborted) throw new AuthError("timeout");
+    if (controller.signal.aborted) { console.warn("[auth]", init.method ?? "GET", path, "-> timeout"); throw new AuthError("timeout"); }
+    console.warn("[auth]", init.method ?? "GET", path, "-> transport failure:", err instanceof Error ? err.message : String(err));
     throw new AuthError("network", err instanceof Error ? err.message : String(err));
   } finally {
     clearTimeout(timer);
@@ -122,6 +125,19 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
 }
 
 interface TokenOut { user: AuthUser; access_token: string; refresh_token: string; token_type: string; expires_in: number }
+export interface ProfilePatch { name?: string; preferred_language?: string; profile?: Record<string, unknown> }
+
+function mergePatch(a: ProfilePatch, b: ProfilePatch): ProfilePatch {
+  return { ...a, ...b, ...(a.profile || b.profile ? { profile: { ...(a.profile ?? {}), ...(b.profile ?? {}) } } : {}) };
+}
+
+async function sendProfile(patch: ProfilePatch): Promise<AuthUser> {
+  const token = await accessToken();
+  if (!token || !current) throw new AuthError("token_missing");
+  const user = await call<AuthUser>("/me", { method: "PATCH", token, body: JSON.stringify(patch) });
+  await commit({ ...current, user });
+  return user;
+}
 
 function fromTokens(t: TokenOut, onboarding_pending: boolean): StoredSession {
   return { kind: "account", user: t.user, access_token: t.access_token, refresh_token: t.refresh_token, expires_at: Date.now() + t.expires_in * 1000, onboarding_pending };
@@ -197,11 +213,29 @@ export function useSession() {
     return user;
   }, []);
 
-  const updateProfile = useCallback(async (patch: { name?: string; preferred_language?: string; profile?: Record<string, unknown> }) => {
-    const token = await accessToken();
-    if (!token || !current) throw new AuthError("token_missing");
-    const user = await call<AuthUser>("/me", { method: "PATCH", token, body: JSON.stringify(patch) });
-    await commit({ ...current, user });
+  /**
+   * Save profile fields to the account. On failure the patch is kept on the
+   * phone (merged with any earlier pending patch) and the error is rethrown so
+   * the screen can say so; `flushPendingProfile` retries it later.
+   */
+  const updateProfile = useCallback(async (patch: ProfilePatch) => {
+    try {
+      const user = await sendProfile(patch);
+      await setJSON(PENDING_KEY, null);
+      return user;
+    } catch (err) {
+      const pending = (await getJSON<ProfilePatch>(PENDING_KEY)) ?? {};
+      await setJSON(PENDING_KEY, mergePatch(pending, patch));
+      throw err;
+    }
+  }, []);
+
+  /** Retry a save that failed earlier. Resolves to the user when it lands, null when nothing was pending. */
+  const flushPendingProfile = useCallback(async () => {
+    const pending = await getJSON<ProfilePatch>(PENDING_KEY);
+    if (!pending || Object.keys(pending).length === 0 || current?.kind !== "account") return null;
+    const user = await sendProfile(pending);
+    await setJSON(PENDING_KEY, null);
     return user;
   }, []);
 
@@ -215,7 +249,7 @@ export function useSession() {
     isGuest: current?.kind === "guest",
     onboardingPending: !!current?.onboarding_pending,
     storageKind: storageKind(),
-    signUp, signIn, continueAsGuest, signOut, refreshUser, updateProfile, finishOnboarding,
+    signUp, signIn, continueAsGuest, signOut, refreshUser, updateProfile, flushPendingProfile, finishOnboarding,
   };
 }
 

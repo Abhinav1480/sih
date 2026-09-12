@@ -23,7 +23,7 @@ import { DEFAULT_LOCATION } from "@/lib/data/placeholders";
 import { HARBOURS } from "@/lib/data/harbours";
 import { KNOWN_CARD_TYPES, type Envelope } from "@/lib/contract/envelope";
 import { useNetworkStatus } from "@/lib/offline/network";
-import { formatAge, loadTripCard, loadTrips, loadVesselProfile, saveTrip, saveTripCard, saveVesselProfile, type VesselProfile } from "@/lib/offline/store";
+import { KEYS, formatAge, loadTripCard, loadTrips, loadVesselProfile, saveTrip, saveTripCard, saveVesselProfile, setJSON, type VesselProfile } from "@/lib/offline/store";
 import { buildTripCard, type TripCard } from "@/lib/offline/tripCard";
 import { DEMO_TRACK, useGeofence } from "@/lib/geofence";
 import { useSpeechInput, useSpeechOutput, buildSpokenText } from "@/lib/voice";
@@ -47,7 +47,7 @@ import { OfflineScreen } from "@/components/app/screens/Offline";
 import { EmergencyScreen } from "@/components/app/screens/Emergency";
 import { BorderWarningOverlay } from "@/components/app/screens/BorderWarning";
 import { StaleWarning } from "@/components/Offline/StaleWarning";
-import { SplashScreen, WelcomeScreen, SignUpScreen, SignInScreen, ForgotScreen } from "@/components/app/screens/Auth";
+import { SplashScreen, WelcomeScreen, SignUpScreen, SignInScreen, ForgotScreen, errorKey } from "@/components/app/screens/Auth";
 import { OnboardingScreen } from "@/components/app/screens/Onboarding";
 import { ProfileScreen } from "@/components/app/screens/Profile";
 import { DashboardScreen } from "@/components/app/screens/Dashboard";
@@ -106,6 +106,9 @@ export default function AppPage() {
   const [micNote, setMicNote] = useState<string | null>(null);
   const [demo, setDemo] = useState<number | null>(null);
   const [warnAcked, setWarnAcked] = useState(false);
+  const [note, setNote] = useState<string | null>(null); // a one-line status the reader can dismiss
+  const onbBack = useRef<(() => boolean) | null>(null);
+  const registerOnbBack = useCallback((fn: () => boolean) => { onbBack.current = fn; }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -229,10 +232,11 @@ export default function AppPage() {
   useEffect(() => registerBackHandler(() => {
     if (session.status === "signed_out") { if (authScreen === "welcome") return false; setAuthScreen("welcome"); return true; }
     if (voice) { exitVoice(); return true; }
+    if (top === "onboarding" && onbBack.current) return onbBack.current();
     if (stack.length > 0) { pop(); return true; }
     if (tab !== TAB_TODAY) { setTab(TAB_TODAY); return true; }
     return false;
-  }), [session.status, authScreen, voice, exitVoice, stack.length, pop, tab]);
+  }), [session.status, authScreen, voice, exitVoice, stack.length, pop, tab, top]);
 
   // --- dashboard, map centre, derived ---------------------------------------------------
   const homeHarbour = (session.user?.profile as { home_harbour?: { name?: string; lat?: number; lon?: number } } | undefined)?.home_harbour;
@@ -270,18 +274,33 @@ export default function AppPage() {
   const canPersist = session.status === "signed_in";
   const needsAccount = useCallback(() => push("needAccount"), [push]);
   const finishOnboarding = useCallback(async (r: { language: string; harbour: { name: string; lat: number; lon: number } | null; vessel: VesselProfile | null }) => {
+    console.info("[onb] finish", JSON.stringify({ language: r.language, harbour: r.harbour?.name ?? null, vessel: r.vessel }));
     if (r.vessel) { await saveVesselProfile(r.vessel); setProfile(r.vessel); }
     if (canPersist) {
       const profilePatch: Record<string, unknown> = {};
       if (r.harbour) profilePatch.home_harbour = r.harbour;
       if (r.vessel) profilePatch.vessel = r.vessel;
-      try { await session.updateProfile({ preferred_language: r.language, ...(Object.keys(profilePatch).length ? { profile: profilePatch } : {}) }); } catch { /* offline: kept locally */ }
+      try {
+        await session.updateProfile({ preferred_language: r.language, ...(Object.keys(profilePatch).length ? { profile: profilePatch } : {}) });
+        setNote(t("profileSaved"));
+      } catch (err) {
+        // Kept on the phone and retried on the next launch; the reader is told now.
+        setNote(`${t("profileSaveFailed")} ${t(errorKey(err))}`);
+      }
     }
     await session.finishOnboarding();
     clearAll();
-  }, [canPersist, session, clearAll]);
+  }, [canPersist, session, clearAll, t]);
+  // A save that failed earlier is retried whenever the app comes up online and signed in.
+  useEffect(() => {
+    if (!canPersist || !net.online) return;
+    session.flushPendingProfile().then((u) => { if (u) setNote(t("profileSaved")); }).catch(() => { /* still pending; told on the next attempt */ });
+  }, [canPersist, net.online]); // eslint-disable-line react-hooks/exhaustive-deps
   const signOut = useCallback(async () => {
     stopSpeaking(); reset(); clearAll(); setTab(TAB_TODAY); setThread(newThread()); setLastSavedAt(null);
+    // The boat, trip card and saved trips belong to the account that is leaving; the next reader must not inherit them.
+    await Promise.all([saveVesselProfile({}), setJSON(KEYS.TRIP_CARD, null), setJSON(KEYS.TRIPS, null), setJSON("orca.profilePending", null)]);
+    setProfile(null); setTrip(null); setTrips([]);
     await session.signOut(); setAuthScreen("welcome");
   }, [stopSpeaking, reset, clearAll, session]);
 
@@ -311,7 +330,7 @@ export default function AppPage() {
       onHistory={() => push("history")} onNew={startNewThread} />,
     <TripsScreen key="t" trips={trips} canAdd={!!(env ?? mapEnv)} lang={lang} t={t} onAdd={canPersist ? saveForTrip : needsAccount} />,
     <MyBoatScreen key="b" profile={profile} lang={lang} langNative={native} t={t}
-      onSave={async (p) => { if (!canPersist) { needsAccount(); return; } await saveVesselProfile(p); setProfile(p); try { await session.updateProfile({ profile: { vessel: p } }); } catch { /* kept locally */ } }}
+      onSave={async (p) => { if (!canPersist) { needsAccount(); return; } await saveVesselProfile(p); setProfile(p); try { await session.updateProfile({ profile: { vessel: p } }); setNote(t("profileSaved")); } catch (err) { setNote(`${t("profileSaveFailed")} ${t(errorKey(err))}`); } }}
       onLanguage={() => push("language")} onTrips={() => setTab(TAB_TRIPS)} onOffline={() => push("offline")} onEmergency={() => push("emergency")}
       demoActive={demo !== null} onDemo={() => { setDemo((d) => (d === null ? 0 : null)); setWarnAcked(false); }} />,
   ][tab];
@@ -395,7 +414,7 @@ export default function AppPage() {
       onBack={pop} onLanguage={() => push("language")} onBoat={() => { clearStack(); setTab(TAB_BOAT); }} onEmergency={() => push("emergency")} onOffline={() => push("offline")}
       onResumeOnboarding={() => push("onboarding")} onCreateAccount={async () => { await signOut(); setAuthScreen("signup"); }} onSignOut={signOut} />
   );
-  else if (top === "onboarding") overlay = <OnboardingScreen t={t} lang={lang} position={position} initialVessel={profile} onLanguage={(l) => setLang(l)} onDone={finishOnboarding} />;
+  else if (top === "onboarding") overlay = <OnboardingScreen t={t} lang={lang} position={position} initialVessel={profile} onLanguage={(l) => setLang(l)} onDone={finishOnboarding} registerBack={registerOnbBack} />;
   else if (top === "needAccount") overlay = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: color.page }}>
       <EmptyState icon={<Icon name="boat" size={44} color={color.inkGhost} />} title={t("needAccount")} body={t("needAccountBody")}
@@ -455,15 +474,15 @@ export default function AppPage() {
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, visibility: covered ? "hidden" : "visible" }}>{tabScreen}</div>
         {covered && <div style={{ position: "absolute", inset: 0, zIndex: 20 }}>{covered}</div>}
-        {micNote && !covered && (
+        {(micNote ?? note) && !covered && (
           <div role="status" style={{ position: "absolute", left: 14, right: 14, bottom: 14, background: color.ink, color: color.headerText, borderRadius: 14, padding: "12px 14px", ...sans(15, 500, 1.35), zIndex: 30, display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={{ flex: 1 }}>{micNote}</span>
-            <button onClick={() => setMicNote(null)} style={{ ...btnReset, color: color.headerMuted, minWidth: 44, minHeight: 44 }}>✕</button>
+            <span style={{ flex: 1 }}>{micNote ?? note}</span>
+            <button onClick={() => { setMicNote(null); setNote(null); }} style={{ ...btnReset, color: color.headerMuted, minWidth: 44, minHeight: 44 }}>✕</button>
           </div>
         )}
         {severe && geo.status && <BorderWarningOverlay status={geo.status} position={position} lang={lang} t={t} onAck={() => setWarnAcked(true)} />}
       </div>
-      {!voiceView && (
+      {!voiceView && top !== "onboarding" && (
         <nav style={{ flex: "none", height: 70, display: "flex", background: color.card, borderTop: `1px solid ${color.line}`, position: "relative" }}>
           {navItems.map((label, i) => {
             const on = tab === i;
